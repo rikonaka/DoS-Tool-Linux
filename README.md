@@ -1,35 +1,54 @@
-# Inherited From WayOSGuessTool(deleted)
+# SYN-Flood-DoS-Tool
 
-<del>个人项目，主要用来破解公司傻逼维盟路由器密码</del>
+Just do it
 
-<del>虽说是个人项目，但是不反对人加入</del>
+# Usage:
 
-现在主要不破解了,直接DOS攻击破坏
+We need compile this code first.
 
-这个版本第一版的代码是通过大量的进程和线程用三次握手之后的`TCP`连接去发送大量数据来攻击
+## Change target IP
 
-但是攻击效果不明显，最高时候`100M`的路由器(其实也是交换机),`1000M`的电脑网卡只能产生接近`2M/s`的流量
+Before We attack, there is something we need change.
 
-于是这里采用了`SYN Flood`攻击的方式，放弃接收三次握手的第二阶段的握手包，或者接收了不发送第三个确认包
+First, the IP address.
 
-最高接近`8M/s`
+This IP or URL address is in the line 30 of `exploit.h`.
+```
+vim exploit.h
+```
 
-<2017/11/28>
+Just use the target URL replace this `POST_URL` value.
 
-攻击时候加入了随机ip和随机端口的设置
+But don't forget the `http://`.
 
-还有自动间断攻击的方法
+(This code was used to exploited the web server's login
+password, the attack features is add recently, so here we
+have to add this `http://`, but calm down, this code will
+auto separate this IP address from URL)
 
-编辑`crontab -e`加入间隔启动代码
+```
+#define POST_URL "http://192.168.20.1:80/login.cgi"
+```
 
-结束程序执行脚本在`script`里面
+If you want to attack the IP address of `192.168.1.1`.
 
-# Complie
+Replace the POST_URL with `http://192.168.1.1`.
 
-Into the Dictoary and excute the `make` command
-It will complie a excuted file named `tool`
+# Compile the code
 
-直接在目录执行`make`就会产生一个`tool`的可执行文件
+```
+make
+```
+
+This command will generate a excutable file named 'tool'.
+
+Then, begian you evil attack.
+
+```
+./tool -t
+```
+
+# Usage
 
 ```
 Usage : ./tool
@@ -38,3 +57,21 @@ Usage : ./tool
       -d   Debug mod
       -t   Attack mod(this mod will not guess the correct password)
 ```
+
+# Advanced usage
+
+If you want to use this code to guess some server's username or password.
+
+Also, you have the edit the exploit.h which in line 30.
+
+Then change the line 10:
+
+```
+#define POST_MODEL "user=%s&password=%s&Submit=登+陆"
+```
+
+Define youself's `POST_MODEL`.
+
+After that, compile this code again and excuted `tool`.
+
+If you want to more, just change this code by you self.
