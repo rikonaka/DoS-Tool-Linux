@@ -32,7 +32,7 @@ auto separate this IP address from URL)
 
 If you want to attack the IP address of `192.168.1.1`.
 
-Replace the POST_URL with `http://192.168.1.1`.
+Replace the `POST_URL` with `http://192.168.1.1`.
 
 # Compile
 
@@ -62,7 +62,7 @@ Usage : ./tool
 
 If you want to use this code to guess some server's username or password.
 
-Also, you have the edit the exploit.h which in line 30.
+Also, you have the edit the `exploit.h` which in line 30.
 
 Then change the line 10:
 
