@@ -1,6 +1,6 @@
 # SYN-Flood-DoS-Tool
 
-Just do it
+Just do it.
 
 # Usage:
 
