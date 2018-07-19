@@ -34,7 +34,7 @@ If you want to attack the IP address of `192.168.1.1`.
 
 Replace the POST_URL with `http://192.168.1.1`.
 
-# Compile the code
+# Compile
 
 ```
 make
