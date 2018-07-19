@@ -8,7 +8,7 @@ We need compile this code first.
 
 ## Change target IP
 
-Before We attack, there is something we need change.
+Before we attack, there is something we need change.
 
 First, the IP address.
 
