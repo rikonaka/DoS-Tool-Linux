@@ -2,6 +2,8 @@
 
 Just do it.
 
+![Chinese version](https://github.com/rikonaka/SYN-Flood-DoS-Tool/blob/master/README-ZH.md)
+
 # Usage:
 
 We need compile this code first.
