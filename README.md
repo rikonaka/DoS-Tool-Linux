@@ -2,7 +2,7 @@
 
 Just do it.
 
-![Chinese version](https://github.com/rikonaka/SYN-Flood-DoS-Tool/blob/master/README-ZH.md)
+[Chinese help](https://github.com/rikonaka/SYN-Flood-DoS-Tool/blob/master/README-ZH.md, click it)
 
 # Usage:
 
