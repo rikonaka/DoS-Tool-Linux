@@ -1,4 +1,4 @@
-/* File : thread.c
+/* File : main.c
  * Auth: isinstance
  * Date: 20171102
  * Mail: no
