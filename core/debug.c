@@ -1,7 +1,54 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <time.h>
 
 #include "debug.h"
+
+int Log(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...)
+{
+    /*
+     * Log(1, 2, "string");
+     * 'user_debug_level' is the level you want to see
+     * 'message_debug_level' is used to identified the message log level
+     */
+
+    va_list arg;
+    char *buf = (char *)malloc(MAX_LOG_BUF_SIZE);
+    time_t t;
+    struct tm *timeinfo;
+    time(&t);
+    timeinfo = localtime(&t);
+    //int done;
+    if (!buf)
+    {
+        fprintf(stderr, "Log-Error: %s\n", strerror(errno));
+        return 1;
+    }
+
+    va_start(arg, fmtstring);
+    // Magic here
+    if (vsprintf(buf, fmtstring, arg) > 0)
+    {
+        if (message_debug_level != 0)
+        {
+            if (message_debug_level >= user_debug_level)
+            {
+                printf("%s: [%s]\n", asctime(timeinfo), buf);
+            }
+        }
+    }
+    // Original _printf code
+    //done = vfprintf(buf, fmtstring, arg);
+    //done = vfprintf(stdout, fmtstring, arg);
+    va_end(arg);
+
+    // Original _printf code
+    //return done;
+    free(buf);
+    return 0;
+}
 
 int ShowUsage()
 {
