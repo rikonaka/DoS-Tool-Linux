@@ -31,12 +31,9 @@ int Log(const int message_debug_level, const int user_debug_level, const char *f
     // Magic here
     if (vsprintf(buf, fmtstring, arg) > 0)
     {
-        if (message_debug_level != 0)
+        if (message_debug_level && user_debug_level >= message_debug_level)
         {
-            if (message_debug_level >= user_debug_level)
-            {
-                printf("%s: [%s]\n", asctime(timeinfo), buf);
-            }
+            printf("%s: [%s]\n", asctime(timeinfo), buf);
         }
     }
     // Original _printf code
@@ -66,7 +63,9 @@ int ShowUsage()
                   "         -u   Use user-provided username (must use with -a 0)\n"
                   "         -U   Use user-provided username file (must use with -a 0)\n"
                   "         -p   Use user-provided password (must use with -a 0)\n"
-                  "         -P   Use user-provided password file (must use with -a 0)\n";
+                  "         -P   Use user-provided password file (must use with -a 0)\n"
+                  "         -t   Set the thread number\n"
+                  "         -T   Set the process number\n";
 
     printf("%s", usage);
     return 0;

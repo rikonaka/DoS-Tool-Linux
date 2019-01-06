@@ -9,8 +9,8 @@
 #include "main.h"
 #include "core/http.h"
 #include "core/debug.h"
-#include "core/attack.h"
-#include "method/random.h"
+#include "core/random.h"
+#include "attack_module/guess_username_password.h"
 
 static int ProcessInputParameters(const int argc, char *argv[], pInput process_result)
 {
@@ -52,11 +52,11 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
             break;
 
         case 'd':
-            process_result->debug_mode = LOG_LEVEL_1;
+            process_result->debug_mode = LOG_INFO;
             break;
 
         case 'D':
-            process_result->debug_mode = LOG_LEVEL_2;
+            process_result->debug_mode = LOG_DEBUG;
             break;
 
         case 'u':
@@ -95,28 +95,81 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 return 1;
             break;
 
+        case 't':
+            if (argv[++i])
+            {
+                process_result->max_thread = atoi(argv[i]);
+                /*
+                if (process_result->max_thread >= __INT64_MAX__)
+                {
+                    process_result->max_process = __INT64_MAX__;
+                }
+                */
+            }
+            else
+                return 1;
+            break;
+
+        case 'T':
+            if (argv[++i])
+            {
+                process_result->max_process = atoi(argv[i]);
+            }
+            else
+                return 1;
+            break;
+
         default:
             printf("Input error, please see the usage:\n");
             ShowUsage();
-            exit(1);
+            return 1;
         }
     }
 
     return 0;
 }
 
-int TestProcessResult(pInput process_result)
+static int TestProcessResult(const pInput process_result)
 {
     /*
         show the process result
      */
-    printf("attack_mode: %d\n", process_result->attack_mode);
-    printf("debug_mode: %d\n", process_result->debug_mode);
-    printf("attack_mode_0_one_username: %s\n", process_result->attack_mode_0_one_username);
-    printf("attack_mode_0_one_password: %s\n", process_result->attack_mode_0_one_password);
-    printf("attack_mode_0_username_file_path: %s\n", process_result->attack_mode_0_username_file_path);
-    printf("attack_mode_0_password_file_path: %s\n", process_result->attack_mode_0_password_file_path);
+    Log(LOG_DEBUG, process_result->debug_mode, "attack_mode: %d\n", process_result->attack_mode);
+    Log(LOG_DEBUG, process_result->debug_mode, "debug_mode: %d\n", process_result->debug_mode);
+    Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_one_username: %s\n", process_result->attack_mode_0_one_username);
+    Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_one_password: %s\n", process_result->attack_mode_0_one_password);
+    Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_username_file_path: %s\n", process_result->attack_mode_0_username_file_path);
+    Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_password_file_path: %s\n", process_result->attack_mode_0_password_file_path);
     return 0;
+}
+
+static int StartAttackJob(const pInput process_result)
+{
+    pid_t job_pid;
+    pthread_t job_tid;
+    int pi, ti;
+    int ret;
+    for (pi = 0; pi < process_result->max_process; pi++)
+    {
+        job_pid = fork();
+        if (job_pid == 0)
+        {
+            /* child process */
+            for (ti = 0; ti < process_result->max_thread; ti++)
+            {
+                switch (process_result->attack_mode)
+                {
+                case GUESS_USERNAME_PASSWORD:
+                    /* get the random seed */
+                    time_t t;
+                    time(&t);
+                    process_result->seed = (int)t + ti + pi;
+                    ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, process_result);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -131,17 +184,29 @@ int main(int argc, char *argv[])
     }
 
     pInput process_result = (pInput)malloc(sizeof(Input));
+    process_result->max_process = MAX_PROCESS;
+    process_result->max_thread = MAX_THREAD;
 
     if (!ProcessInputParameters(argc, argv, process_result))
     {
+        Log(LOG_INFO, process_result->debug_mode, "Running...");
+        Log(LOG_DEBUG, process_result->debug_mode, "Debug mode start...");
         TestProcessResult(process_result);
+
+        if (process_result->debug_mode != 0)
+        {
+            Log(LOG_DEBUG, process_result->debug_mode, "Sleep 2s for debug...");
+            sleep(2);
+        }
+
+        StartAttackJob(process_result);
     }
     else
     {
         printf("Please check you input");
         ShowUsage();
-        exit(1);
     }
 
+    free(process_result);
     return 0;
 }
