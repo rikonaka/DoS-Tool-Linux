@@ -21,6 +21,6 @@ int ShowUsage()
                   "         -p   Use user-provided password (must use with -a 0)\n"
                   "         -P   Use user-provided password file (must use with -a 0)\n";
 
-    printf(usage);
+    printf("%s", usage);
     return 0;
 }

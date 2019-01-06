@@ -5,7 +5,7 @@
 #define ATTACK_MODE_DEFAULT 1
 
 /*
-    0  - do not show the debug information
+    0 - do not show the debug information
     1 - show the debug information
     2 - more debug information
 */
