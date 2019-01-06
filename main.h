@@ -26,7 +26,6 @@ typedef struct input
     int max_thread;
     int seed;
     char attack_mode_0_one_username[MAX_USERNAME_LENGTH];
-    char attack_mode_0_one_password[MAX_PASSWORD_LENGTH];
     char attack_mode_0_username_file_path[MAX_USERNAME_PATH_LENGTH];
     char attack_mode_0_password_file_path[MAX_PASSWORD_PATH_LENGTH];
     // continue

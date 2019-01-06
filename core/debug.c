@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <errno.h>
 #include <time.h>
 
 #include "debug.h"
@@ -23,7 +22,6 @@ int Log(const int message_debug_level, const int user_debug_level, const char *f
     //int done;
     if (!buf)
     {
-        fprintf(stderr, "Log-Error: %s\n", strerror(errno));
         return 1;
     }
 
@@ -62,10 +60,9 @@ int ShowUsage()
                   "         -D   Show more debug mode\n"
                   "         -u   Use user-provided username (must use with -a 0)\n"
                   "         -U   Use user-provided username file (must use with -a 0)\n"
-                  "         -p   Use user-provided password (must use with -a 0)\n"
                   "         -P   Use user-provided password file (must use with -a 0)\n"
                   "         -t   Set the thread number\n"
-                  "         -T   Set the process number\n";
+                  "         -p   Set the process number\n";
 
     printf("%s", usage);
     return 0;

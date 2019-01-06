@@ -7,10 +7,9 @@
 #include <sys/time.h>
 
 #include "main.h"
-#include "core/http.h"
 #include "core/debug.h"
-#include "core/random.h"
 #include "attack_module/guess_username_password.h"
+#include "attack_module/syn_flood_dos.h"
 
 static int ProcessInputParameters(const int argc, char *argv[], pInput process_result)
 {
@@ -77,15 +76,6 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 return 1;
             break;
 
-        case 'p':
-            if (argv[++i])
-            {
-                strncpy(process_result->attack_mode_0_one_password, argv[i], MAX_PASSWORD_LENGTH);
-            }
-            else
-                return 1;
-            break;
-
         case 'P':
             if (argv[++i])
             {
@@ -110,7 +100,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 return 1;
             break;
 
-        case 'T':
+        case 'p':
             if (argv[++i])
             {
                 process_result->max_process = atoi(argv[i]);
@@ -120,7 +110,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
             break;
 
         default:
-            printf("Input error, please see the usage:\n");
+            Log(LOG_ERROR, LOG_ERROR, "Input error, please see the usage:\n");
             ShowUsage();
             return 1;
         }
@@ -137,7 +127,6 @@ static int TestProcessResult(const pInput process_result)
     Log(LOG_DEBUG, process_result->debug_mode, "attack_mode: %d\n", process_result->attack_mode);
     Log(LOG_DEBUG, process_result->debug_mode, "debug_mode: %d\n", process_result->debug_mode);
     Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_one_username: %s\n", process_result->attack_mode_0_one_username);
-    Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_one_password: %s\n", process_result->attack_mode_0_one_password);
     Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_username_file_path: %s\n", process_result->attack_mode_0_username_file_path);
     Log(LOG_DEBUG, process_result->debug_mode, "attack_mode_0_password_file_path: %s\n", process_result->attack_mode_0_password_file_path);
     return 0;
@@ -148,7 +137,6 @@ static int StartAttackJob(const pInput process_result)
     pid_t job_pid;
     pthread_t job_tid;
     int pi, ti;
-    int ret;
     for (pi = 0; pi < process_result->max_process; pi++)
     {
         job_pid = fork();
@@ -164,12 +152,48 @@ static int StartAttackJob(const pInput process_result)
                     time_t t;
                     time(&t);
                     process_result->seed = (int)t + ti + pi;
-                    ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, process_result);
+                    int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, process_result);
+                    if (ret != 0)
+                    {
+                        Log(LOG_ERROR, LOG_ERROR, "Error: create pthread error");
+                        return 1;
+                    }
+                    pthread_join(job_tid, NULL);
+                    break;
+
+                case SYN_FLOOD_ATTACK:
+                    /* not finish */
                     break;
                 }
             }
         }
+        else if (job_pid < 0)
+        {
+            // Error now
+            Log(LOG_ERROR, LOG_ERROR, "Error: create process error");
+        }
+        else
+        {
+
+            int wait_val;
+            int child_id;
+            // Father process
+            child_id = wait(&wait_val);
+            Log(LOG_DEBUG, process_result->debug_mode, "child exit, process id: %d", child_id);
+            if (WIFEXITED(wait_val))
+            {
+                Log(LOG_DEBUG, process_result->debug_mode, "child exited with code %d", WEXITSTATUS(wait_val));
+            }
+            else
+            {
+                Log(LOG_DEBUG, LOG_DEBUG, "Error: child exited NOT normally");
+                // sleep() for test
+                //sleep(1);
+            }
+        }
     }
+
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -189,7 +213,7 @@ int main(int argc, char *argv[])
 
     if (!ProcessInputParameters(argc, argv, process_result))
     {
-        Log(LOG_INFO, process_result->debug_mode, "Running...");
+        Log(LOG_INFO, LOG_INFO, "Running...");
         Log(LOG_DEBUG, process_result->debug_mode, "Debug mode start...");
         TestProcessResult(process_result);
 
@@ -203,7 +227,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("Please check you input");
+        Log(LOG_ERROR, LOG_ERROR, "Please check you input");
         ShowUsage();
     }
 
