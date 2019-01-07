@@ -288,13 +288,13 @@ int http_parse_result(const char *lpbuf, char *rebuf)
     return 0;
 }
 
-//char *http_post(const char *url, const char *post_str, int debug_mode, int not_recv)
+//char *http_post(const char *url, const char *post_str, int debug_level, int not_recv)
 void http_post(const struct HTTP_POST_ARG *input)
 {
     // Init the input structure
     char *url = input->URL;
     char *post_str = input->PostData;
-    int debug_mode = input->DebugMode;
+    int debug_level = input->DebugMode;
     int attack = input->Attack;
 
     int socket_fd = -1;
@@ -309,19 +309,19 @@ void http_post(const struct HTTP_POST_ARG *input)
 
     if (!url || !post_str)
     {
-        debug(debug_mode, 1, "url or post_str is null, failed...");
+        debug(debug_level, 1, "url or post_str is null, failed...");
         return_str = return_string;
     }
     if (http_parse_url(url, host_addr, file, &port))
     {
-        debug(debug_mode, 1, "http_parse_url failed...");
+        debug(debug_level, 1, "http_parse_url failed...");
         return_str = return_string;
     }
     //printf("host_addr : %s\nfile:%s\n%d\n", host_addr, file, port);
     socket_fd = http_tcpclient_create(host_addr, port);
     if (socket_fd < 0)
     {
-        debug(debug_mode, 1, "http_tcpclient_create failed...");
+        debug(debug_level, 1, "http_tcpclient_create failed...");
         return_str = return_string;
     }
 
@@ -336,9 +336,9 @@ void http_post(const struct HTTP_POST_ARG *input)
         char *rand_ip_addr = (char *)calloc(20, sizeof(char));
         int rport;
         struct AHTTP_INPUT *atmp = (struct AHTTP_INPUT *)malloc(sizeof(struct AHTTP_INPUT));
-        debug(debug_mode, 2, "ATTACK!!!!--------------");
+        debug(debug_level, 2, "ATTACK!!!!--------------");
         atmp->DstIP = host_addr;
-        if (debug_mode == 2)
+        if (debug_level == 2)
         {
             atmp->MaxLoop = 10;
         }
@@ -346,7 +346,7 @@ void http_post(const struct HTTP_POST_ARG *input)
         {
             atmp->MaxLoop = -1;
         }
-        debug(debug_mode, 2, "Start sending data...");
+        debug(debug_level, 2, "Start sending data...");
         for (;;)
         {
             // Here get the rand ip address
@@ -366,48 +366,48 @@ void http_post(const struct HTTP_POST_ARG *input)
     {
         sprintf(lpbuf, HTTP_POST, file, host_addr, port, strlen(post_str), post_str);
         // send now
-        debug(debug_mode, 1, "Start sending data...");
+        debug(debug_level, 1, "Start sending data...");
         if (http_tcpclient_send(socket_fd, lpbuf, strlen(lpbuf)) < 0)
         {
-            debug(debug_mode, 1, "http_tcpclient_send failed..");
+            debug(debug_level, 1, "http_tcpclient_send failed..");
             //http_tcpclient_close(socket_fd);
             //return return_string;
         }
 
         if (http_tcpclient_recv(socket_fd, return_string) <= 0)
         {
-            debug(debug_mode, 1, "http_tcpclient_recv failed...");
+            debug(debug_level, 1, "http_tcpclient_recv failed...");
             //http_tcpclient_close(socket_fd);
             //return return_string;
         }
-        debug(debug_mode, 1, "Recvevicing the data from server...");
+        debug(debug_level, 1, "Recvevicing the data from server...");
 
         response_data = (char *)calloc(MY_HTTP_DEFAULT_RESPONSE_LENGTH, sizeof(char));
         if (!response_data)
         {
-            debug(debug_mode, 1, "Response malloc failed\n");
+            debug(debug_level, 1, "Response malloc failed\n");
             //return return_string;
         }
 
         // Return value is '0' mean success
         if (http_parse_result(return_string, response_data) != 0)
         {
-            debug(debug_mode, 1, "http_parse_result failed\n");
+            debug(debug_level, 1, "http_parse_result failed\n");
             //return return_string;
         }
-        debug(debug_mode, 2, "Start copying the data to buf");
+        debug(debug_level, 2, "Start copying the data to buf");
         strcpy(return_str, response_data);
-        debug(debug_mode, 2, "End the copy");
+        debug(debug_level, 2, "End the copy");
         //return response_data;
         //http_tcpclient_close(socket_fd);
     }
     http_tcpclient_close(socket_fd);
     free(lpbuf);
-    debug(debug_mode, 2, "End in the http_post");
+    debug(debug_level, 2, "End in the http_post");
 }
 
 /*
-char *http_get(const char *url, int debug_mode, int not_recv)
+char *http_get(const char *url, int debug_level, int not_recv)
 {
     int socket_fd = -1;
     int port = 0;

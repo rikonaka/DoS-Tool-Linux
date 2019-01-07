@@ -8,9 +8,9 @@ int some()
         char *rand_ip_addr = (char *)calloc(20, sizeof(char));
         int rport;
         struct AHTTP_INPUT *atmp = (struct AHTTP_INPUT *)malloc(sizeof(struct AHTTP_INPUT));
-        debug(debug_mode, 2, "ATTACK!!!!--------------");
+        debug(debug_level, 2, "ATTACK!!!!--------------");
         atmp->DstIP = host_addr;
-        if (debug_mode == 2)
+        if (debug_level == 2)
         {
             atmp->MaxLoop = 10;
         }
@@ -18,7 +18,7 @@ int some()
         {
             atmp->MaxLoop = -1;
         }
-        debug(debug_mode, 2, "Start sending data...");
+        debug(debug_level, 2, "Start sending data...");
         for (;;)
         {
             // Here get the rand ip address
@@ -33,4 +33,5 @@ int some()
         free(atmp);
     }
     */
+    return 0;
 }

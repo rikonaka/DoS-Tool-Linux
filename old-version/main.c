@@ -26,7 +26,7 @@ void work(struct INPUT_ARG *pinput)
     pid_t pid;
     pthread_t tid;
     int process_i;
-    int debug_mode = pinput->DebugMode;
+    int debug_level = pinput->DebugMode;
     int thread_i;
     int ret;
 
@@ -45,7 +45,7 @@ void work(struct INPUT_ARG *pinput)
                 ret = pthread_create(&tid, NULL, (void *)exploit, pinput);
                 if (ret != 0)
                 {
-                    debug(debug_mode, 1, "Create pthread error...");
+                    debug(debug_level, 1, "Create pthread error...");
                 }
                 pthread_join(tid, NULL);
             }
@@ -55,7 +55,7 @@ void work(struct INPUT_ARG *pinput)
         else if (pid < 0)
         {
             // Error now
-            debug(debug_mode, 1, "Create process error\n");
+            debug(debug_level, 1, "Create process error\n");
         }
         else
         {
@@ -64,21 +64,21 @@ void work(struct INPUT_ARG *pinput)
             int child_id;
             // Father process
             child_id = wait(&wait_val);
-            debug(debug_mode, 2, "Child exit, process id: %d", child_id);
+            debug(debug_level, 2, "Child exit, process id: %d", child_id);
             if (WIFEXITED(wait_val))
             {
-                debug(debug_mode, 2, "child exited with code %d", WEXITSTATUS(wait_val));
-                if (debug_mode != 2)
+                debug(debug_level, 2, "child exited with code %d", WEXITSTATUS(wait_val));
+                if (debug_level != 2)
                 {
                     work(pinput);
                 }
             }
             else
             {
-                debug(debug_mode, 2, "child exited NOT normally");
+                debug(debug_level, 2, "child exited NOT normally");
                 // sleep() for test
                 //sleep(1);
-                if (debug_mode != 2)
+                if (debug_level != 2)
                 {
                     work(pinput);
                 }
@@ -143,8 +143,8 @@ int main(int argc, char *argv[])
     int attack = ATTACK_MODE_DEFAULT;
     // RAND_USER_NAME_DEFAULT default is '0'(mean do NOT use random user name)
     int rand_flag = RAND_USER_NAME_DEFAULT;
-    // DEBUG_MODE_DEFAULT default is '0'
-    int debug_mode = DEBUG_MODE_DEFAULT;
+    // debug_level_DEFAULT default is '0'
+    int debug_level = debug_level_DEFAULT;
     // Accept the parse_input function return value
     struct PARSE_RETURN *parse_result;
     char **pargv = argv;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         }
         if (parse_result->doption != 0)
         {
-            debug_mode = parse_result->doption;
+            debug_level = parse_result->doption;
         }
     }
 
@@ -181,24 +181,24 @@ int main(int argc, char *argv[])
     {
         rand_flag = 0;
     }
-    if (debug_mode < 0)
+    if (debug_level < 0)
     {
-        debug_mode = 0;
+        debug_level = 0;
     }
     if (attack < 0)
     {
         attack = 0;
     }
     pinput->RandFlag = rand_flag;
-    pinput->DebugMode = debug_mode;
+    pinput->DebugMode = debug_level;
     pinput->Attack = attack;
 
-    debug(debug_mode, 1, "End parse input");
-    debug(debug_mode, 2, "Started nonsense mode");
-    debug(debug_mode, 2, "RandFlag:%d - DebugMode:%d - Attack:%d", pinput->RandFlag, pinput->DebugMode, pinput->Attack);
-    if (debug_mode == 2)
+    debug(debug_level, 1, "End parse input");
+    debug(debug_level, 2, "Started nonsense mode");
+    debug(debug_level, 2, "RandFlag:%d - DebugMode:%d - Attack:%d", pinput->RandFlag, pinput->DebugMode, pinput->Attack);
+    if (debug_level == 2)
     {
-        debug(debug_mode, 2, "Sleep 2s");
+        debug(debug_level, 2, "Sleep 2s");
         sleep(2);
     }
 

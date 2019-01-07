@@ -1,9 +1,11 @@
-#define LOG_OFF 0
-#define LOG_INFO 1
-#define LOG_DEBUG 2
-#define LOG_ERROR 3
+#define DEBUG_OFF 0
+#define DEBUG_LEVEL_1 1 // show the importance value
+#define DEBUG_LEVEL_2 2 // show the not importance value
+#define DEBUG_LEVEL_3 3 // show function start, end
 
-#define MAX_LOG_BUF_SIZE 100
+#define MAX_LOG_BUF_SIZE 50
 
-int ShowUsage();
-int Log(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
+int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
+int DisplayInfo(const char *fmtstring, ...);
+int DisplayWarning(const char *fmtsring, ...);
+int DisplayError(const char *fmtstring, ...);

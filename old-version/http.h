@@ -39,7 +39,7 @@ struct HTTP_POST_ARG
                  "HOST: %s:%d\r\n"      \
                  "Accept: */*\r\n\r\n"
 
-//char *http_get(const char *url, int debug_mode, int not_recv);
+//char *http_get(const char *url, int debug_level, int not_recv);
 void http_post(const struct HTTP_POST_ARG *input);
 
 #endif

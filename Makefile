@@ -4,11 +4,11 @@ CC   = gcc
 SRCS = main.c core/debug.c attack_module/guess_username_password.c attack_module/syn_flood_dos.c 
 
 OBJS = $(SRCS:.c=.o)
-EXEC = tool
+EXEC = dos-tool
 
 start: $(OBJS)
 		$(CC) -o $(EXEC) $(OBJS) -g -Wall -lpthread
-		@echo '>>> Complie All File Ok'
+		@echo 'complie done'
 
 .c.o:
 		$(CC) -o $@ -c $< -g -Wall -lpthread
@@ -16,4 +16,4 @@ start: $(OBJS)
 clean:
 		rm -f $(OBJS)
 		rm -f $(EXEC)
-		@echo '>>> Clean All File Ok'
+		@echo 'clean done'
