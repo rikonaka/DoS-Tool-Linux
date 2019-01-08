@@ -31,8 +31,6 @@
 typedef struct attack_struct
 {
     char url[MAX_URL_LENGTH];
-    char post_data[MAX_SEND_DATA_SIZE];
-    char return_data[MAX_RECEIVE_DATA_SIZE];
     char username[MAX_USERNAME_LENGTH];
     char password[MAX_PASSWORD_LENGTH];
     int debug_level;

@@ -62,7 +62,7 @@ static int CheckInputCompliance(const pInput process_result)
     /* must have -i */
     if (strlen(process_result->address) == 0)
     {
-        return 1;
+        return -1;
     }
 
     /*
@@ -91,7 +91,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
         if (!ptmp)
         {
             printf("Illegal input\n");
-            return 1;
+            return -1;
         }
 
         switch (*(ptmp + 1))
@@ -114,7 +114,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 }
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'd':
@@ -141,7 +141,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 }
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'u':
@@ -150,7 +150,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 strncpy(process_result->attack_mode_0_one_username, argv[i], MAX_USERNAME_LENGTH);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'U':
@@ -159,7 +159,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 strncpy(process_result->attack_mode_0_username_file_path, argv[i], MAX_USERNAME_PATH_LENGTH);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'P':
@@ -168,7 +168,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 strncpy(process_result->attack_mode_0_password_file_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 't':
@@ -177,7 +177,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 process_result->max_thread = atoi(argv[i]);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'p':
@@ -186,7 +186,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 process_result->max_process = atoi(argv[i]);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'r':
@@ -195,7 +195,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 process_result->random_password_length = atoi(argv[i]);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'i':
@@ -204,7 +204,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 strncpy(process_result->address, argv[i], MAX_URL_LENGTH);
             }
             else
-                return 1;
+                return -1;
             break;
 
         case 'R':
@@ -232,7 +232,7 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
         default:
             DisplayError("Please check you input");
             DispalyUsage();
-            return 1;
+            return -1;
         }
     }
 
@@ -282,7 +282,7 @@ static int StartAttackJob(const pInput process_result)
                     if (ret != 0)
                     {
                         DisplayError("Create pthread failed");
-                        return 1;
+                        return -1;
                     }
                     pthread_join(job_tid, NULL);
                     break;
@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
     {
         DisplayError("Need more parameter");
         DispalyUsage();
-        return 1;
+        return -1;
     }
 
     pInput process_result = (pInput)malloc(sizeof(Input));
@@ -368,7 +368,7 @@ int main(int argc, char *argv[])
         else
             DisplayError("Check compliance failed, please check your input");
             DispalyUsage();
-            return 1;
+            return -1;
     }
     else
     {

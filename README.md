@@ -1,6 +1,12 @@
-# SYN-Flood-DoS-Tool
+# DoS-Tool
 
-Just do it.
+For hacker's tool.
+
+# Install in Debian or Ubuntu series Linux system
+
+```
+sudo apt install openssl libssl-dev
+```
 
 [Chinese help](https://github.com/rikonaka/SYN-Flood-DoS-Tool/blob/master/README-ZH.md)
 

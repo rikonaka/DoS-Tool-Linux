@@ -29,7 +29,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     //int done;
     if (!buf)
     {
-        return 1;
+        return -1;
     }
 
     va_start(arg, fmtstring);
@@ -63,7 +63,7 @@ int DisplayInfo(const char *fmtstring, ...)
     time_struct = localtime(&t);
     if (!buf)
     {
-        return 1;
+        return -1;
     }
 
     va_start(arg, fmtstring);
@@ -92,7 +92,7 @@ int DisplayWarning(const char *fmtstring, ...)
     time_struct = localtime(&t);
     if (!buf)
     {
-        return 1;
+        return -1;
     }
 
     va_start(arg, fmtstring);
@@ -121,7 +121,7 @@ int DisplayError(const char *fmtstring, ...)
     time_struct = localtime(&t);
     if (!buf)
     {
-        return 1;
+        return -1;
     }
 
     va_start(arg, fmtstring);
@@ -136,12 +136,9 @@ int DisplayError(const char *fmtstring, ...)
     return 0;
 }
 
+/*
 int main(void)
 {
-    /*
-     * for the test 
-     */
-
     char *test = "ABCDabcd";
     DisplayDebug(2, 1, test);
     DisplayInfo(test);
@@ -150,3 +147,4 @@ int main(void)
 
     return 0;
 }
+*/

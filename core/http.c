@@ -1,148 +1,162 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
+#include <arpa/inet.h>
+#include <errno.h>
 
 #include "http.h"
 #include "debug.h"
+#include "cstring.h"
 #include "../main.h"
 
-static int HttpTcpClientCreate(const char *host, int port)
+static int TcpConnectCreate(const char *host, int port)
 {
-    struct hostent *he;
+    /* 
+     * create a tcp connect
+     * return socket file id
+     */
+
+    //struct hostent *he;
     struct sockaddr_in server_addr;
     int socket_fd;
-    // 2017-11-03 add timeout
-    /*
-    struct timeval timeout;
-    */
-    int ret;
 
-    if ((he = gethostbyname(host)) == NULL)
+    /*
+    if (!(he = gethostbyname(host)))
     {
-        return 1;
+        return -1;
     }
+    */
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
-    server_addr.sin_addr = *((struct in_addr *)he->h_addr);
+    //DisplayInfo("HOST: %s", host);
+    server_addr.sin_addr.s_addr = inet_addr(host);
+    //DisplayInfo("Error: %s", strerror(errno));
+    //server_addr.sin_addr = *((struct in_addr *)he->h_addr);
+    //server_addr.sin_addr = *((struct in_addr *)he->h_addr_list);
+    /*
+    if (inet_pton(AF_INET, host, &server_addr.sin_addr) <= 0)
+    {
+        DisplayError("Invaild address: %s", strerror(errno));
+        //return -1;
+    }
+    */
 
     if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     //if ((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
         DisplayError("Init socket failed");
-        return 1;
+        return -1;
     }
 
     int flag = 1;
-    int len = sizeof(int);
-    ret = setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, len);
-    if (ret != 0)
+    if (!setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)))
     {
         DisplayError("Set ret 1 failed");
-        return 1;
+        return -1;
     }
 
     int sendbuf = MAX_SEND_DATA_SIZE;
 
-    ret = setsockopt(socket_fd, SOL_SOCKET, SO_SNDBUF, &sendbuf, sizeof(sendbuf));
-    if (ret != 0)
+    if (!setsockopt(socket_fd, SOL_SOCKET, SO_SNDBUF, &sendbuf, sizeof(sendbuf)))
     {
         DisplayError("Set ret 2 failed");
-        return 1;
+        return -1;
     }
 
     if (connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
     {
         DisplayError("Connect host failed");
-        return 1;
+        return -1;
     }
 
     return socket_fd;
 }
 
-static int HttpTcpClientSend(int socket, char *buff, int size)
+static ssize_t TcpSend(const int socket, const char *buff, size_t buff_size)
 {
     /*
-     * In this function
+     * in this function
      * 'socket' is the socket object to host
      * 'buff' is we want to sending to host string 
      * 'size' is sizeof(buff)
+     * 
+     * return sended data size
      */
-    int sent = 0, tmpres = 0;
 
-    // If the buff not null
-    while (size > sent)
+    ssize_t sended_data_size = 0;
+
+    /* make sure the program had sending all data */
+    // send(sockfd, buf, len, flags);
+    sended_data_size = send(socket, buff, buff_size, 0);
+    if (sended_data_size == -1)
     {
-        // TODO:
-        // Make sure the program had sending all data
-        // send(sockfd, buf, len, flags);
-        tmpres = send(socket, buff + sent, size - sent, 0);
-        if (tmpres == -1)
-        {
-            DisplayError("Send failed");
-            return -1;
-        }
-        sent += tmpres;
+        DisplayError("Tcp send data failed");
+        return -1;
     }
+
     // function will return the sizeof send data bytes
-    return sent;
+    return sended_data_size;
 }
 
-static int HttpTcpClientRecv(int socket, char *rebuf)
+static ssize_t TcpRecv(int socket, char *rebuf)
 {
     /*
      * This function will return the receive string length
      */
-    int recvnum = 0;
+    ssize_t recv_data_size = 0;
     //recvnum = recv(socket, lpbuff, BUFFER_SIZE * 4, 0);
-    recvnum = recv(socket, rebuf, MAX_RECEIVE_DATA_SIZE, 0);
-    return recvnum;
+    recv_data_size = recv(socket, rebuf, MAX_RECEIVE_DATA_SIZE, 0);
+    return recv_data_size;
 }
 
-static int HttpTcpClientClose(int socket)
+static int TcpConnectClose(int socket)
 {
     //shutdown(socket, SHUT_RDWR);
     close(socket);
     return 0;
 }
 
-int HttpPostMethod(const pAttarckStruct attack_struct, char *rebuf)
+size_t HTTPPostMethod(char **response, const char *url, const char *request, int debug_level)
 {
-    DisplayDebug(DEBUG_LEVEL_3, attack_struct->debug_level, "Enter HttpPostMethod");
+    /*
+     * use the HTTP post method post 'request_data'
+     * then, return the response_data size
+     */
+
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPostMethod");
     int socket_fd;
     int port;
+    char *host_addr;
+    char *suffix;
     /* here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space */
-    char lpbuf[5 * MAX_SEND_DATA_SIZE];
-    char host_addr[SMALL_BUFFER_SIZE];
-    char file[SMALL_BUFFER_SIZE];
-    char http_receive_buf[MAX_RECEIVE_DATA_SIZE];
-    char result_buf[MAX_RECEIVE_DATA_SIZE];
+    char receive_buf[MAX_RECEIVE_DATA_SIZE];
 
-    if (!attack_struct->url || !attack_struct->post_data)
+    if (!url || !request)
     {
         DisplayError("url or post_str not find");
-        return 1;
+        return -1;
     }
 
-    if (ProcessURL(attack_struct->url, host_addr, file, &port))
+    if (SplitURL(url, &host_addr, &suffix, &port))
     {
         DisplayError("ProcessURL failed");
-        return 1;
+        return -1;
     }
-    DisplayDebug(DEBUG_LEVEL_1, attack_struct->debug_level, "host_addr: %s\nfile:%s\nport:%d\n", host_addr, file, port);
-    socket_fd = HttpTcpClientCreate(host_addr, port);
+    DisplayDebug(DEBUG_LEVEL_1, debug_level, "host_addr: %s file:%s port:%d", host_addr, suffix, port);
+    DisplayDebug(DEBUG_LEVEL_2, debug_level, "%s", host_addr);
+    socket_fd = TcpConnectCreate(host_addr, port);
     if (socket_fd < 0)
     {
-        DisplayError("HttpTcpClientCreate failed");
-        return 1;
+        DisplayError("TcpConnectCreate failed");
+        return -1;
     }
-
-    DisplayDebug(DEBUG_LEVEL_2, attack_struct->debug_level, "Send:\n%s\n", lpbuf);
-    sprintf(lpbuf, HTTP_POST, file, host_addr, port, strlen(attack_struct->post_data), attack_struct->post_data);
 
     /* 
      * it's time to recv from server
@@ -151,34 +165,25 @@ int HttpPostMethod(const pAttarckStruct attack_struct, char *rebuf)
      */
 
     /* send now */
-    DisplayDebug(DEBUG_LEVEL_3, attack_struct->debug_level, "Start sending data...");
-    if (HttpTcpClientSend(socket_fd, lpbuf, strlen(lpbuf)) < 0)
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Start sending data...");
+    if (TcpSend(socket_fd, request, strlen(request)) < 0)
     {
-        DisplayError("HttpTcpClientSend failed");
+        DisplayError("TcpSend failed");
         //http_tcpclient_close(socket_fd);
         //return return_string;
     }
 
-    if (HttpTcpClientRecv(socket_fd, http_receive_buf) <= 0)
+    if (TcpRecv(socket_fd, receive_buf) <= 0)
     {
-        DisplayError("TttpTcpClientRecv failed");
+        DisplayError("TcpRecv failed");
         //http_tcpclient_close(socket_fd);
         //return return_string;
     }
-    DisplayDebug(DEBUG_LEVEL_3, attack_struct->debug_level, "Recvevicing the data from server...");
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing the data from server...");
 
-    // Return value is '0' mean success
-    if (CheckResult(http_receive_buf, result_buf, attack_struct->debug_level) != 0)
-    {
-        DisplayWarning("CheckResult not found anything fun");
-        //return return_string;
-    }
-    DisplayDebug(DEBUG_LEVEL_3, attack_struct->debug_level, "Start copying the data to buf...");
-    strcpy(rebuf, result_buf);
-    DisplayDebug(DEBUG_LEVEL_3, attack_struct->debug_level, "Finish copy...");
-    //return response_data;
-    //http_tcpclient_close(socket_fd);
-    HttpTcpClientClose(socket_fd);
-    DisplayDebug(DEBUG_LEVEL_3, attack_struct->debug_level, "Exit HttpPostMethod");
-    return 0;
+    *response = receive_buf;
+    TcpConnectClose(socket_fd);
+
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Exit HttpPostMethod");
+    return strlen(receive_buf);
 }

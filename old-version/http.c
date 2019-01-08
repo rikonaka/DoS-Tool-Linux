@@ -244,7 +244,7 @@ int http_parse_result(const char *lpbuf, char *rebuf)
     if (!ptmp)
     {
         printf("http/1.1 not found\n");
-        return 1;
+        return -1;
     }
 
     // Backward offset 9 characters will point to http status code
@@ -252,7 +252,7 @@ int http_parse_result(const char *lpbuf, char *rebuf)
     if (atoi(ptmp + 9) != 200)
     {
         printf("result:\n%s\n", lpbuf);
-        return 1;
+        return -1;
     }
 
     // Discovery transport data in response
@@ -260,13 +260,13 @@ int http_parse_result(const char *lpbuf, char *rebuf)
     if (!ptmp)
     {
         printf("Response data is NULL\n");
-        return 1;
+        return -1;
     }
     response = (char *)calloc((strlen(ptmp) + 1), sizeof(char));
     if (!response)
     {
         printf("malloc failed\n");
-        return 1;
+        return -1;
     }
 
     // ptmp point to the response's data
@@ -278,7 +278,7 @@ int http_parse_result(const char *lpbuf, char *rebuf)
     if (sizeof(response) > MY_HTTP_DEFAULT_RESPONSE_LENGTH)
     {
         printf("The response data more than MY_HTTP_DEFAULT_RESPONSE_LENGTH\n");
-        return 1;
+        return -1;
     }
     strcpy(rebuf, response);
 

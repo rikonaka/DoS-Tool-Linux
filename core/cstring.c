@@ -2,82 +2,80 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h>
 
 #include "../main.h"
+#include "debug.h"
 
-int ProcessURL(const char *url, char *host, char *file, int *port)
+int SplitURL(const char *url, char **host, char **suffix, int *port)
 {
     /*
      * This function will split the url
      * Example with url = 'http://192.168.20.1:8080/index.html'
      * After parse:
      *    host = "192.168.20.1"
-     *    file = "index.html"
+     *    suffix = "index.html"
      *    port = 8080
+     * 
+     * input:
+     *     url
+     * output:
+     *     host
+     *     suffix
+     *     port
      */
-    char *ptr1, *ptr2;
-    int len = 0;
-    if (!url || !host || !file || !port)
-    {
-        return 1;
-    }
 
-    ptr1 = (char *)url;
+    char tr1[MAX_URL_LENGTH];
+    strncpy(tr1, url, MAX_URL_LENGTH);
+    char *ptr1 = tr1;
+    char *ptr2;
+    char *ptr3;
 
-    /* not support https now */
-    if (strncmp(ptr1, "http://", strlen("http://")) == 0)
+    ptr1 = strchr(ptr1, '/');
+    if (!ptr1 || *(++ptr1) != '/')
     {
-        // jump offset
-        ptr1 += strlen("http://");
+        DisplayError("Please check your URL address");
+        return -1;
     }
-    else
-    {
-        return 1;
-    }
+    /* cut the 'http:\\' */
+    *ptr1 = '\0';
+    ++ptr1;
 
-    // search the characters '/'
     ptr2 = strchr(ptr1, '/');
 
-    // if not found '/'
-    // strchr return null
-    // else return pointer
-    if (ptr2)
+    if (!ptr2)
+    {
+        DisplayError("Please check your URL address");
+        return -1;
+    }
+    else
     {
         // Execute here mean program found the '/'
         // Now ptr1 and ptr2 status is here:
-        //       ptr1             ptr2
-        //        |                |
+        //      ptr1              ptr2
+        //       |                 |
         // http://192.168.20.1:8080/index.html
         // len is same as the strlen("192.168.20.1")
-        len = strlen(ptr1) - strlen(ptr2);
+        *ptr2 = '\0';
 
         // Only copy the IP(192.168.20.1:8080) address to host
-        memcpy(host, ptr1, len);
-
-        // Make the position backward the '192.168.20.1:8080' become '\0'
-        host[len] = '\0';
-
         // There sentence is judge the (index.html) is existed or not
-        if (*(ptr2 + 1))
+        if (*(++ptr2))
         {
             // Copy the 'index.html' to file except the frist character '\'
-            memcpy(file, ptr2 + 1, strlen(ptr2) - 1);
             // Fill in the last blank with '\0'
-            file[strlen(ptr2) - 1] = '\0';
+            *suffix = ptr2;
         }
-    }
-    else
-    {
-        // If not existed the '/index.html' string
-        // Just copy the ptr1 to host
-        memcpy(host, ptr1, strlen(ptr1));
-        // Also fill in the last character with '\0'
-        host[strlen(ptr1)] = '\0';
     }
 
     // Now split host and ip
-    ptr1 = strchr(host, ':');
-    if (ptr1)
+    ptr3 = strchr(ptr1, ':');
+    if (!ptr3)
+    {
+        DisplayWarning("No port found, use default value <%d> now", PORT_DEFAULT);
+        *port = PORT_DEFAULT;
+    }
+    else
     {
         /* Now ptr1 status:
          *            ptr1
@@ -90,42 +88,16 @@ int ProcessURL(const char *url, char *host, char *file, int *port)
          * 1. ptr1 = '\0';
          * 2. ptr1 += 1;
          */
-        *ptr1++ = '\0';
+        *ptr3 = '\0';
+        ++ptr3;
         // Make the port point to (int)8080
-        *port = atoi(ptr1);
+        *port = atoi(ptr3);
     }
-    else
-    {
-        *port = PORT_DEFAULT;
-    }
+    *host = ptr1;
     return 0;
 }
 
-int IncludeString(char *source, char *target)
-{
-    /*
-     * return
-     * 0 source include target
-     * 1 not include
-     */
-
-    char *pt = target;
-    char *ps;
-    ps = strchr(source, *pt);
-    while (*pt)
-    {
-        if (*pt != *ps)
-        {
-            return 1;
-        }
-        ++pt;
-        ++ps;
-    }
-
-    return 0;
-}
-
-static int GetRandomPassword(char *rebuf, const pInput process_result)
+int GetRandomPassword(char *rebuf, const pInput process_result)
 {
     /*
      * generate the random password and return
@@ -157,3 +129,18 @@ static int GetRandomPassword(char *rebuf, const pInput process_result)
     strncpy(rebuf, str, MAX_PASSWORD_LENGTH);
     return 0;
 }
+
+/*
+int main(void)
+{
+    char *input = "http://192.168.1.1:80/index.html";
+    char *output;
+    char *host;
+    char *suffix;
+    int port;
+
+    SplitURL(input, &host, &suffix, &port);
+    printf("host: %s, suffix: %s, port: %d\n", host, suffix, port);
+    return 0;
+}
+*/

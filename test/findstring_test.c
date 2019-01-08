@@ -16,7 +16,7 @@ int FindString(char *source, char *target)
     {
         if (*pt != *ps)
         {
-            return 1;
+            return -1;
         }
         ++pt;
         ++ps;
