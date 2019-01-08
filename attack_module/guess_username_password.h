@@ -1,15 +1,13 @@
+#ifndef _GUESS_USERNAME_PASSWORD_H
+#define _GUESS_USERNAME_PASSWORD_H
+
 #define GUESS_USERNAME_PASSWORD 0
 #define SYN_FLOOD_ATTACK 1
 
 #define GET_RANDOM_USERNAME 1
 #define GET_RANDOM_PASSWORD 2
 
-
 #define EACH_NAME_TRY 1024
-#define MAX_SEND_DATA_SIZE 10240
-#define MAX_RECEIVE_DATA_SIZE 10240
-#define SMALL_BUFFER_SIZE 128
-#define BIG_BUFFER_SIZE 1024
 
 typedef struct username_list
 {
@@ -36,3 +34,5 @@ typedef struct password_list_header
 } PasswordList_Header, *pPasswordList_Header;
 
 int Attack_GuessUsernamePassword(const pInput process_result);
+
+#endif

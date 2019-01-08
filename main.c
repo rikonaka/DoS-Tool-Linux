@@ -70,7 +70,7 @@ static int CheckInputCompliance(const pInput process_result)
      */
     if (process_result->attack_mode != 0)
     {
-
+        
     }
 
     DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Exit CheckInputCompliance");

@@ -9,7 +9,7 @@
 #include "../core/http.h"
 #include "guess_username_password.h"
 
-static int CheckResult(const char *lpbuf, char *rebuf, int debug_level)
+static int GetHttpResponse(const char *lpbuf, char *rebuf, int debug_level)
 {
     /*
      * This function will extract the response's transport data from server

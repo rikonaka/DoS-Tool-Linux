@@ -1,3 +1,6 @@
+#ifndef _MAIN_H
+#define _MAIN_H
+
 /*
     0  - guess the web passwd (advanced)
     1  - syn flood attack
@@ -57,3 +60,5 @@ typedef struct input
     char attack_mode_0_password_file_path[MAX_PASSWORD_PATH_LENGTH];
     // continue
 } Input, *pInput;
+
+#endif
