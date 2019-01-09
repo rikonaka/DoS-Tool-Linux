@@ -5,5 +5,6 @@
 
 int GetRandomPassword(char *rebuf, const pInput process_result);
 int SplitURL(const char *url, char **host, char **suffix, int *port);
+int FreeSplitURLSpace(char *host, char *suffix);
 
 #endif

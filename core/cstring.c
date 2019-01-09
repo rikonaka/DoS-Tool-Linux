@@ -7,6 +7,13 @@
 #include "../main.h"
 #include "debug.h"
 
+int FreeSplitURLSpace(char *host, char *suffix)
+{
+    free(host);
+    free(suffix);
+    return 0;
+}
+
 int SplitURL(const char *url, char **host, char **suffix, int *port)
 {
     /* rewrite this function at 2019-1-10*/
@@ -70,6 +77,9 @@ int SplitURL(const char *url, char **host, char **suffix, int *port)
     *host = host_buff;
     *suffix = suffix_buff;
     *port = atoi(port_buff);
+    //free(host_buff);
+    //free(suffix_buff);
+    free(port_buff);
 
     return 0;
 }
