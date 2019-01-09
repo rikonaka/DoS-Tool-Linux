@@ -9,7 +9,7 @@
 
 int SplitURL(const char *url, char **host, char **suffix, int *port)
 {
-    /* rewrite it */
+    /* rewrite this function at 2019-1-10*/
     int i;
     /*      12           3 */
     /* http://192.168.1.1/index.html */
@@ -49,6 +49,7 @@ int SplitURL(const char *url, char **host, char **suffix, int *port)
             ++i;
             ++ptmp;
         }
+        port_buff[i] = '\0';
     }
     else
     {
