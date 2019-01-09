@@ -49,5 +49,7 @@ int main(void)
     HTTPPostMethod(&response, url, send_buf, 3);
     DisplayInfo(response);
 
+    FreeSplitURLSpace(host, suffix);
+
     return 0;
 }
