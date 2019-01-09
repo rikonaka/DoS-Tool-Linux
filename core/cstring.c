@@ -13,41 +13,50 @@ int SplitURL(const char *url, char **host, char **suffix, int *port)
     int i;
     /*      12           3 */
     /* http://192.168.1.1/index.html */
-    char *first_slash_position = strstr(url, '/');
-    char *second_slash_position = strstr((first_slash_position + 1), '/');
-    char *thrid_slash_position = strstr((second_slash_position + 1), '/');
+    char *first_slash_position = strchr(url, '/');
+    char *second_slash_position = strchr((first_slash_position + 1), '/');
+    char *third_slash_position = strchr((second_slash_position + 1), '/');
     /* if url like http://192.168.1.1:8080/index.html */
-    char *colon_position = strstr((second_slash_position + 1), ':');
+    char *colon_position = strchr((second_slash_position + 1), ':');
     char *ptmp;
 
     char *host_buff = (char *)malloc(sizeof(char));
     char *suffix_buff = (char *)malloc(sizeof(char));
     char *port_buff = (char *)malloc(sizeof(char));
-    memset(host_buff, 0, sizeof(host_buff));
-    memset(suffix_buff, 0, sizeof(suffix_buff));
+    memset(host_buff, '\0', sizeof(host_buff));
+    memset(suffix_buff, '\0', sizeof(suffix_buff));
+    memset(port_buff, '\0', sizeof(suffix_buff));
 
     /* copy the host to host_buff */
     ptmp = (second_slash_position + 1);
     i = 0;
-    while (ptmp != colon_position)
+    while (ptmp != colon_position && ptmp != third_slash_position)
     {
         host_buff[i] = *ptmp;
         ++i;
         ++ptmp;
     }
+    host_buff[i] = '\0';
 
     /* copy the port if existed */
-    ptmp = (colon_position + 1);
-    i = 0;
-    while (ptmp != second_slash_position)
+    if (colon_position)
     {
-        port_buff[i] = *ptmp;
-        ++i;
-        ++ptmp;
+        ptmp = (colon_position + 1);
+        i = 0;
+        while (ptmp != third_slash_position)
+        {
+            port_buff[i] = *ptmp;
+            ++i;
+            ++ptmp;
+        }
     }
-
+    else
+    {
+        /* if can not found the : use the default value */
+        sprintf(port_buff, "%d", PORT_DEFAULT);
+    }
     /* copy the suffix to suffix_buff */
-    ptmp = (second_slash_position + 1);
+    ptmp = (third_slash_position + 1);
     i = 0;
     while (*ptmp)
     {
@@ -55,6 +64,7 @@ int SplitURL(const char *url, char **host, char **suffix, int *port)
         ++i;
         ++ptmp;
     }
+    suffix_buff[i] = '\0';
 
     *host = host_buff;
     *suffix = suffix_buff;
@@ -99,7 +109,8 @@ int GetRandomPassword(char *rebuf, const pInput process_result)
 /*
 int main(void)
 {
-    char *input = "http://192.168.1.1:80/index.html";
+    //char *input = "http://192.168.1.1:80/index.html";
+    char *input = "http://192.168.1.1/index.html";
     char *output;
     char *host;
     char *suffix;
