@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <netdb.h>
+
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/socket.h>
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <errno.h>
 
@@ -24,7 +22,10 @@ static int TcpConnectCreate(const char *host, int port)
 
     //struct hostent *he;
     struct sockaddr_in server_addr;
-    int socket_fd;
+    int sock;
+    int send_size = MAX_SEND_DATA_SIZE;
+    int enable = 1;
+    //char *host_test = "192.168.1.1";
 
     /*
     if (!(he = gethostbyname(host)))
@@ -33,50 +34,41 @@ static int TcpConnectCreate(const char *host, int port)
     }
     */
 
+    //server_addr.sin_addr.s_addr = inet_addr(host_test);
+    server_addr.sin_addr.s_addr = inet_addr(host);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
-    //DisplayInfo("HOST: %s", host);
-    server_addr.sin_addr.s_addr = inet_addr(host);
-    //DisplayInfo("Error: %s", strerror(errno));
     //server_addr.sin_addr = *((struct in_addr *)he->h_addr);
     //server_addr.sin_addr = *((struct in_addr *)he->h_addr_list);
-    /*
-    if (inet_pton(AF_INET, host, &server_addr.sin_addr) <= 0)
+
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        DisplayError("Invaild address: %s", strerror(errno));
-        //return -1;
+        DisplayError("Init socket failed: %s", strerror(errno));
+        return -1;
+    }
+
+    /* setsockopt sucess return 0 */
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
+    {
+        DisplayError("setsockopt-1 failed: %s", strerror(errno));
+        return -1;
+    }
+
+    /*
+    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &send_size, sizeof(send_size)))
+    {
+        DisplayError("setsockopt-2 failed: %s", strerror(errno));
+        return -1;
     }
     */
 
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    //if ((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        DisplayError("Init socket failed");
+        DisplayError("Connect host failed: %s", strerror(errno));
         return -1;
     }
 
-    int flag = 1;
-    if (!setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag)))
-    {
-        DisplayError("Set ret 1 failed");
-        return -1;
-    }
-
-    int sendbuf = MAX_SEND_DATA_SIZE;
-
-    if (!setsockopt(socket_fd, SOL_SOCKET, SO_SNDBUF, &sendbuf, sizeof(sendbuf)))
-    {
-        DisplayError("Set ret 2 failed");
-        return -1;
-    }
-
-    if (connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
-    {
-        DisplayError("Connect host failed");
-        return -1;
-    }
-
-    return socket_fd;
+    return sock;
 }
 
 static ssize_t TcpSend(const int socket, const char *buff, size_t buff_size)
@@ -131,12 +123,13 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
      */
 
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPostMethod");
-    int socket_fd;
+    int sock;
     int port;
-    char *host_addr;
+    char *host;
     char *suffix;
+
     /* here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space */
-    char receive_buf[MAX_RECEIVE_DATA_SIZE];
+    char receive_buff[MAX_RECEIVE_DATA_SIZE];
 
     if (!url || !request)
     {
@@ -144,15 +137,15 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
         return -1;
     }
 
-    if (SplitURL(url, &host_addr, &suffix, &port))
+    if (SplitURL(url, &host, &suffix, &port))
     {
         DisplayError("ProcessURL failed");
         return -1;
     }
-    DisplayDebug(DEBUG_LEVEL_1, debug_level, "host_addr: %s file:%s port:%d", host_addr, suffix, port);
-    DisplayDebug(DEBUG_LEVEL_2, debug_level, "%s", host_addr);
-    socket_fd = TcpConnectCreate(host_addr, port);
-    if (socket_fd < 0)
+    DisplayDebug(DEBUG_LEVEL_1, debug_level, "host_addr: %s file:%s port:%d", host, suffix, port);
+    DisplayDebug(DEBUG_LEVEL_2, debug_level, "%s", host);
+    sock = TcpConnectCreate(host, port);
+    if (sock < 0)
     {
         DisplayError("TcpConnectCreate failed");
         return -1;
@@ -166,14 +159,14 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
 
     /* send now */
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Start sending data...");
-    if (TcpSend(socket_fd, request, strlen(request)) < 0)
+    if (TcpSend(sock, request, strlen(request)) < 0)
     {
         DisplayError("TcpSend failed");
         //http_tcpclient_close(socket_fd);
         //return return_string;
     }
 
-    if (TcpRecv(socket_fd, receive_buf) <= 0)
+    if (TcpRecv(sock, receive_buff) <= 0)
     {
         DisplayError("TcpRecv failed");
         //http_tcpclient_close(socket_fd);
@@ -181,9 +174,9 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
     }
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing the data from server...");
 
-    *response = receive_buf;
-    TcpConnectClose(socket_fd);
+    *response = receive_buff;
+    TcpConnectClose(sock);
 
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Exit HttpPostMethod");
-    return strlen(receive_buf);
+    return strlen(receive_buff);
 }

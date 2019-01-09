@@ -9,91 +9,57 @@
 
 int SplitURL(const char *url, char **host, char **suffix, int *port)
 {
-    /*
-     * This function will split the url
-     * Example with url = 'http://192.168.20.1:8080/index.html'
-     * After parse:
-     *    host = "192.168.20.1"
-     *    suffix = "index.html"
-     *    port = 8080
-     * 
-     * input:
-     *     url
-     * output:
-     *     host
-     *     suffix
-     *     port
-     */
+    /* rewrite it */
+    int i;
+    /*      12           3 */
+    /* http://192.168.1.1/index.html */
+    char *first_slash_position = strstr(url, '/');
+    char *second_slash_position = strstr((first_slash_position + 1), '/');
+    char *thrid_slash_position = strstr((second_slash_position + 1), '/');
+    /* if url like http://192.168.1.1:8080/index.html */
+    char *colon_position = strstr((second_slash_position + 1), ':');
+    char *ptmp;
 
-    char tr1[MAX_URL_LENGTH];
-    strncpy(tr1, url, MAX_URL_LENGTH);
-    char *ptr1 = tr1;
-    char *ptr2;
-    char *ptr3;
+    char *host_buff = (char *)malloc(sizeof(char));
+    char *suffix_buff = (char *)malloc(sizeof(char));
+    char *port_buff = (char *)malloc(sizeof(char));
+    memset(host_buff, 0, sizeof(host_buff));
+    memset(suffix_buff, 0, sizeof(suffix_buff));
 
-    ptr1 = strchr(ptr1, '/');
-    if (!ptr1 || *(++ptr1) != '/')
+    /* copy the host to host_buff */
+    ptmp = (second_slash_position + 1);
+    i = 0;
+    while (ptmp != colon_position)
     {
-        DisplayError("Please check your URL address");
-        return -1;
-    }
-    /* cut the 'http:\\' */
-    *ptr1 = '\0';
-    ++ptr1;
-
-    ptr2 = strchr(ptr1, '/');
-
-    if (!ptr2)
-    {
-        DisplayError("Please check your URL address");
-        return -1;
-    }
-    else
-    {
-        // Execute here mean program found the '/'
-        // Now ptr1 and ptr2 status is here:
-        //      ptr1              ptr2
-        //       |                 |
-        // http://192.168.20.1:8080/index.html
-        // len is same as the strlen("192.168.20.1")
-        *ptr2 = '\0';
-
-        // Only copy the IP(192.168.20.1:8080) address to host
-        // There sentence is judge the (index.html) is existed or not
-        if (*(++ptr2))
-        {
-            // Copy the 'index.html' to file except the frist character '\'
-            // Fill in the last blank with '\0'
-            *suffix = ptr2;
-        }
+        host_buff[i] = *ptmp;
+        ++i;
+        ++ptmp;
     }
 
-    // Now split host and ip
-    ptr3 = strchr(ptr1, ':');
-    if (!ptr3)
+    /* copy the port if existed */
+    ptmp = (colon_position + 1);
+    i = 0;
+    while (ptmp != second_slash_position)
     {
-        DisplayWarning("No port found, use default value <%d> now", PORT_DEFAULT);
-        *port = PORT_DEFAULT;
+        port_buff[i] = *ptmp;
+        ++i;
+        ++ptmp;
     }
-    else
+
+    /* copy the suffix to suffix_buff */
+    ptmp = (second_slash_position + 1);
+    i = 0;
+    while (*ptmp)
     {
-        /* Now ptr1 status:
-         *            ptr1
-         *             |
-         * 192.168.20.1:8080
-         * -----------------
-         * Some important C skill:
-         * 'pstr++' is not same as '++ptr1'
-         * '*ptr1++ = '\0' excute step:
-         * 1. ptr1 = '\0';
-         * 2. ptr1 += 1;
-         */
-        *ptr3 = '\0';
-        ++ptr3;
-        // Make the port point to (int)8080
-        *port = atoi(ptr3);
+        suffix_buff[i] = *ptmp;
+        ++i;
+        ++ptmp;
     }
-    *host = ptr1;
+
+    *host = host_buff;
+    *suffix = suffix_buff;
+    *port = atoi(port_buff);
+
     return 0;
 }
 
