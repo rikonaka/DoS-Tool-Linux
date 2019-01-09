@@ -158,7 +158,7 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
      */
 
     /* send now */
-    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Start sending data...");
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Sending data...");
     if (TcpSend(sock, request, strlen(request)) < 0)
     {
         DisplayError("TcpSend failed");
@@ -166,13 +166,13 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
         //return return_string;
     }
 
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing data...");
     if (TcpRecv(sock, receive_buff) <= 0)
     {
         DisplayError("TcpRecv failed");
         //http_tcpclient_close(socket_fd);
         //return return_string;
     }
-    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing the data from server...");
 
     *response = receive_buff;
     TcpConnectClose(sock);
