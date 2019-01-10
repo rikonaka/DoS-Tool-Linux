@@ -12,8 +12,8 @@
 #define MAX_USERNAME_PATH_LENGTH 100
 #define MAX_PASSWORD_PATH_LENGTH 100
 #define MAX_URL_LENGTH 100
-#define MAX_SEND_DATA_SIZE 10240
-#define MAX_RECEIVE_DATA_SIZE 10240
+#define MAX_SEND_DATA_SIZE 1024
+#define MAX_RECEIVE_DATA_SIZE 1024
 #define SMALL_BUFFER_SIZE 128
 #define BIG_BUFFER_SIZE 1024
 
@@ -24,6 +24,7 @@
 #define RANDOM_SIP_DEFAULT 1 // default open it for attack safety
 #define PORT_DEFAULT 80
 #define USERNAME_DEFAULT "admin"
+#define RECV_TIME_OUT 20 // s
 
 //#define POST_DATA "user=%s&password=%s&Submit=登+陆"
 //#define POST_URL "http://192.168.20.1:80/login.cgi"

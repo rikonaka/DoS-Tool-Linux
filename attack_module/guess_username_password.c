@@ -29,24 +29,25 @@ int main(void)
     Base64Encode(&b64message, test_rebuf_GetRandomPassword, strlen(test_rebuf_GetRandomPassword));
 
     // combined data now
-    char send_buf[MAX_SEND_DATA_SIZE];
+    char send_buff[strlen(FEIXUN_FWR_604H_REQUEST_MODEL) + MAX_SEND_DATA_SIZE];
     char *url = "http://192.168.1.1/login.asp";
     char *host;
     char *suffix;
     int port;
 
-    char send_data_buf[MAX_SEND_DATA_SIZE];
-    sprintf(send_data_buf, FEIXUN_FWR_604H_REQUEST_DATA_MODEL, "admin", b64message);
+    char send_data_buff[MAX_SEND_DATA_SIZE];
+    sprintf(send_data_buff, FEIXUN_FWR_604H_REQUEST_DATA_MODEL, "admin", b64message);
 
     SplitURL(url, &host, &suffix, &port);
-    sprintf(send_buf, FEIXUN_FWR_604H_REQUEST_MODEL, host, url, send_data_buf);
-    DisplayDebug(DEBUG_LEVEL_2, test_input_GetRandomPassword->debug_level, "Send:\n%s\n", send_buf);
+    //DisplayInfo("%ld", strlen(send_data_buff));
+    sprintf(send_buff, FEIXUN_FWR_604H_REQUEST_MODEL, host, url, strlen(send_data_buff), send_data_buff);
+    //DisplayDebug(DEBUG_LEVEL_2, test_input_GetRandomPassword->debug_level, "Send:\n%s\n", send_buff);
 
     // send now
     char *response;
-    DisplayInfo("*********************");
-    DisplayInfo("url: %s", url);
-    HTTPPostMethod(&response, url, send_buf, 3);
+    //DisplayInfo("*********************");
+    //DisplayInfo("url: %s", url);
+    HTTPPostMethod(&response, url, send_buff, 0);
     DisplayInfo(response);
 
     FreeSplitURLSpace(host, suffix);

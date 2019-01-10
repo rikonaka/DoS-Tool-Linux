@@ -13,26 +13,19 @@
 #include "cstring.h"
 #include "../main.h"
 
-static int TcpConnectCreate(const char *host, int port)
+static int TCPConnectCreate(const char *host, int port)
 {
-    /* 
-     * create a tcp connect
-     * return socket file id
-     */
+    /* as you see */
 
     //struct hostent *he;
     struct sockaddr_in server_addr;
     int sock;
     int send_size = MAX_SEND_DATA_SIZE;
     int enable = 1;
+    struct timeval recv_timeout;
+    recv_timeout.tv_sec = RECV_TIME_OUT;
+    recv_timeout.tv_usec = 0;
     //char *host_test = "192.168.1.1";
-
-    /*
-    if (!(he = gethostbyname(host)))
-    {
-        return -1;
-    }
-    */
 
     //server_addr.sin_addr.s_addr = inet_addr(host_test);
     server_addr.sin_addr.s_addr = inet_addr(host);
@@ -50,17 +43,15 @@ static int TcpConnectCreate(const char *host, int port)
     /* setsockopt sucess return 0 */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
-        DisplayError("setsockopt-1 failed: %s", strerror(errno));
+        DisplayError("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
         return -1;
     }
 
-    /*
-    if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &send_size, sizeof(send_size)))
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(struct timeval)))
     {
-        DisplayError("setsockopt-2 failed: %s", strerror(errno));
+        DisplayError("setsockopt SO_RCVTIMEO failed: %s", strerror(errno));
         return -1;
     }
-    */
 
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
@@ -71,7 +62,7 @@ static int TcpConnectCreate(const char *host, int port)
     return sock;
 }
 
-static ssize_t TcpSend(const int socket, const char *buff, size_t buff_size)
+static ssize_t TCPSend(const int socket, const char *buff, size_t buff_size)
 {
     /*
      * in this function
@@ -82,33 +73,57 @@ static ssize_t TcpSend(const int socket, const char *buff, size_t buff_size)
      * return sended data size
      */
 
-    ssize_t sended_data_size = 0;
+    ssize_t sent_total_size = 0;
+    ssize_t sent_size = 0;
 
     /* make sure the program had sending all data */
-    // send(sockfd, buf, len, flags);
-    sended_data_size = send(socket, buff, buff_size, 0);
-    if (sended_data_size == -1)
+    while (sent_total_size < buff_size)
     {
-        DisplayError("Tcp send data failed");
-        return -1;
+        sent_size = send(socket, buff + sent_total_size, buff_size - sent_total_size, 0);
+        if (sent_size == -1)
+        {
+            DisplayError("Tcp send data failed");
+            return -1;
+        }
+        sent_total_size += sent_size;
     }
 
     // function will return the sizeof send data bytes
-    return sended_data_size;
+    return sent_total_size;
 }
 
-static ssize_t TcpRecv(int socket, char *rebuf)
+static ssize_t TCPRecv(int socket, char **rebuff)
 {
     /*
-     * This function will return the receive string length
+     * This function will return the receive data length
      */
-    ssize_t recv_data_size = 0;
-    //recvnum = recv(socket, lpbuff, BUFFER_SIZE * 4, 0);
-    recv_data_size = recv(socket, rebuf, MAX_RECEIVE_DATA_SIZE, 0);
-    return recv_data_size;
+
+    ssize_t recv_total_size = 0;
+    ssize_t recv_size = 0;
+    char *buff = (char *)malloc(MAX_RECEIVE_DATA_SIZE);
+    for (;;)
+    {
+        recv_size = recv(socket, buff, MAX_RECEIVE_DATA_SIZE, 0);
+        if (recv_size == -1)
+        {
+            DisplayError("Tcp recv data failed");
+            return -1;
+        }
+        else if (recv_size == 0)
+        {
+            break;
+        }
+
+        buff = (char *)realloc(buff, sizeof(buff) + MAX_RECEIVE_DATA_SIZE);
+        recv_total_size += recv_size;
+    }
+
+    //DisplayInfo("%s", buff);
+    *rebuff = buff;
+    return recv_total_size;
 }
 
-static int TcpConnectClose(int socket)
+static int TCPConnectClose(int socket)
 {
     //shutdown(socket, SHUT_RDWR);
     close(socket);
@@ -129,54 +144,44 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
     char *suffix;
 
     /* here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space */
-    char receive_buff[MAX_RECEIVE_DATA_SIZE];
 
     if (!url || !request)
     {
         DisplayError("url or post_str not find");
         return -1;
     }
-
     if (SplitURL(url, &host, &suffix, &port))
     {
         DisplayError("ProcessURL failed");
         return -1;
     }
-    DisplayDebug(DEBUG_LEVEL_1, debug_level, "host_addr: %s file:%s port:%d", host, suffix, port);
-    DisplayDebug(DEBUG_LEVEL_2, debug_level, "%s", host);
-    sock = TcpConnectCreate(host, port);
+
+    DisplayDebug(DEBUG_LEVEL_2, debug_level, "host_addr: %s suffix:%s port:%d", host, suffix, port);
+    /* 1 connect */
+    sock = TCPConnectCreate(host, port);
     if (sock < 0)
     {
         DisplayError("TcpConnectCreate failed");
         return -1;
     }
 
-    /* 
-     * it's time to recv from server
-     * store the data from server in 'lpbuf'
-     * this will wait and recv data and return
-     */
-
-    /* send now */
+    /* 2 send */
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Sending data...");
-    if (TcpSend(sock, request, strlen(request)) < 0)
+    if (TCPSend(sock, request, strlen(request)) < 0)
     {
         DisplayError("TcpSend failed");
-        //http_tcpclient_close(socket_fd);
-        //return return_string;
     }
 
+    /* 3 recv */
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing data...");
-    if (TcpRecv(sock, receive_buff) <= 0)
+    if (TCPRecv(sock, response) <= 0)
     {
         DisplayError("TcpRecv failed");
-        //http_tcpclient_close(socket_fd);
-        //return return_string;
     }
+    //DisplayDebug(DEBUG_LEVEL_2, debug_level, "Data: %s", response);
 
-    *response = receive_buff;
-    TcpConnectClose(sock);
-
+    /* 4 close */
+    TCPConnectClose(sock);
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Exit HttpPostMethod");
-    return strlen(receive_buff);
+    return strlen(*response);
 }
