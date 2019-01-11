@@ -17,10 +17,10 @@ static int DisplayUsage(void)
         show the useage info
      */
     char *usage = "\n"
-                  "Usage:   dostool\n"
-                  "Example: ./dostool -a 1 -i \"192.168.1.1:80\"\n"
-                  "         ./dostool -a 0 -u riko -i \"http:\\\\192,168.1.1:80/login.asp\"\n"
+                  "Usage:   dostool [option]\n"
+                  "Example: ./dostool -a 0 -u riko -i \"http:\\\\192,168.1.1:80/login.asp\"\n"
                   "         ./dostool -a 0 -U \"/home/test/username.txt\" -P \"/home/test/password.txt\"\n"
+                  "         ./dostool -a 1 -i \"192.168.1.1:80\"\n"
                   "         -i \"http:\\\\192,168.1.1:80/login.asp\"\n\n"
                   "         -a    Indicate attack mode\n"
                   "               0    Guess the web password\n"
@@ -46,7 +46,7 @@ static int DisplayUsage(void)
     return 0;
 }
 
-static int CheckInputCompliance(const pInput process_result)
+static int CheckInputCompliance(const pInput input)
 {
     /*
      * check the compliance of user input
@@ -57,31 +57,38 @@ static int CheckInputCompliance(const pInput process_result)
      * 1 - error
      */
 
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Enter CheckInputCompliance");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter CheckInputCompliance");
 
-    /* must have -i */
-    if (strlen(process_result->address) == 0)
+    // in the dos attack mode, can not appear 'http' in the address
+    if (input->attack_mode != 0)
     {
-        return -1;
+        if (strstr(input->address, "http"))
+        {
+            DisplayError("Please check your address, this should not appear http or https");
+            return -1;
+        }
     }
 
-    /*
-     * in the dos attack mode, can not appear 'http' in the address
-     */
-    if (process_result->attack_mode != 0)
+    // -U must with -P
+    if (strlen(input->attack_mode_0_username_file_path) > 0)
     {
-        
+        if (strlen(input->attack_mode_0_password_file_path) == 0)
+        {
+            DisplayError("Place check your -U paratemer, -U must use with -P");
+            return -1;
+        }
     }
 
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Exit CheckInputCompliance");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit CheckInputCompliance");
+    return 0;
 }
 
-static int ProcessInputParameters(const int argc, char *argv[], pInput process_result)
+static int ProcessInput(const int argc, char *argv[], pInput input)
 {
     /*
         understood the user input meaning
      */
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Enter ProcessInputParameters");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter ProcessInputParameters");
     int i;
     char *ptmp;
 
@@ -102,19 +109,23 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 switch (*argv[i])
                 {
                 case '0':
-                    process_result->attack_mode = GUESS_USERNAME_PASSWORD;
+                    input->attack_mode = GUESS_USERNAME_PASSWORD;
                     break;
                 case '1':
-                    process_result->attack_mode = SYN_FLOOD_ATTACK;
+                    input->attack_mode = SYN_FLOOD_ATTACK;
                     break;
                 default:
-                    DisplayWarning("Value of -a parameter is not allowed, use default value now");
-                    process_result->attack_mode = ATTACK_MODE_DEFAULT;
+                    DisplayWarning("Value of the -a parameter is not allowed, use default value now");
+                    input->attack_mode = ATTACK_MODE_DEFAULT;
                     break;
                 }
             }
             else
-                return -1;
+            {
+                DisplayWarning("Can not found value of -a parameter, use default value now");
+                input->attack_mode = ATTACK_MODE_DEFAULT;
+                //return -1;
+            }
             break;
 
         case 'd':
@@ -123,88 +134,116 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 switch (*argv[i])
                 {
                 case '0':
-                    process_result->debug_level = DEBUG_OFF;
+                    input->debug_level = DEBUG_OFF;
                     break;
                 case '1':
-                    process_result->debug_level = DEBUG_LEVEL_1;
+                    input->debug_level = DEBUG_LEVEL_1;
                     break;
                 case '2':
-                    process_result->debug_level = DEBUG_LEVEL_2;
+                    input->debug_level = DEBUG_LEVEL_2;
                     break;
                 case '3':
-                    process_result->debug_level = DEBUG_LEVEL_3;
+                    input->debug_level = DEBUG_LEVEL_3;
                     break;
                 default:
-                    DisplayWarning("Value of -t parameter is not allowed, use default value now");
-                    process_result->debug_level = DEBUG_LEVEL_DEFAULT;
+                    DisplayWarning("Value of -d parameter is not allowed, use default value now");
+                    input->debug_level = DEBUG_LEVEL_DEFAULT;
                     break;
                 }
             }
             else
-                return -1;
+            {
+                DisplayWarning("Can not found value of -d parameter, use default value now");
+                input->debug_level = DEBUG_LEVEL_DEFAULT;
+                //return -1;
+            }
             break;
 
         case 'u':
             if (argv[++i])
             {
-                strncpy(process_result->attack_mode_0_one_username, argv[i], MAX_USERNAME_LENGTH);
+                strncpy(input->attack_mode_0_one_username, argv[i], MAX_USERNAME_LENGTH);
             }
             else
+            {
+                DisplayError("Can not found value of -u parameter");
                 return -1;
+            }
             break;
 
         case 'U':
             if (argv[++i])
             {
-                strncpy(process_result->attack_mode_0_username_file_path, argv[i], MAX_USERNAME_PATH_LENGTH);
+                strncpy(input->attack_mode_0_username_file_path, argv[i], MAX_USERNAME_PATH_LENGTH);
             }
             else
+            {
+                DisplayError("Can not found value of -U parameter");
                 return -1;
+            }
             break;
 
         case 'P':
             if (argv[++i])
             {
-                strncpy(process_result->attack_mode_0_password_file_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
+                strncpy(input->attack_mode_0_password_file_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
             }
             else
+            {
+                DisplayError("Can not found value of -P parameter");
                 return -1;
+            }
             break;
 
         case 't':
             if (argv[++i])
             {
-                process_result->max_thread = atoi(argv[i]);
+                input->max_thread = atoi(argv[i]);
             }
             else
-                return -1;
+            {
+                DisplayWarning("Can not found value of -t parameter, use default value now");
+                input->max_thread = THREAD_NUM_DEFAULT;
+                //return -1;
+            }
             break;
 
         case 'p':
             if (argv[++i])
             {
-                process_result->max_process = atoi(argv[i]);
+                input->max_process = atoi(argv[i]);
             }
             else
-                return -1;
+            {
+                DisplayWarning("Can not found value of -p parameter, use default value now");
+                input->max_process = PROCESS_NUM_DEFAULT;
+                //return -1;
+            }
             break;
 
         case 'r':
             if (argv[++i])
             {
-                process_result->random_password_length = atoi(argv[i]);
+                input->random_password_length = atoi(argv[i]);
             }
             else
-                return -1;
+            {
+                DisplayWarning("Can not found value of -r parameter, use default value now");
+                input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
+                //return -1;
+            }
             break;
 
         case 'i':
             if (argv[++i])
             {
-                strncpy(process_result->address, argv[i], MAX_URL_LENGTH);
+                strncpy(input->address, argv[i], MAX_URL_LENGTH);
             }
             else
+            {
+                DisplayError("Can not found value of -i parameter");
                 return -1;
+            }
             break;
 
         case 'R':
@@ -213,21 +252,27 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
                 switch (*argv[i])
                 {
                 case '0':
-                    process_result->random_sip_address = DISABLE_SIP;
+                    input->random_sip_address = DISABLE_SIP;
                     break;
                 case '1':
-                    process_result->random_sip_address = ENABLE_SIP;
+                    input->random_sip_address = ENABLE_SIP;
                     break;
                 default:
                     DisplayWarning("Value of -R parameter is not allowed, use default value now");
-                    process_result->random_sip_address = ENABLE_SIP;
+                    input->random_sip_address = ENABLE_SIP;
                     break;
                 }
             }
+            else
+            {
+                DisplayWarning("Can not found value of -i parameter, use default value now");
+                input->random_sip_address = RANDOM_SIP_DEFAULT;
+            }
+            break;
 
         case 'h':
             DispalyUsage();
-            break;
+            return 0;
 
         default:
             DisplayError("Please check you input");
@@ -236,59 +281,60 @@ static int ProcessInputParameters(const int argc, char *argv[], pInput process_r
         }
     }
 
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Exit ProcessInputParameters");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit ProcessInputParameters");
     return 0;
 }
 
-static int TestProcessResult(const pInput process_result)
+static int Run_Attack_GuessUsernamePassword(pInput input)
 {
-    /*
-        show the process result
-     */
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "attack_mode: %d\n", process_result->attack_mode);
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "debug_level: %d\n", process_result->debug_level);
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "attack_mode_0_one_username: %s\n", process_result->attack_mode_0_one_username);
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "attack_mode_0_username_file_path: %s\n", process_result->attack_mode_0_username_file_path);
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "attack_mode_0_password_file_path: %s\n", process_result->attack_mode_0_password_file_path);
-    return 0;
-}
-
-static int StartAttackJob(const pInput process_result)
-{
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Enter StartAttackJob");
-    pid_t job_pid;
+    // split the big function
     pthread_t job_tid;
-    int pi, ti;
-    for (pi = 0; pi < process_result->max_process; pi++)
+    int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, input);
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", job_tid);
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
+    if (ret != 0)
     {
-        DisplayDebug(DEBUG_LEVEL_2, process_result->debug_level, "pi value: %d", pi);
+        DisplayError("Create pthread failed");
+        return -1;
+    }
+    pthread_join(job_tid, NULL);
+    return 0;
+}
+
+static int Run_Attack_SYNFlood(pInput input)
+{
+    // run function in thread
+    return 0;
+}
+
+static int StartAttackJob(const pInput input)
+{
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackJob");
+    pid_t job_pid;
+    int pi, ti;
+    for (pi = 0; pi < input->max_process; pi++)
+    {
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pi value: %d", pi);
         job_pid = fork();
-        DisplayDebug(DEBUG_LEVEL_2, process_result->debug_level, "job_pid value: %d", job_pid);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_pid value: %d", job_pid);
         if (job_pid == 0)
         {
             /* child process */
-            for (ti = 0; ti < process_result->max_thread; ti++)
+            for (ti = 0; ti < input->max_thread; ti++)
             {
-                DisplayDebug(DEBUG_LEVEL_2, process_result->debug_level, "ti value: %d", ti);
-                DisplayDebug(DEBUG_LEVEL_2, process_result->debug_level, "attack_mode value: %d", process_result->attack_mode);
-                switch (process_result->attack_mode)
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ti value: %d", ti);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "attack_mode value: %d", input->attack_mode);
+                switch (input->attack_mode)
                 {
                 case GUESS_USERNAME_PASSWORD:
                     /* get the random seed */
-                    process_result->seed = ti + pi;
-                    int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, process_result);
-                    DisplayDebug(DEBUG_LEVEL_2, process_result->debug_level, "job_tid value: %d", job_tid);
-                    DisplayDebug(DEBUG_LEVEL_2, process_result->debug_level, "ret value: %d", ret);
-                    if (ret != 0)
-                    {
-                        DisplayError("Create pthread failed");
-                        return -1;
-                    }
-                    pthread_join(job_tid, NULL);
+                    input->seed = ti + pi;
+                    Run_Attack_GuessUsernamePassword(input);
                     break;
 
                 case SYN_FLOOD_ATTACK:
                     /* not finish */
+                    Run_Attack_SYNFlood(input);
                     break;
                 }
             }
@@ -300,15 +346,14 @@ static int StartAttackJob(const pInput process_result)
         }
         else
         {
-
+            // Father process
             int wait_val;
             int child_id;
-            // Father process
             child_id = wait(&wait_val);
-            DisplayDebug(DEBUG_LEVEL_1, process_result->debug_level, "child exit, process id: %d", child_id);
+            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "child exit, process id: %d", child_id);
             if (WIFEXITED(wait_val))
             {
-                DisplayDebug(DEBUG_LEVEL_1, process_result->debug_level, "child exited with code %d", WEXITSTATUS(wait_val));
+                DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "child exited with code %d", WEXITSTATUS(wait_val));
             }
             else
             {
@@ -319,7 +364,7 @@ static int StartAttackJob(const pInput process_result)
         }
     }
 
-    DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Exit StartAttackJob");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackJob");
     return 0;
 }
 
@@ -336,39 +381,38 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    pInput process_result = (pInput)malloc(sizeof(Input));
-    process_result->max_process = PROCESS_NUM_DEFAULT;
-    process_result->max_thread = THREAD_NUM_DEFAULT;
-    process_result->debug_level = DEBUG_LEVEL_DEFAULT;
-    process_result->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
-    process_result->random_sip_address = RANDOM_SIP_DEFAULT;
+    pInput input = (pInput)malloc(sizeof(Input));
+    // field default value
+    input->attack_mode = -1;
+    input->max_process = PROCESS_NUM_DEFAULT;
+    input->max_thread = THREAD_NUM_DEFAULT;
+    input->debug_level = DEBUG_LEVEL_DEFAULT;
+    input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
+    input->random_sip_address = RANDOM_SIP_DEFAULT;
 
-    /* processing the user input data */
-    if (!ProcessInputParameters(argc, argv, process_result))
+    // processing the user input data
+    if (!ProcessInput(argc, argv, input))
     {
         DisplayInfo("Running...");
-        DisplayDebug(DEBUG_LEVEL_1, process_result->debug_level, "Debug mode");
-        if (process_result->debug_level > 0)
-        {
-            TestProcessResult(process_result);
-        }
+        DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
 
-        if (process_result->debug_level > 0)
+        if (input->debug_level > 0)
         {
-            DisplayDebug(DEBUG_LEVEL_1, process_result->debug_level, "Sleep 2s for debug...");
+            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Sleep 2s for debug...");
             sleep(2);
         }
 
-        DisplayDebug(DEBUG_LEVEL_3, process_result->debug_level, "Run StartAttackJob now");
-        if (!CheckInputCompliance(process_result))
+        if (!CheckInputCompliance(input))
         {
             /* process user input ready, start attack now */
-            StartAttackJob(process_result);
+            StartAttackJob(input);
         }
         else
+        {
             DisplayError("Check compliance failed, please check your input");
             DispalyUsage();
             return -1;
+        }
     }
     else
     {
@@ -376,6 +420,6 @@ int main(int argc, char *argv[])
         ShowUsage();
     }
 
-    free(process_result);
+    free(input);
     return 0;
 }

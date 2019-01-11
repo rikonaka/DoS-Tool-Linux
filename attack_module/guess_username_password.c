@@ -11,6 +11,13 @@
 #include "guess_username_password.h"
 #include "guess_model.h"
 
+int Attack_GuessUsernamePassword(pInput input)
+{
+    // start attack
+
+    return 0;
+}
+
 int main(void)
 {
 

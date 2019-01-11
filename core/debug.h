@@ -1,6 +1,6 @@
 #ifndef _DEBUG_H
-#define _DEBUG_OFF 0
-
+#define _DEBUG_H
+#define DEBUG_OFF 0
 #define DEBUG_LEVEL_1 1 // show the importance value
 #define DEBUG_LEVEL_2 2 // show the not importance value
 #define DEBUG_LEVEL_3 3 // show function start, end

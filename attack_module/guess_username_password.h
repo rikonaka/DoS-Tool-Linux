@@ -33,6 +33,11 @@ typedef struct password_list_header
     int length;
 } PasswordList_Header, *pPasswordList_Header;
 
-int Attack_GuessUsernamePassword(const pInput process_result);
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
+extern int DisplayInfo(const char *fmtstring, ...);
+extern int DisplayWarning(const char *fmtsring, ...);
+extern int DisplayError(const char *fmtstring, ...);
+
+int Attack_GuessUsernamePassword(pInput input);
 
 #endif

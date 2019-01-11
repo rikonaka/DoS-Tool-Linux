@@ -18,7 +18,7 @@
 #include "rand.h"
 #include "exploit.h"
 
-//void *exploit(void *input);
+//void *exploit(void *input_arg);
 
 void work(struct INPUT_ARG *pinput)
 {
@@ -90,7 +90,7 @@ void work(struct INPUT_ARG *pinput)
 struct PARSE_RETURN *parse_input(const int iargc, char **pargv)
 {
     /*
-     * Parse the input from user
+     * Parse the input_arg from user
      * There is someting should explain
      * Use the struct PARSE_RETURN to return vaule
      */
@@ -106,7 +106,7 @@ struct PARSE_RETURN *parse_input(const int iargc, char **pargv)
         ptmp = (char *)strstr(pargv[i], "-");
         if (!ptmp)
         {
-            printf("Illegal input\n");
+            printf("Illegal input_arg\n");
             return NULL;
         }
         switch (*(ptmp + 1))
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         parse_result = (struct PARSE_RETURN *)parse_input(argc, pargv);
         if (parse_result == NULL)
         {
-            printf("Wrrong input option\n");
+            printf("Wrrong input_arg option\n");
             return -1;
         }
         if (parse_result->toption != 0)
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
     pinput->DebugMode = debug_level;
     pinput->Attack = attack;
 
-    debug(debug_level, 1, "End parse input");
+    debug(debug_level, 1, "End parse input_arg");
     debug(debug_level, 2, "Started nonsense mode");
     debug(debug_level, 2, "RandFlag:%d - DebugMode:%d - Attack:%d", pinput->RandFlag, pinput->DebugMode, pinput->Attack);
     if (debug_level == 2)
