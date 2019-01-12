@@ -5,10 +5,18 @@
     0  - guess the web passwd (advanced)
     1  - syn flood attack
 */
+#define GUESS_USERNAME_PASSWORD 0
+#define SYN_FLOOD_ATTACK 1
 #define ATTACK_MODE_DEFAULT 1
 
-#define MAX_USERNAME_LENGTH 10
-#define MAX_PASSWORD_LENGTH 20
+#define DEBUG_OFF 0
+#define DEBUG_LEVEL_1 1 // show the importance value
+#define DEBUG_LEVEL_2 2 // show the not importance value
+#define DEBUG_LEVEL_3 3 // show function start, end
+#define MAX_LOG_BUF_SIZE 50
+
+#define MAX_USERNAME_LENGTH 16
+#define MAX_PASSWORD_LENGTH 16
 #define MAX_USERNAME_PATH_LENGTH 100
 #define MAX_PASSWORD_PATH_LENGTH 100
 #define MAX_URL_LENGTH 100
@@ -26,25 +34,7 @@
 #define USERNAME_DEFAULT "admin"
 #define RECV_TIME_OUT 20 // s
 
-//#define POST_DATA "user=%s&password=%s&Submit=登+陆"
-//#define POST_URL "http://192.168.20.1:80/login.cgi"
-
-typedef struct attack_struct
-{
-    char url[MAX_URL_LENGTH];
-    char username[MAX_USERNAME_LENGTH];
-    char password[MAX_PASSWORD_LENGTH];
-    int debug_level;
-    int attack_mode;
-    /* one username set 0, use the username_list set 1 */
-    int username_type;
-    /* use the random password, set 0, use the password file set 1 */
-    int password_type;
-    struct username_list_header *username_list_header;
-    struct password_list_header *password_list_header;
-} AttarckStruct, *pAttarckStruct;
-
-typedef struct input
+typedef struct user_input
 {
     int attack_mode;
     int debug_level;
@@ -59,5 +49,25 @@ typedef struct input
     char attack_mode_0_password_file_path[MAX_PASSWORD_PATH_LENGTH];
     // continue
 } Input, *pInput;
+
+// defined by str.h
+typedef struct split_url_output
+{
+    char *host;
+    char *suffix;
+    int port;
+} SplitURLOutput, *pSplitURLOutput;
+
+typedef struct char_node
+{
+    struct char_node *next;
+    char *username;
+} CharNode, *pCharNode;
+
+typedef struct char_header
+{
+    struct char_node *next;
+    size_t length;
+} CharHeader, *pCharHeader;
 
 #endif

@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <time.h>
 
-#include "debug.h"
+#include "../main.h"
 
 int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...)
 {

@@ -9,9 +9,13 @@
 #include <errno.h>
 
 #include "http.h"
-#include "debug.h"
-#include "cstring.h"
 #include "../main.h"
+
+// from ../core/debug.h
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
+extern int DisplayInfo(const char *fmtstring, ...);
+extern int DisplayWarning(const char *fmtsring, ...);
+extern int DisplayError(const char *fmtstring, ...);
 
 static int TCPConnectCreate(const char *host, int port)
 {
@@ -138,6 +142,12 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
      */
 
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPostMethod");
+
+    // from ../core/str.h
+    extern int GetRandomPassword(char *rebuf, const pInput process_result);
+    extern int SplitURL(const char *url, char **host, char **suffix, int *port);
+    extern int FreeSplitURLSpace(char *host, char *suffix);
+
     int sock;
     int port;
     char *host;

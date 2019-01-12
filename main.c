@@ -7,9 +7,11 @@
 #include <sys/time.h>
 
 #include "main.h"
-#include "core/debug.h"
-#include "attack_module/guess_username_password.h"
-#include "attack_module/syn_flood_dos.h"
+
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
+extern int DisplayInfo(const char *fmtstring, ...);
+extern int DisplayWarning(const char *fmtsring, ...);
+extern int DisplayError(const char *fmtstring, ...);
 
 static int DisplayUsage(void)
 {
@@ -18,8 +20,10 @@ static int DisplayUsage(void)
      */
     char *usage = "\n"
                   "Usage:   dostool [option]\n"
-                  "Example: ./dostool -a 0 -u riko -i \"http:\\\\192,168.1.1:80/login.asp\"\n"
+                  "Example: ./dostool -a 0 -u \"JayChou\" -i \"http:\\\\192,168.1.1:80/login.asp\"\n"
                   "         ./dostool -a 0 -U \"/home/test/username.txt\" -P \"/home/test/password.txt\"\n"
+                  "         ./dostool -a 0 -u \"JayChou\" -P \"/home/test/password.txt\"\n"
+                  "         ./dostool -a 0 -P \"/home/test/password.txt\"\n"
                   "         ./dostool -a 1 -i \"192.168.1.1:80\"\n"
                   "         -i \"http:\\\\192,168.1.1:80/login.asp\"\n\n"
                   "         -a    Indicate attack mode\n"
@@ -40,6 +44,8 @@ static int DisplayUsage(void)
                   "         -R    Use the random source IP address in dos attack (can not use in the guess password attack)\n"
                   "               0    turn off the random source ip address which can protect in the local net\n"
                   "               1    enable random source ip address (default)\n\n"
+                  "         -m    Type of router\n"
+                  "               Please check the README.md file for details\n\n"
                   "         -h    Show this message\n";
 
     printf("%s", usage);
@@ -288,10 +294,13 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
 static int Run_Attack_GuessUsernamePassword(pInput input)
 {
     // split the big function
+    extern int Attack_GuessUsernamePassword(pInput input);
     pthread_t job_tid;
+
     int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, input);
     DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", job_tid);
     DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
+
     if (ret != 0)
     {
         DisplayError("Create pthread failed");
