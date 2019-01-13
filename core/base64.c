@@ -68,12 +68,6 @@ size_t Base64Decode(unsigned char **buffer, char *b64message)
     return length;
 }
 
-int FreeBase64Buff(char *message)
-{
-    free(message);
-    return 0;
-}
-
 int Base64Encode(char **b64message, const unsigned char *buffer, size_t length)
 {
     /*

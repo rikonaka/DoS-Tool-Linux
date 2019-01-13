@@ -1,7 +1,10 @@
-#ifndef _REQUEST_H
-#define _REQUEST_H
+#ifndef _GUESS_H
+#define _GUESS_H
 #include <stdlib.h>
 #include <string.h>
+
+#define GET_RANDOM_USERNAME 1
+#define GET_RANDOM_PASSWORD 2
 
 char *FEIXUN_FWR_604H_REQUEST = "POST /goform/formLogin HTTP/1.1\r\n"
                                 "Host: %s\r\n"
@@ -23,26 +26,7 @@ typedef struct match_output
     char *request;
     char *request_data;
     char *success_or_not;
+    struct match_output *next;
 } MatchOutput, *pMatchOutput;
-
-int FreeMatchModel(pMatchOutput p)
-{
-    free(p);
-    return 0;
-}
-
-int MatchModel(pMatchOutput *output, char *input)
-{
-    (*output) = (pMatchOutput)malloc(sizeof(MatchOutput));
-
-    if (strstr(input, "feixun_fwr_604h"))
-    {
-        (*output)->request = FEIXUN_FWR_604H_REQUEST;
-        (*output)->request_data = FEIXUN_FWR_604H_REQUEST_DATA;
-        (*output)->success_or_not = FEIXUN_FWR_604H_SUCCESS;
-    }
-
-    return 0;
-}
 
 #endif

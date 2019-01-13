@@ -12,7 +12,7 @@ extern int DisplayInfo(const char *fmtstring, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmtstring, ...);
 
-int FreeSplitURL(pSplitURLOutput p)
+int FreeSplitURLBuff(pSplitURLOutput p)
 {
     free(p->host);
     free(p->suffix);
@@ -20,7 +20,7 @@ int FreeSplitURL(pSplitURLOutput p)
     return 0;
 }
 
-int SplitURL(const char *url, pSplitURLOutput *output)
+int SplitURL(pSplitURLOutput *output, const char *url)
 {
     // rewrite this function at 2019-1-10
     int i;
@@ -37,9 +37,9 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     char *host_buff = (char *)malloc(sizeof(char));
     char *suffix_buff = (char *)malloc(sizeof(char));
     char *port_buff = (char *)malloc(sizeof(char));
-    memset(host_buff, '\0', sizeof(host_buff));
-    memset(suffix_buff, '\0', sizeof(suffix_buff));
-    memset(port_buff, '\0', sizeof(suffix_buff));
+    memset(host_buff, 0,sizeof(char));
+    memset(suffix_buff, 0, sizeof(char));
+    memset(port_buff, 0, sizeof(char));
 
     /* copy the host to host_buff */
     ptmp = (second_slash_position + 1);
@@ -89,7 +89,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     return 0;
 }
 
-int FreeRandomPassword(char *password)
+int FreeRandomPasswordBuff(char *password)
 {
     free(password);
     return 0;
@@ -128,9 +128,10 @@ int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
     return 0;
 }
 
-static int TestCharList(const pCharHeader output)
+/*
+static int TestStringList(const pStringHeader output)
 {
-    pCharNode p = output->next;
+    pStringNode p = output->next;
     DisplayInfo("Linked list length: %d", output->length);
     while (p)
     {
@@ -138,11 +139,12 @@ static int TestCharList(const pCharHeader output)
         p = p->next;
     }
 }
+*/
 
-int FreeProcessFile(pCharHeader p)
+int FreeProcessFileBuff(pStringHeader p)
 {
-    pCharNode n = p->next;
-    pCharNode n_next = n->next;
+    pStringNode n = p->next;
+    pStringNode n_next = n->next;
     while (n_next)
     {
         //DisplayInfo("Free <%s> space now", n->username);
@@ -162,7 +164,7 @@ int FreeProcessFile(pCharHeader p)
     return 0;
 }
 
-int ProcessFile(char *path, pCharHeader *output, int flag)
+int ProcessFile(char *path, pStringHeader *output, int flag)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -177,8 +179,8 @@ int ProcessFile(char *path, pCharHeader *output, int flag)
         LENGTH = MAX_USERNAME_LENGTH;
     }
 
-    (*output) = (pCharHeader)malloc(sizeof(CharHeader));
-    pCharNode u_list;
+    (*output) = (pStringHeader)malloc(sizeof(StringHeader));
+    pStringNode u_list;
     (*output)->length = 0;
     (*output)->next = NULL;
     char space[LENGTH];
@@ -206,7 +208,7 @@ int ProcessFile(char *path, pCharHeader *output, int flag)
         u_length = strlen(space);
         if (u_length > 0)
         {
-            u_list = (pCharNode)malloc(sizeof(CharNode));
+            u_list = (pStringNode)malloc(sizeof(StringNode));
             u_list->next = (*output)->next;
             (*output)->next = u_list;
             //DisplayInfo("%ld", u_length);
@@ -230,20 +232,20 @@ int main(void)
     char *input = "http://192.168.1.1/index.html";
     pSplitURLOutput s;
 
-    SplitURL(input, &s);
+    SplitURL(&s, input);
     printf("host: %s, suffix: %s, port: %d\n", s->host, s->suffix, s->port);
     FreeSplitURL(s);
 
     char *random;
     GetRandomPassword(&random, 10, 8);
     DisplayInfo("%s", random);
-    FreeRandomPassword(random);
+    FreeRandomPasswordBuff(random);
 
     char *path = "/home/hero/Documents/Code/DoS-Tool/wordlists/others/best1050.txt";
-    pCharHeader p;
+    pStringHeader p;
     ProcessFile(path, &p, 0);
     //TestCharList(p);
-    FreeProcessFile(p);
+    FreeProcessFileBuff(p);
 
     return 0;
 }

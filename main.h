@@ -9,6 +9,9 @@
 #define SYN_FLOOD_ATTACK 1
 #define ATTACK_MODE_DEFAULT 1
 
+#define DISABLE_SIP 0
+#define ENABLE_SIP 1
+
 #define DEBUG_OFF 0
 #define DEBUG_LEVEL_1 1 // show the importance value
 #define DEBUG_LEVEL_2 2 // show the not importance value
@@ -22,6 +25,7 @@
 #define MAX_URL_LENGTH 100
 #define MAX_SEND_DATA_SIZE 1024
 #define MAX_RECEIVE_DATA_SIZE 1024
+#define MAX_MODEL_TYPE_LENGTH 20
 #define SMALL_BUFFER_SIZE 128
 #define BIG_BUFFER_SIZE 1024
 
@@ -33,6 +37,7 @@
 #define PORT_DEFAULT 80
 #define USERNAME_DEFAULT "admin"
 #define RECV_TIME_OUT 20 // s
+#define MODEL_TYPE_DEFAULT "not_sure"
 
 typedef struct user_input
 {
@@ -47,6 +52,7 @@ typedef struct user_input
     char attack_mode_0_one_username[MAX_USERNAME_LENGTH];
     char attack_mode_0_username_file_path[MAX_USERNAME_PATH_LENGTH];
     char attack_mode_0_password_file_path[MAX_PASSWORD_PATH_LENGTH];
+    char model_type[MAX_MODEL_TYPE_LENGTH];
     // continue
 } Input, *pInput;
 
@@ -58,16 +64,16 @@ typedef struct split_url_output
     int port;
 } SplitURLOutput, *pSplitURLOutput;
 
-typedef struct char_node
+typedef struct string_node
 {
-    struct char_node *next;
+    struct string_node *next;
     char *username;
-} CharNode, *pCharNode;
+} StringNode, *pStringNode;
 
-typedef struct char_header
+typedef struct string_header
 {
-    struct char_node *next;
+    struct string_node *next;
     size_t length;
-} CharHeader, *pCharHeader;
+} StringHeader, *pStringHeader;
 
 #endif

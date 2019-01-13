@@ -8,7 +8,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
-#include "http.h"
 #include "../main.h"
 
 // from ../core/debug.h
@@ -24,7 +23,6 @@ static int TCPConnectCreate(const char *host, int port)
     //struct hostent *he;
     struct sockaddr_in server_addr;
     int sock;
-    int send_size = MAX_SEND_DATA_SIZE;
     int enable = 1;
     struct timeval recv_timeout;
     recv_timeout.tv_sec = RECV_TIME_OUT;
@@ -134,6 +132,12 @@ static int TCPConnectClose(int socket)
     return 0;
 }
 
+int FreeHTTPPostMethodBuff(char *p)
+{
+    free(p);
+    return 0;
+}
+
 size_t HTTPPostMethod(char **response, const char *url, const char *request, int debug_level)
 {
     /*
@@ -145,13 +149,11 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
 
     // from ../core/str.h
     extern int GetRandomPassword(char *rebuf, const pInput process_result);
-    extern int SplitURL(const char *url, char **host, char **suffix, int *port);
-    extern int FreeSplitURLSpace(char *host, char *suffix);
+    extern int SplitURL(pSplitURLOutput *output, const char *url);
+    extern int FreeSplitURLBuff(char *host, char *suffix);
 
     int sock;
-    int port;
-    char *host;
-    char *suffix;
+    pSplitURLOutput sp;
 
     /* here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space */
 
@@ -160,15 +162,15 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
         DisplayError("url or post_str not find");
         return -1;
     }
-    if (SplitURL(url, &host, &suffix, &port))
+    if (SplitURL(&sp, url))
     {
         DisplayError("ProcessURL failed");
         return -1;
     }
 
-    DisplayDebug(DEBUG_LEVEL_2, debug_level, "host_addr: %s suffix:%s port:%d", host, suffix, port);
+    DisplayDebug(DEBUG_LEVEL_2, debug_level, "host_addr: %s suffix:%s port:%d", sp->host, sp->suffix, sp->port);
     /* 1 connect */
-    sock = TCPConnectCreate(host, port);
+    sock = TCPConnectCreate(sp->host, sp->port);
     if (sock < 0)
     {
         DisplayError("TcpConnectCreate failed");

@@ -45,7 +45,7 @@ static int DisplayUsage(void)
                   "               0    turn off the random source ip address which can protect in the local net\n"
                   "               1    enable random source ip address (default)\n\n"
                   "         -m    Type of router\n"
-                  "               Please check the README.md file for details\n\n"
+                  "               feixun_fwr_604h not_sure\n\n"
                   "         -h    Show this message\n";
 
     printf("%s", usage);
@@ -94,7 +94,6 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
     /*
         understood the user input meaning
      */
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter ProcessInputParameters");
     int i;
     char *ptmp;
 
@@ -110,6 +109,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
         switch (*(ptmp + 1))
         {
         case 'a':
+            // int
             if (argv[++i])
             {
                 switch (*argv[i])
@@ -135,6 +135,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'd':
+            // int
             if (argv[++i])
             {
                 switch (*argv[i])
@@ -166,18 +167,20 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'u':
+            // char
             if (argv[++i])
             {
                 strncpy(input->attack_mode_0_one_username, argv[i], MAX_USERNAME_LENGTH);
             }
             else
             {
-                DisplayError("Can not found value of -u parameter");
-                return -1;
+                DisplayError("Can not found value of -u parameter, use the default value now");
+                strncpy(input->attack_mode_0_one_username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
             }
             break;
 
         case 'U':
+            // char
             if (argv[++i])
             {
                 strncpy(input->attack_mode_0_username_file_path, argv[i], MAX_USERNAME_PATH_LENGTH);
@@ -190,6 +193,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'P':
+            // char
             if (argv[++i])
             {
                 strncpy(input->attack_mode_0_password_file_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
@@ -202,6 +206,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 't':
+            // int
             if (argv[++i])
             {
                 input->max_thread = atoi(argv[i]);
@@ -215,6 +220,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'p':
+            // int
             if (argv[++i])
             {
                 input->max_process = atoi(argv[i]);
@@ -228,6 +234,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'r':
+            // int
             if (argv[++i])
             {
                 input->random_password_length = atoi(argv[i]);
@@ -241,6 +248,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'i':
+            // char
             if (argv[++i])
             {
                 strncpy(input->address, argv[i], MAX_URL_LENGTH);
@@ -253,6 +261,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             break;
 
         case 'R':
+            // int
             if (argv[++i])
             {
                 switch (*argv[i])
@@ -276,18 +285,30 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             }
             break;
 
+        case 'm':
+            // char
+            if (argv[++i])
+            {
+                strncpy(input->model_type, argv[i], MAX_MODEL_TYPE_LENGTH);
+            }
+            else
+            {
+                DisplayWarning("Can not found value of -m parameter use default value now");
+                strncpy(input->model_type, (char *)MODEL_TYPE_DEFAULT, MAX_MODEL_TYPE_LENGTH);
+            }
+            break;
+
         case 'h':
-            DispalyUsage();
+            DisplayUsage();
             return 0;
 
         default:
             DisplayError("Please check you input");
-            DispalyUsage();
+            DisplayUsage();
             return -1;
         }
     }
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit ProcessInputParameters");
     return 0;
 }
 
@@ -386,7 +407,7 @@ int main(int argc, char *argv[])
     if (argc == 1)
     {
         DisplayError("Need more parameter");
-        DispalyUsage();
+        DisplayUsage();
         return -1;
     }
 
@@ -419,14 +440,14 @@ int main(int argc, char *argv[])
         else
         {
             DisplayError("Check compliance failed, please check your input");
-            DispalyUsage();
+            DisplayUsage();
             return -1;
         }
     }
     else
     {
         DisplayError("Please check you input");
-        ShowUsage();
+        DisplayUsage();
     }
 
     free(input);
