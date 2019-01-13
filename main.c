@@ -209,12 +209,12 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             // int
             if (argv[++i])
             {
-                input->max_thread = atoi(argv[i]);
+                input->thread_num = atoi(argv[i]);
             }
             else
             {
                 DisplayWarning("Can not found value of -t parameter, use default value now");
-                input->max_thread = THREAD_NUM_DEFAULT;
+                input->thread_num = THREAD_NUM_DEFAULT;
                 //return -1;
             }
             break;
@@ -223,12 +223,12 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             // int
             if (argv[++i])
             {
-                input->max_process = atoi(argv[i]);
+                input->process_num = atoi(argv[i]);
             }
             else
             {
                 DisplayWarning("Can not found value of -p parameter, use default value now");
-                input->max_process = PROCESS_NUM_DEFAULT;
+                input->process_num = PROCESS_NUM_DEFAULT;
                 //return -1;
             }
             break;
@@ -342,7 +342,7 @@ static int StartAttackJob(const pInput input)
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackJob");
     pid_t job_pid;
     int pi, ti;
-    for (pi = 0; pi < input->max_process; pi++)
+    for (pi = 0; pi < input->process_num; pi++)
     {
         DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pi value: %d", pi);
         job_pid = fork();
@@ -350,20 +350,21 @@ static int StartAttackJob(const pInput input)
         if (job_pid == 0)
         {
             /* child process */
-            for (ti = 0; ti < input->max_thread; ti++)
+            for (ti = 0; ti < input->thread_num; ti++)
             {
                 DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ti value: %d", ti);
                 DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "attack_mode value: %d", input->attack_mode);
+                input->serial_num = ti + pi;
                 switch (input->attack_mode)
                 {
                 case GUESS_USERNAME_PASSWORD:
-                    /* get the random seed */
+                    // get the random seed
                     input->seed = ti + pi;
                     Run_Attack_GuessUsernamePassword(input);
                     break;
 
                 case SYN_FLOOD_ATTACK:
-                    /* not finish */
+                    /// not finish
                     Run_Attack_SYNFlood(input);
                     break;
                 }
@@ -414,8 +415,8 @@ int main(int argc, char *argv[])
     pInput input = (pInput)malloc(sizeof(Input));
     // field default value
     input->attack_mode = -1;
-    input->max_process = PROCESS_NUM_DEFAULT;
-    input->max_thread = THREAD_NUM_DEFAULT;
+    input->process_num = PROCESS_NUM_DEFAULT;
+    input->thread_num = THREAD_NUM_DEFAULT;
     input->debug_level = DEBUG_LEVEL_DEFAULT;
     input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
     input->random_sip_address = RANDOM_SIP_DEFAULT;

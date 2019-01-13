@@ -43,11 +43,12 @@ typedef struct user_input
 {
     int attack_mode;
     int debug_level;
-    int max_process;
-    int max_thread;
+    int process_num;
+    int thread_num;
     int seed;
     int random_password_length;
     int random_sip_address;
+    int serial_num;
     char address[MAX_URL_LENGTH];
     char username[MAX_USERNAME_LENGTH];
     char username_path[MAX_USERNAME_PATH_LENGTH];
@@ -67,7 +68,7 @@ typedef struct split_url_output
 typedef struct string_node
 {
     struct string_node *next;
-    char *username;
+    char *str;
 } StringNode, *pStringNode;
 
 typedef struct string_header

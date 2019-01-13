@@ -1,7 +1,7 @@
 .SUFFIXES:.c .o
 
 CC   = gcc
-SRCS = main.c core/debug.c core/base64.c core/http.c core/str.c attack_module/guess.c attack_module/syn_flood_dos.c 
+SRCS = main.c core/debug.c core/base64.c core/http.c core/str.c core/dispatch.c attack_module/guess.c attack_module/syn_flood_dos.c 
 
 OBJS = $(SRCS:.c=.o)
 EXEC = dos-tool

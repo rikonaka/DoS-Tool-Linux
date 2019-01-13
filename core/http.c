@@ -138,7 +138,7 @@ int FreeHTTPPostMethodBuff(char *p)
     return 0;
 }
 
-size_t HTTPPostMethod(char **response, const char *url, const char *request, int debug_level)
+size_t HTTPPostMethod(const char *url, const char *request, char **response, int debug_level)
 {
     /*
      * use the HTTP post method post 'request_data'
@@ -149,7 +149,7 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
 
     // from ../core/str.h
     extern int GetRandomPassword(char *rebuf, const pInput process_result);
-    extern int SplitURL(pSplitURLOutput *output, const char *url);
+    extern int SplitURL(const char *url, pSplitURLOutput *output);
     extern int FreeSplitURLBuff(char *host, char *suffix);
 
     int sock;
@@ -162,7 +162,7 @@ size_t HTTPPostMethod(char **response, const char *url, const char *request, int
         DisplayError("url or post_str not find");
         return -1;
     }
-    if (SplitURL(&sp, url))
+    if (SplitURL(url, &sp))
     {
         DisplayError("ProcessURL failed");
         return -1;

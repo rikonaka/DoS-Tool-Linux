@@ -20,7 +20,7 @@ int FreeSplitURLBuff(pSplitURLOutput p)
     return 0;
 }
 
-int SplitURL(pSplitURLOutput *output, const char *url)
+int SplitURL(const char *url, pSplitURLOutput *output)
 {
     // rewrite this function at 2019-1-10
     int i;
@@ -37,7 +37,7 @@ int SplitURL(pSplitURLOutput *output, const char *url)
     char *host_buff = (char *)malloc(sizeof(char));
     char *suffix_buff = (char *)malloc(sizeof(char));
     char *port_buff = (char *)malloc(sizeof(char));
-    memset(host_buff, 0,sizeof(char));
+    memset(host_buff, 0, sizeof(char));
     memset(suffix_buff, 0, sizeof(char));
     memset(port_buff, 0, sizeof(char));
 
@@ -164,7 +164,41 @@ int FreeProcessFileBuff(pStringHeader p)
     return 0;
 }
 
-int ProcessFile(char *path, pStringHeader *output, int flag)
+int NumberOfRowsFile(const char *path, size_t *num)
+{
+    FILE *fp = fopen(path, "r");
+    // for count
+    char buff[SMALL_BUFFER_SIZE];
+    char ch;
+    size_t count = 0;
+    if (!fp)
+    {
+        DisplayError("Error: Can not open the username file");
+        return -1;
+    }
+    while (!feof(fp))
+    {
+        // if stack error, change here
+        memset(buff, 0, SMALL_BUFFER_SIZE);
+        ch = fgetc(fp);
+        while (ch != '\n' && ch != '\r' && !feof(fp))
+        {
+            sprintf(buff, "%s%c", buff, ch);
+            //DisplayInfo("%c", ch);
+            ch = fgetc(fp);
+        }
+
+        if (strlen(buff) > 0)
+        {
+            ++count;
+        }
+    }
+    fclose(fp);
+    *num = count;
+    return 0;
+}
+
+int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start, size_t end)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -183,9 +217,10 @@ int ProcessFile(char *path, pStringHeader *output, int flag)
     pStringNode u_list;
     (*output)->length = 0;
     (*output)->next = NULL;
-    char space[LENGTH];
+    char buff[LENGTH];
     char ch;
     size_t u_length = 0;
+    size_t count = 0;
 
     FILE *fp = fopen(path, "r");
     if (!fp)
@@ -196,27 +231,31 @@ int ProcessFile(char *path, pStringHeader *output, int flag)
     while (!feof(fp))
     {
         // if stack error, change here
-        memset(space, 0, LENGTH);
+        memset(buff, 0, LENGTH);
         ch = fgetc(fp);
         while (ch != '\n' && ch != '\r' && !feof(fp))
         {
-            sprintf(space, "%s%c", space, ch);
+            sprintf(buff, "%s%c", buff, ch);
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
         }
 
-        u_length = strlen(space);
+        u_length = strlen(buff);
         if (u_length > 0)
         {
-            u_list = (pStringNode)malloc(sizeof(StringNode));
-            u_list->next = (*output)->next;
-            (*output)->next = u_list;
-            //DisplayInfo("%ld", u_length);
-            // make a space for /0
-            u_list->username = (char *)malloc(u_length + 1);
-            memset(u_list->username, 0, u_length + 1);
-            strncpy(u_list->username, space, u_length);
-            ++((*output)->length);
+            if ((*output)->length > start && (*output)->length < end)
+            {
+                u_list = (pStringNode)malloc(sizeof(StringNode));
+                u_list->next = (*output)->next;
+                (*output)->next = u_list;
+                //DisplayInfo("%ld", u_length);
+                // make a space for /0
+                u_list->username = (char *)malloc(u_length + 1);
+                memset(u_list->username, 0, u_length + 1);
+                strncpy(u_list->username, buff, u_length);
+                ++((*output)->length);
+            }
+            ++count;
             //DisplayInfo("%s", u_list->username);
             //DisplayInfo("%d", (*output)->length);
         }
@@ -232,7 +271,7 @@ int main(void)
     char *input = "http://192.168.1.1/index.html";
     pSplitURLOutput s;
 
-    SplitURL(&s, input);
+    SplitURL(input, &s);
     printf("host: %s, suffix: %s, port: %d\n", s->host, s->suffix, s->port);
     FreeSplitURL(s);
 
