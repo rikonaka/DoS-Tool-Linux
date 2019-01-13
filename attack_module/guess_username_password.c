@@ -5,7 +5,7 @@
 
 #include "../main.h"
 #include "guess_username_password.h"
-#include "router_type.h"
+#include "request.h"
 
 // from ../core/debug.h
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
@@ -14,14 +14,15 @@ extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmtstring, ...);
 
 // from ../core/str.h
-extern int FreeRandomPassword(char *password);
+extern int FreeRandomPasswordBuff(char *password);
 extern int GetRandomPassword(char **rebuf, unsigned int seed, const int length);
 extern int SplitURL(const char *url, pSplitURLOutput *output);
-extern int FreeSplitURLSpace(pSplitURLOutput p);
+extern int FreeSplitURLBuff(pSplitURLOutput p);
 extern int ProcessFile(char *path, pCharHeader *output, int flag);
-extern int FreeProcessFile(pCharHeader p);
+extern int FreeProcessFileBuff(pCharHeader p);
 
 // from ../core/http.h
+extern int FreeHTTPPostMethodBuff(char *p);
 extern size_t HTTPPostMethod(char **response, const char *url, const char *request, int debug_level);
 
 // from ../core/base64.h
@@ -154,18 +155,16 @@ int main(void)
     Base64Encode(&b64message, test_rebuf_GetRandomPassword, strlen(test_rebuf_GetRandomPassword));
 
     // combined data now
-    char send_buff[strlen(FEIXUN_FWR_604H_REQUEST_MODEL) + MAX_SEND_DATA_SIZE];
+    char send_buff[strlen(FEIXUN_FWR_604H_REQUEST) + MAX_SEND_DATA_SIZE];
     char *url = "http://192.168.1.1/login.asp";
-    char *host;
-    char *suffix;
-    int port;
+    pSplitURLOutput sp;
 
     char send_data_buff[MAX_SEND_DATA_SIZE];
-    sprintf(send_data_buff, FEIXUN_FWR_604H_REQUEST_DATA_MODEL, "admin", b64message);
+    sprintf(send_data_buff, FEIXUN_FWR_604H_REQUEST_DATA, "admin", b64message);
 
-    SplitURL(const char *url, pSplitURLOutput *output);
+    SplitURL(url, sp);
     //DisplayInfo("%ld", strlen(send_data_buff));
-    sprintf(send_buff, FEIXUN_FWR_604H_REQUEST_MODEL, host, url, strlen(send_data_buff), send_data_buff);
+    sprintf(send_buff, FEIXUN_FWR_604H_REQUEST, sp->host, url, strlen(send_data_buff), send_data_buff);
     //DisplayDebug(DEBUG_LEVEL_2, test_input_GetRandomPassword->debug_level, "Send:\n%s\n", send_buff);
 
     // send now
@@ -175,7 +174,15 @@ int main(void)
     HTTPPostMethod(&response, url, send_buff, 0);
     DisplayInfo(response);
 
-    FreeSplitURLSpace(host, suffix);
+    FreeRandomPasswordBuff(test_rebuf_GetRandomPassword);
+    FreeSplitURLBuff(sp);
+    FreeBase64Buff(b64message);
+    FreeHTTPPostMethodBuff(response);
+
+    // test match model
+    pMatchOutput mt;
+    MatchModel(&mt, "feixun_fwr_604h");
+    FreeMatchModel(mt);
 
     return 0;
 }
