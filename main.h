@@ -16,7 +16,7 @@
 #define DEBUG_LEVEL_1 1 // show the importance value
 #define DEBUG_LEVEL_2 2 // show the not importance value
 #define DEBUG_LEVEL_3 3 // show function start, end
-#define MAX_LOG_BUF_SIZE 50
+#define MAX_LOG_BUF_SIZE 100
 
 #define MAX_USERNAME_LENGTH 16
 #define MAX_PASSWORD_LENGTH 16
@@ -49,9 +49,9 @@ typedef struct user_input
     int random_password_length;
     int random_sip_address;
     char address[MAX_URL_LENGTH];
-    char attack_mode_0_one_username[MAX_USERNAME_LENGTH];
-    char attack_mode_0_username_file_path[MAX_USERNAME_PATH_LENGTH];
-    char attack_mode_0_password_file_path[MAX_PASSWORD_PATH_LENGTH];
+    char username[MAX_USERNAME_LENGTH];
+    char username_path[MAX_USERNAME_PATH_LENGTH];
+    char password_path[MAX_PASSWORD_PATH_LENGTH];
     char model_type[MAX_MODEL_TYPE_LENGTH];
     // continue
 } Input, *pInput;

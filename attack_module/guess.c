@@ -144,25 +144,25 @@ int Attack_GuessUsernamePassword(pInput input)
     REQUEST_DATA = mt->request_data;
     SUCCESS_OR_NOT = mt->success_or_not;
 
-    if (strlen(input->attack_mode_0_username_file_path) > 0)
+    if (strlen(input->username_path) > 0)
     {
         // if path existed, ignore the usename
         pStringHeader u_header;
-        ProcessFile(input->attack_mode_0_username_file_path, &u_header, 0);
-        if (strlen(input->attack_mode_0_password_file_path) > 0)
+        ProcessFile(input->username_path, &u_header, 0);
+        if (strlen(input->password_path) > 0)
         {
             pStringHeader p_header;
-            ProcessFile(input->attack_mode_0_password_file_path, &p_header, 1);
+            ProcessFile(input->password_path, &p_header, 1);
             UListPList(input->address, u_header, p_header);
             FreeProcessFileBuff(u_header);
             FreeProcessFileBuff(p_header);
         }
         // else will never happen
     }
-    else if (strlen(input->attack_mode_0_one_username) > 0)
+    else if (strlen(input->username) > 0)
     {
         // use one username
-        UOnePRandom(input->address, input->attack_mode_0_one_username, (unsigned int)input->seed, input->random_password_length);
+        UOnePRandom(input->address, input->username, (unsigned int)input->seed, input->random_password_length);
     }
     else
     {

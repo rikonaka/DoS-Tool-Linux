@@ -76,9 +76,9 @@ static int CheckInputCompliance(const pInput input)
     }
 
     // -U must with -P
-    if (strlen(input->attack_mode_0_username_file_path) > 0)
+    if (strlen(input->username_path) > 0)
     {
-        if (strlen(input->attack_mode_0_password_file_path) == 0)
+        if (strlen(input->password_path) == 0)
         {
             DisplayError("Place check your -U paratemer, -U must use with -P");
             return -1;
@@ -170,12 +170,12 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             // char
             if (argv[++i])
             {
-                strncpy(input->attack_mode_0_one_username, argv[i], MAX_USERNAME_LENGTH);
+                strncpy(input->username, argv[i], MAX_USERNAME_LENGTH);
             }
             else
             {
                 DisplayError("Can not found value of -u parameter, use the default value now");
-                strncpy(input->attack_mode_0_one_username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
+                strncpy(input->username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
             }
             break;
 
@@ -183,7 +183,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             // char
             if (argv[++i])
             {
-                strncpy(input->attack_mode_0_username_file_path, argv[i], MAX_USERNAME_PATH_LENGTH);
+                strncpy(input->username_path, argv[i], MAX_USERNAME_PATH_LENGTH);
             }
             else
             {
@@ -196,7 +196,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             // char
             if (argv[++i])
             {
-                strncpy(input->attack_mode_0_password_file_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
+                strncpy(input->password_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
             }
             else
             {
@@ -419,12 +419,13 @@ int main(int argc, char *argv[])
     input->debug_level = DEBUG_LEVEL_DEFAULT;
     input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
     input->random_sip_address = RANDOM_SIP_DEFAULT;
+    strncpy(input->username, (char *)USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
 
     // processing the user input data
     if (!ProcessInput(argc, argv, input))
     {
-        DisplayInfo("Running...");
-        DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
+        //DisplayInfo("Running...");
+        //DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
 
         if (input->debug_level > 0)
         {

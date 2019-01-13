@@ -21,16 +21,12 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     }
 
     va_list arg;
-    char *buf = (char *)malloc(MAX_LOG_BUF_SIZE);
+    char buf[MAX_LOG_BUF_SIZE];
     time_t t;
     struct tm *time_struct;
     time(&t);
     time_struct = localtime(&t);
     //int done;
-    if (!buf)
-    {
-        return -1;
-    }
 
     va_start(arg, fmtstring);
     // Magic here
@@ -45,7 +41,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
 
     // Original _printf code
     //return done;
-    free(buf);
+    //free(buf);
     return 0;
 }
 
@@ -56,15 +52,11 @@ int DisplayInfo(const char *fmtstring, ...)
      */
 
     va_list arg;
-    char *buf = (char *)malloc(MAX_LOG_BUF_SIZE);
+    char buf[MAX_LOG_BUF_SIZE];
     time_t t;
     struct tm *time_struct;
     time(&t);
     time_struct = localtime(&t);
-    if (!buf)
-    {
-        return -1;
-    }
 
     va_start(arg, fmtstring);
     if (vsprintf(buf, fmtstring, arg) > 0)
@@ -74,7 +66,6 @@ int DisplayInfo(const char *fmtstring, ...)
     }
 
     va_end(arg);
-    free(buf);
     return 0;
 }
 
@@ -85,15 +76,11 @@ int DisplayWarning(const char *fmtstring, ...)
      */
 
     va_list arg;
-    char *buf = (char *)malloc(MAX_LOG_BUF_SIZE);
+    char buf[MAX_LOG_BUF_SIZE];
     time_t t;
     struct tm *time_struct;
     time(&t);
     time_struct = localtime(&t);
-    if (!buf)
-    {
-        return -1;
-    }
 
     va_start(arg, fmtstring);
     if (vsprintf(buf, fmtstring, arg) > 0)
@@ -103,7 +90,7 @@ int DisplayWarning(const char *fmtstring, ...)
     }
 
     va_end(arg);
-    free(buf);
+    //free(buf);
     return 0;
 }
 
@@ -114,15 +101,11 @@ int DisplayError(const char *fmtstring, ...)
      */
 
     va_list arg;
-    char *buf = (char *)malloc(MAX_LOG_BUF_SIZE);
+    char buf[MAX_LOG_BUF_SIZE];
     time_t t;
     struct tm *time_struct;
     time(&t);
     time_struct = localtime(&t);
-    if (!buf)
-    {
-        return -1;
-    }
 
     va_start(arg, fmtstring);
     if (vsprintf(buf, fmtstring, arg) > 0)
@@ -132,7 +115,7 @@ int DisplayError(const char *fmtstring, ...)
     }
 
     va_end(arg);
-    free(buf);
+    //free(buf);
     return 0;
 }
 
