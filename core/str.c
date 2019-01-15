@@ -164,7 +164,7 @@ int FreeProcessFileBuff(pStringHeader p)
     return 0;
 }
 
-int NumberOfRowsFile(const char *path, size_t *num)
+int GetFileLines(const char *path, size_t *num)
 {
     FILE *fp = fopen(path, "r");
     // for count
@@ -250,9 +250,9 @@ int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start,
                 (*output)->next = u_list;
                 //DisplayInfo("%ld", u_length);
                 // make a space for /0
-                u_list->username = (char *)malloc(u_length + 1);
-                memset(u_list->username, 0, u_length + 1);
-                strncpy(u_list->username, buff, u_length);
+                u_list->str = (char *)malloc(u_length + 1);
+                memset(u_list->str, 0, u_length + 1);
+                strncpy(u_list->str, buff, u_length);
                 ++((*output)->length);
             }
             ++count;

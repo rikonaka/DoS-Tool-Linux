@@ -19,8 +19,8 @@ extern int SplitURL(const char *url, pSplitURLOutput *output);
 extern int FreeSplitURLBuff(pSplitURLOutput p);
 
 // from ../core/http.c
-extern int FreeHTTPPostMethodBuff(char *p);
-extern size_t HTTPPostMethod(const char *url, const char *request, char **response, int debug_level);
+extern int FreeHTTPPostBuff(char *p);
+extern size_t HTTPPost(const char *url, const char *request, char **response, int debug_level);
 
 // from ../core/base64.c
 extern int Base64Encode(char **b64message, const unsigned char *buffer, size_t length);
@@ -94,9 +94,9 @@ static int UListPList(char *url, pStringHeader u_header, pStringHeader p_header)
             sprintf(send_buff, REQUEST_DATA, sp->host, url, strlen(data_buff), data_buff);
 
             // send now
-            HTTPPostMethod(url, send_buff, &response, 0);
+            HTTPPost(url, send_buff, &response, 0);
             DisplayInfo(response);
-            FreeHTTPPostMethodBuff(*response);
+            FreeHTTPPostBuff(*response);
             p = p->next;
         }
         u = u->next;
@@ -115,7 +115,12 @@ static int UOnePRandom(const char *url, const char *username, unsigned int seed,
     char data_buff[MAX_SEND_DATA_SIZE];
     char *response;
     pSplitURLOutput sp;
-    SplitURL(url, &sp);
+
+    if (SplitURL(url, &sp))
+    {
+        DisplayError("SplitURL failed");
+        return -1;
+    }
 
     for (;;)
     {
@@ -140,16 +145,16 @@ static int UOnePRandom(const char *url, const char *username, unsigned int seed,
         // send now
         //DisplayInfo("*********************");
         //DisplayInfo("url: %s", url);
-        if (HTTPPostMethod(url, send_buff, response, 0))
+        if (HTTPPost(url, send_buff, response, 0))
         {
-            DisplayError("HTTPPostMethod failed");
+            DisplayError("HTTPPost failed");
             return -1;
         }
-        DisplayInfo(response);
-        
-        if (FreeHTTPPostMethodBuff(response))
+        //DisplayInfo(response);
+
+        if (FreeHTTPPostBuff(response))
         {
-            DisplayError("FreeHTTPPostMethodBuff failed");
+            DisplayError("FreeHTTPPostBuff failed");
             return -1;
         }
         if (FreeRandomPasswordBuff(password))
@@ -191,20 +196,20 @@ static UOnePList(const char *url, const char *username, const pStringHeader p_he
         }
 
         // combined data now
-        sprintf(data_buff, REQUEST, u->username, b64message);
+        sprintf(data_buff, REQUEST, username, b64message);
         sprintf(send_buff, REQUEST_DATA, sp->host, url, strlen(data_buff), data_buff);
 
         // send now
-        if (HTTPPostMethod(url, send_buff, &response, 0))
+        if (HTTPPost(url, send_buff, &response, 0))
         {
-            DisplayError("HTTPPostMethod failed");
+            DisplayError("HTTPPost failed");
             return -1;
         }
 
         DisplayInfo(response);
-        if (FreeHTTPPostMethodBuff(*response))
+        if (FreeHTTPPostBuff(response))
         {
-            DisplayError("FreeHTTPPostMethodBuff failed");
+            DisplayError("FreeHTTPPostBuff failed");
             return -1;
         }
         p = p->next;
@@ -297,12 +302,12 @@ int main(void)
     char *response;
     //DisplayInfo("*********************");
     //DisplayInfo("url: %s", url);
-    HTTPPostMethod(&response, url, send_buff, 0);
+    HTTPPost(&response, url, send_buff, 0);
     DisplayInfo(response);
 
     FreeRandomPasswordBuff(password);
     FreeSplitURLBuff(sp);
-    FreeHTTPPostMethodBuff(response);
+    FreeHTTPPostBuff(response);
 
     // test match model
     pMatchOutput mt;

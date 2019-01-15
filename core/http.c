@@ -132,20 +132,20 @@ static int TCPConnectClose(int socket)
     return 0;
 }
 
-int FreeHTTPPostMethodBuff(char *p)
+int FreeHTTPPostBuff(char *p)
 {
     free(p);
     return 0;
 }
 
-size_t HTTPPostMethod(const char *url, const char *request, char **response, int debug_level)
+size_t HTTPPost(const char *url, const char *request, char **response, int debug_level)
 {
     /*
      * use the HTTP post method post 'request_data'
      * then, return the response_data size
      */
 
-    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPostMethod");
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPost");
 
     // from ../core/str.h
     extern int GetRandomPassword(char *rebuf, const pInput process_result);

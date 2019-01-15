@@ -9,16 +9,15 @@ extern int DisplayInfo(const char *fmtstring, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmtstring, ...);
 
-extern int NumberOfRowsFile(const char *path, size_t *num);
+extern int GetFileLines(const char *path, size_t *num);
 extern int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start, size_t end);
-extern int FreeProcessFileBuff(pStringHeader p);
 
 int TaskAssignmentForFile(const char *path, pStringHeader *output, int flag, const int process_num, const int thread_num, const int serial_num)
 {
     // multi process and thread
     // assign task for each thread
     size_t num;
-    if (NumberOfRowsFile(path, &num))
+    if (GetFileLines(path, &num))
     {
         DisplayError("Count file's rows failed");
         return -1;
