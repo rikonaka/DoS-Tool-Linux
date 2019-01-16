@@ -104,6 +104,11 @@ size_t Base64Encode(char **b64message, const unsigned char *buffer, size_t lengt
     return strlen(*b64message);
 }
 
+void FreeBase64(char *b64message)
+{
+    free(b64message);
+}
+
 /*
 int main(void)
 {

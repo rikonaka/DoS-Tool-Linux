@@ -8,10 +8,10 @@
 
 #include "main.h"
 
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
-extern int DisplayInfo(const char *fmtstring, ...);
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmtstring, ...);
+extern int DisplayError(const char *fmt, ...);
 
 static int DisplayUsage(void)
 {
@@ -317,17 +317,22 @@ static int Run_Attack_GuessUsernamePassword(pInput input)
     // split the big function
     extern int Attack_GuessUsernamePassword(pInput input);
     pthread_t job_tid;
-
-    int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, input);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", job_tid);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
-
-    if (ret != 0)
+    int ti;
+    for (ti = 0; ti < input->max_thread; ti++)
     {
-        DisplayError("Create pthread failed");
-        return -1;
+        input->serial_num += ti;
+        input->seed += ti;
+        int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, input);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", job_tid);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
+
+        if (ret != 0)
+        {
+            DisplayError("Create pthread failed");
+            return -1;
+        }
+        pthread_join(job_tid, NULL);
     }
-    pthread_join(job_tid, NULL);
     return 0;
 }
 
@@ -341,7 +346,7 @@ static int StartAttackJob(const pInput input)
 {
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackJob");
     pid_t job_pid;
-    int pi, ti;
+    int pi;
     for (pi = 0; pi < input->max_process; pi++)
     {
         DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pi value: %d", pi);
@@ -350,24 +355,20 @@ static int StartAttackJob(const pInput input)
         if (job_pid == 0)
         {
             /* child process */
-            for (ti = 0; ti < input->max_thread; ti++)
+            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "attack_mode value: %d", input->attack_mode);
+            switch (input->attack_mode)
             {
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ti value: %d", ti);
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "attack_mode value: %d", input->attack_mode);
-                input->serial_num = ti + pi;
-                switch (input->attack_mode)
-                {
-                case GUESS_USERNAME_PASSWORD:
-                    // get the random seed
-                    input->seed = ti + pi;
-                    Run_Attack_GuessUsernamePassword(input);
-                    break;
+            case GUESS_USERNAME_PASSWORD:
+                // get the random seed
+                input->serial_num = pi;
+                input->seed = pi;
+                Run_Attack_GuessUsernamePassword(input);
+                break;
 
-                case SYN_FLOOD_ATTACK:
-                    /// not finish
-                    Run_Attack_SYNFlood(input);
-                    break;
-                }
+            case SYN_FLOOD_ATTACK:
+                /// not finish
+                Run_Attack_SYNFlood(input);
+                break;
             }
         }
         else if (job_pid < 0)
@@ -399,7 +400,7 @@ static int StartAttackJob(const pInput input)
     return 0;
 }
 
-static InitInput(pInput *p)
+static int InitInput(pInput *p)
 {
     // make sure the buff is clean
     (*p) = (pInput)malloc(sizeof(Input));

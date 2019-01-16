@@ -15,19 +15,16 @@
 #define DEBUG_LEVEL_1 1 // show the importance value
 #define DEBUG_LEVEL_2 2 // show the not importance value
 #define DEBUG_LEVEL_3 3 // show function start, end
-#define MAX_LOG_BUF_SIZE 100
 
 #define MAX_USERNAME_LENGTH 16
 #define MAX_PASSWORD_LENGTH 16
 #define MAX_USERNAME_PATH_LENGTH 100
 #define MAX_PASSWORD_PATH_LENGTH 100
 #define MAX_URL_LENGTH 100
-#define MAX_SEND_DATA_SIZE 2048
-#define MAX_RECEIVE_DATA_SIZE 2048
 #define MAX_MODEL_TYPE_LENGTH 20
-#define SMALL_BUFFER_SIZE 32
-#define MIDDLE_BUFFER_SIZE 128
-#define BIG_BUFFER_SIZE 1024
+#define COMMON_BUFFER_SIZE 16
+#define SEND_DATA_SIZE 2048
+#define RECEIVE_DATA_SIZE 2048
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF

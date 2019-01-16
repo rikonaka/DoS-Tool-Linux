@@ -4,10 +4,10 @@
 
 #include "../main.h"
 
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
-extern int DisplayInfo(const char *fmtstring, ...);
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmtstring, ...);
+extern int DisplayError(const char *fmt, ...);
 
 extern int GetFileLines(const char *path, size_t *num);
 extern int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start, size_t end);

@@ -11,7 +11,7 @@
 #define BUFFER_SIZE 1024
 #endif
 
-void debug(const int debugflag, const int debuglevel, const char *fmtstring, ...)
+void debug(const int debugflag, const int debuglevel, const char *fmt, ...)
 {
     /*
      * debug(1, 2, "string");
@@ -24,9 +24,9 @@ void debug(const int debugflag, const int debuglevel, const char *fmtstring, ...
     char *buf = (char *)malloc(BUFFER_SIZE);
     //int done;
 
-    va_start(arg, fmtstring);
+    va_start(arg, fmt);
     // Magic here
-    if (vsprintf(buf, fmtstring, arg) > 0)
+    if (vsprintf(buf, fmt, arg) > 0)
     {
         if (debugflag != 0)
         {
@@ -37,8 +37,8 @@ void debug(const int debugflag, const int debuglevel, const char *fmtstring, ...
         }
     }
     // Original _printf code
-    //done = vfprintf(buf, fmtstring, arg);
-    //done = vfprintf(stdout, fmtstring, arg);
+    //done = vfprintf(buf, fmt, arg);
+    //done = vfprintf(stdout, fmt, arg);
     va_end(arg);
 
     // Original _printf code

@@ -7,17 +7,16 @@
 
 #include "../main.h"
 
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
-extern int DisplayInfo(const char *fmtstring, ...);
-extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmtstring, ...);
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DisplayInfo(const char *fmt, ...);
+extern int DisplayWarning(const char *fmt, ...);
+extern int DisplayError(const char *fmt, ...);
 
-int FreeSplitURLBuff(pSplitURLOutput p)
+void FreeSplitURLBuff(pSplitURLOutput p)
 {
     free(p->host);
     free(p->suffix);
     free(p);
-    return 0;
 }
 
 int SplitURL(const char *url, pSplitURLOutput *output)
@@ -105,10 +104,9 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     return 0;
 }
 
-int FreeRandomPasswordBuff(char *password)
+void FreeRandomPasswordBuff(char *password)
 {
     free(password);
-    return 0;
 }
 
 int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
@@ -131,10 +129,6 @@ int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
     int r_num;
     int i;
 
-    if (seed > 1024)
-    {
-        seed = 0;
-    }
     // srand is here
     srand((int)time(0) + seed);
 
@@ -170,7 +164,7 @@ static int TestStringList(const pStringHeader output)
 }
 */
 
-int FreeProcessFileBuff(pStringHeader p)
+void FreeProcessFileBuff(pStringHeader p)
 {
     pStringNode n = p->next;
     pStringNode n_next = n->next;
@@ -190,16 +184,19 @@ int FreeProcessFileBuff(pStringHeader p)
 
     free(n);
     free(p);
-    return 0;
 }
 
 int GetFileLines(const char *path, size_t *num)
 {
+
+    // count the file lines
+
     FILE *fp = fopen(path, "r");
-    // for count
-    char buff[SMALL_BUFFER_SIZE + 1];
-    char ch;
+    size_t size = (size_t)COMMON_BUFFER_SIZE;
     size_t count = 0;
+    size_t i;
+    char *buff = (char *)malloc(size);
+    char ch;
     if (!fp)
     {
         DisplayError("Error: Can not open the username file");
@@ -207,15 +204,26 @@ int GetFileLines(const char *path, size_t *num)
     }
     while (!feof(fp))
     {
-        // if stack error, change here
-        if (!memset(buff, 0, SMALL_BUFFER_SIZE + 1))
+        ch = fgetc(fp);
+        i = size;
+        if (!memset(buff, 0, size))
         {
             DisplayError("GetFileLines memset failed");
             return -1;
         }
-        ch = fgetc(fp);
         while (ch && ch != '\n' && ch != '\r' && !feof(fp))
         {
+            if (i <= 0)
+            {
+                size += size;
+                i = size;
+                buff = (char *)realloc(buff, size);
+                if (!buff)
+                {
+                    DisplayError("GetFileLines realloc failed");
+                    return -1;
+                }
+            }
             if (!sprintf(buff, "%s%c", buff, ch))
             {
                 DisplayError("GetFileLines sprintf failed");
@@ -223,6 +231,7 @@ int GetFileLines(const char *path, size_t *num)
             }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
+            --i;
         }
 
         if (strlen(buff) > 0)

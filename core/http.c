@@ -11,10 +11,10 @@
 #include "../main.h"
 
 // from ../core/debug.h
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmtstring, ...);
-extern int DisplayInfo(const char *fmtstring, ...);
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmtstring, ...);
+extern int DisplayError(const char *fmt, ...);
 
 static int TCPConnectCreate(const char *host, int port)
 {
@@ -102,10 +102,10 @@ static ssize_t TCPRecv(int socket, char **rebuff)
 
     ssize_t recv_total_size = 0;
     ssize_t recv_size = 0;
-    char *buff = (char *)malloc(MAX_RECEIVE_DATA_SIZE);
+    char *buff = (char *)malloc(RECEIVE_DATA_SIZE);
     for (;;)
     {
-        recv_size = recv(socket, buff, MAX_RECEIVE_DATA_SIZE, 0);
+        recv_size = recv(socket, buff, RECEIVE_DATA_SIZE, 0);
         if (recv_size == -1)
         {
             DisplayError("Tcp recv data failed");
@@ -116,7 +116,7 @@ static ssize_t TCPRecv(int socket, char **rebuff)
             break;
         }
 
-        buff = (char *)realloc(buff, sizeof(buff) + MAX_RECEIVE_DATA_SIZE);
+        buff = (char *)realloc(buff, sizeof(buff) + RECEIVE_DATA_SIZE);
         if (!buff)
         {
             DisplayError("TCPRecv realloc failed");
@@ -137,10 +137,9 @@ static int TCPConnectClose(int socket)
     return 0;
 }
 
-int FreeHTTPPostBuff(char *p)
+void FreeHTTPPostBuff(char *p)
 {
     free(p);
-    return 0;
 }
 
 size_t HTTPPost(const char *url, const char *request, char **response, int debug_level)
@@ -154,7 +153,7 @@ size_t HTTPPost(const char *url, const char *request, char **response, int debug
 
     // from ../core/str.h
     extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern int FreeSplitURLBuff(char *host, char *suffix);
+    extern void FreeSplitURLBuff(char *host, char *suffix);
 
     int sock;
     pSplitURLOutput sp;
