@@ -117,6 +117,11 @@ static ssize_t TCPRecv(int socket, char **rebuff)
         }
 
         buff = (char *)realloc(buff, sizeof(buff) + MAX_RECEIVE_DATA_SIZE);
+        if (!buff)
+        {
+            DisplayError("TCPRecv realloc failed");
+            return -1;
+        }
         recv_total_size += recv_size;
     }
 
@@ -148,15 +153,13 @@ size_t HTTPPost(const char *url, const char *request, char **response, int debug
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPost");
 
     // from ../core/str.h
-    extern int GetRandomPassword(char *rebuf, const pInput process_result);
     extern int SplitURL(const char *url, pSplitURLOutput *output);
     extern int FreeSplitURLBuff(char *host, char *suffix);
 
     int sock;
     pSplitURLOutput sp;
 
-    /* here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space */
-
+    /// here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space
     if (!url || !request)
     {
         DisplayError("url or post_str not find");
@@ -195,5 +198,6 @@ size_t HTTPPost(const char *url, const char *request, char **response, int debug
     /* 4 close */
     TCPConnectClose(sock);
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Exit HttpPostMethod");
+
     return strlen(*response);
 }

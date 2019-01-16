@@ -12,7 +12,7 @@ extern int DisplayError(const char *fmtstring, ...);
 extern int GetFileLines(const char *path, size_t *num);
 extern int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start, size_t end);
 
-int TaskAssignmentForFile(const char *path, pStringHeader *output, int flag, const int process_num, const int thread_num, const int serial_num)
+int TaskAssignmentForFile(const char *path, pStringHeader *output, int flag, const int max_process, const int max_thread, const int serial_num)
 {
     // multi process and thread
     // assign task for each thread
@@ -23,7 +23,7 @@ int TaskAssignmentForFile(const char *path, pStringHeader *output, int flag, con
         return -1;
     }
 
-    size_t cut = (num) / ((size_t)process_num * (size_t)thread_num);
+    size_t cut = (num) / ((size_t)max_process * (size_t)max_thread);
     size_t start = serial_num * cut;
     size_t end = (serial_num + 1) * cut;
 

@@ -68,7 +68,7 @@ size_t Base64Decode(unsigned char **buffer, char *b64message)
     return length;
 }
 
-int Base64Encode(char **b64message, const unsigned char *buffer, size_t length)
+size_t Base64Encode(char **b64message, const unsigned char *buffer, size_t length)
 {
     /*
      * encode a binary safe base64 string 
@@ -101,7 +101,7 @@ int Base64Encode(char **b64message, const unsigned char *buffer, size_t length)
 
     *b64message = (*buffer_ptr).data;
 
-    return 0;
+    return strlen(*b64message);
 }
 
 /*

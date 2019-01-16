@@ -37,9 +37,21 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     char *host_buff = (char *)malloc(sizeof(char));
     char *suffix_buff = (char *)malloc(sizeof(char));
     char *port_buff = (char *)malloc(sizeof(char));
-    memset(host_buff, 0, sizeof(char));
-    memset(suffix_buff, 0, sizeof(char));
-    memset(port_buff, 0, sizeof(char));
+    if (!memset(host_buff, 0, sizeof(char)))
+    {
+        DisplayError("SplitURL memset failed");
+        return -1;
+    }
+    if (!memset(suffix_buff, 0, sizeof(char)))
+    {
+        DisplayError("SplitURL memset failed");
+        return -1;
+    }
+    if (!memset(port_buff, 0, sizeof(char)))
+    {
+        DisplayError("SplitURL memset failed");
+        return -1;
+    }
 
     /* copy the host to host_buff */
     ptmp = (second_slash_position + 1);
@@ -68,7 +80,11 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     else
     {
         /* if can not found the : use the default value */
-        sprintf(port_buff, "%d", PORT_DEFAULT);
+        if (!sprintf(port_buff, "%d", PORT_DEFAULT))
+        {
+            DisplayError("SplitURL sprintf failed");
+            return -1;
+        }
     }
     /* copy the suffix to suffix_buff */
     ptmp = (third_slash_position + 1);
@@ -102,7 +118,16 @@ int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
      */
 
     char *r_password = (char *)malloc(MAX_PASSWORD_LENGTH);
-    memset(r_password, 0, MAX_PASSWORD_LENGTH);
+    if (!r_password)
+    {
+        DisplayError("GetRandomPassword malloc failed");
+        return -1;
+    }
+    if (!memset(r_password, 0, MAX_PASSWORD_LENGTH))
+    {
+        DisplayError("GetRandomPassword memset failed");
+        return -1;
+    }
     int r_num;
     int i;
 
@@ -121,7 +146,11 @@ int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
         r_num = 33 + (int)(rand() % 92);
         if (isprint(r_num))
         {
-            sprintf(r_password, "%s%c", r_password, r_num);
+            if (!sprintf(r_password, "%s%c", r_password, r_num))
+            {
+                DisplayError("GetRandomPassword sprintf failed");
+                return -1;
+            }
         }
     }
     *rebuf = r_password;
@@ -168,7 +197,7 @@ int GetFileLines(const char *path, size_t *num)
 {
     FILE *fp = fopen(path, "r");
     // for count
-    char buff[SMALL_BUFFER_SIZE];
+    char buff[SMALL_BUFFER_SIZE + 1];
     char ch;
     size_t count = 0;
     if (!fp)
@@ -179,11 +208,19 @@ int GetFileLines(const char *path, size_t *num)
     while (!feof(fp))
     {
         // if stack error, change here
-        memset(buff, 0, SMALL_BUFFER_SIZE);
-        ch = fgetc(fp);
-        while (ch != '\n' && ch != '\r' && !feof(fp))
+        if (!memset(buff, 0, SMALL_BUFFER_SIZE + 1))
         {
-            sprintf(buff, "%s%c", buff, ch);
+            DisplayError("GetFileLines memset failed");
+            return -1;
+        }
+        ch = fgetc(fp);
+        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
+        {
+            if (!sprintf(buff, "%s%c", buff, ch))
+            {
+                DisplayError("GetFileLines sprintf failed");
+                return -1;
+            }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
         }
@@ -193,7 +230,11 @@ int GetFileLines(const char *path, size_t *num)
             ++count;
         }
     }
-    fclose(fp);
+    if (fclose(fp))
+    {
+        DisplayError("GetFileLines fclose failed");
+        return -1;
+    }
     *num = count;
     return 0;
 }
@@ -214,10 +255,15 @@ int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start,
     }
 
     (*output) = (pStringHeader)malloc(sizeof(StringHeader));
+    if (!(*output))
+    {
+        DisplayError("ProcessFile malloc failed");
+        return -1;
+    }
     pStringNode u_list;
     (*output)->length = 0;
     (*output)->next = NULL;
-    char buff[LENGTH];
+    char buff[LENGTH + 1];
     char ch;
     size_t u_length = 0;
     size_t count = 0;
@@ -231,11 +277,19 @@ int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start,
     while (!feof(fp))
     {
         // if stack error, change here
-        memset(buff, 0, LENGTH);
-        ch = fgetc(fp);
-        while (ch != '\n' && ch != '\r' && !feof(fp))
+        if (!memset(buff, 0, LENGTH + 1))
         {
-            sprintf(buff, "%s%c", buff, ch);
+            DisplayError("ProcessFile memset failed");
+            return -1;
+        }
+        ch = fgetc(fp);
+        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
+        {
+            if (!sprintf(buff, "%s%c", buff, ch))
+            {
+                DisplayError("ProcessFile sprintf failed");
+                return -1;
+            }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
         }
@@ -243,24 +297,39 @@ int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start,
         u_length = strlen(buff);
         if (u_length > 0)
         {
-            if ((*output)->length > start && (*output)->length < end)
+            if ((*output)->length >= start && (*output)->length < end)
             {
                 u_list = (pStringNode)malloc(sizeof(StringNode));
+                if (!u_list)
+                {
+                    DisplayError("ProcessFile malloc failed");
+                    return -1;
+                }
                 u_list->next = (*output)->next;
                 (*output)->next = u_list;
                 //DisplayInfo("%ld", u_length);
                 // make a space for /0
                 u_list->str = (char *)malloc(u_length + 1);
-                memset(u_list->str, 0, u_length + 1);
-                strncpy(u_list->str, buff, u_length);
+                if (!memset(u_list->str, 0, u_length + 1))
+                {
+                    DisplayError("ProcessFile memset failed");
+                    return -1;
+                }
+                if (!strncpy(u_list->str, buff, u_length))
+                {
+                    DisplayError("ProcessFile strncpy failed");
+                    return -1;
+                }
                 ++((*output)->length);
             }
             ++count;
-            //DisplayInfo("%s", u_list->username);
-            //DisplayInfo("%d", (*output)->length);
         }
     }
-    fclose(fp);
+    if (fclose(fp))
+    {
+        DisplayError("ProcessFile fclose failed");
+        return -1;
+    }
     return 0;
 }
 
