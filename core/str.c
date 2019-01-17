@@ -152,9 +152,9 @@ int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
 }
 
 /*
-static int TestStringList(const pStringHeader output)
+static int TestStringList(const pStrHeader output)
 {
-    pStringNode p = output->next;
+    pStrNode p = output->next;
     DisplayInfo("Linked list length: %d", output->length);
     while (p)
     {
@@ -164,10 +164,10 @@ static int TestStringList(const pStringHeader output)
 }
 */
 
-void FreeProcessFileBuff(pStringHeader p)
+void FreeProcessFileBuff(pStrHeader p)
 {
-    pStringNode n = p->next;
-    pStringNode n_next = n->next;
+    pStrNode n = p->next;
+    pStrNode n_next = n->next;
     while (n_next)
     {
         //DisplayInfo("Free <%s> space now", n->username);
@@ -248,7 +248,7 @@ int GetFileLines(const char *path, size_t *num)
     return 0;
 }
 
-int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start, size_t end)
+int ProcessFile(const char *path, pStrHeader *output, int flag, size_t start, size_t end)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -263,13 +263,13 @@ int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start,
         LENGTH = MAX_USERNAME_LENGTH;
     }
 
-    (*output) = (pStringHeader)malloc(sizeof(StringHeader));
+    (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
         DisplayError("ProcessFile malloc failed");
         return -1;
     }
-    pStringNode u_list;
+    pStrNode u_list;
     (*output)->length = 0;
     (*output)->next = NULL;
     char buff[LENGTH + 1];
@@ -308,7 +308,7 @@ int ProcessFile(const char *path, pStringHeader *output, int flag, size_t start,
         {
             if ((*output)->length >= start && (*output)->length < end)
             {
-                u_list = (pStringNode)malloc(sizeof(StringNode));
+                u_list = (pStrNode)malloc(sizeof(StrNode));
                 if (!u_list)
                 {
                     DisplayError("ProcessFile malloc failed");
@@ -359,7 +359,7 @@ int main(void)
     FreeRandomPasswordBuff(random);
 
     char *path = "/home/hero/Documents/Code/DoS-Tool/wordlists/others/best1050.txt";
-    pStringHeader p;
+    pStrHeader p;
     ProcessFile(path, &p, 0);
     //TestCharList(p);
     FreeProcessFileBuff(p);

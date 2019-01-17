@@ -17,7 +17,9 @@ extern int GetRandomPassword(char **rebuf, unsigned int seed, const int length);
 extern int SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomPasswordBuff(char *password);
 extern void FreeSplitURLBuff(pSplitURLOutput p);
-extern void FreeProcessFileBuff(pStringHeader p);
+extern void FreeProcessFileBuff(pStrHeader p);
+extern int ProcessFile(const char *path, pStrHeader *output, int flag, size_t start, size_t end);
+extern int GetFileLines(const char *path, size_t *num);
 
 // from ../core/http.c
 extern size_t HTTPPost(const char *url, const char *request, char **response, int debug_level);
@@ -28,12 +30,52 @@ extern size_t Base64Encode(char **b64message, const unsigned char *buffer, size_
 extern size_t Base64Decode(unsigned char **buffer, char *b64message);
 extern void FreeBase64(char *b64message);
 
-// from ../core/dispatch.c
-extern int TaskAssignmentForFile(const char *path, pStringHeader *output, int flag, const int max_process, const int max_thread, const int serial_num);
-
 char *REQUEST;
 char *REQUEST_DATA;
 char *SUCCESS_OR_NOT;
+
+static int TestMultiProcessControl(const int debug_level, const pStrHeader p)
+{
+    // test the file process result
+    if (debug_level < 2)
+    {
+        return 0;
+    }
+    pStrNode t = p->next;
+    while (t)
+    {
+        DisplayInfo("%s", t->str);
+        t = t->next;
+    }
+    return 0;
+}
+
+static int MultiProcessControl(const char *path, pStrHeader *output, int flag, const int max_process, const int max_thread, const int serial_num)
+{
+    // multi process and thread
+    // assign task for each thread
+
+    size_t num;
+
+    if (GetFileLines(path, &num) == -1)
+    {
+        // get the file lines count
+        DisplayError("MultiProcessControl GetFileLines failed");
+        return -1;
+    }
+
+    size_t cut = (num) / ((size_t)max_process * (size_t)max_thread);
+    size_t start = serial_num * cut;
+    size_t end = (serial_num + 1) * cut;
+
+    if (ProcessFile(path, output, flag, start, end) == -1)
+    {
+        DisplayError("Processing file failed");
+        return -1;
+    }
+
+    return 0;
+}
 
 static void FreeMatchModel(pMatchOutput p)
 {
@@ -85,11 +127,11 @@ static int CheckResponse(char *response)
     return -1;
 }
 
-static int UListPList(char *url, pStringHeader u_header, pStringHeader p_header, const int debug_level)
+static int UListPList(char *url, pStrHeader u_header, pStrHeader p_header, const int debug_level)
 {
     // username is a list and password is list too
-    pStringNode u = u_header->next;
-    pStringNode p;
+    pStrNode u = u_header->next;
+    pStrNode p;
     char *b64message;
     char *response;
     char request[strlen(REQUEST) + SEND_DATA_SIZE + 1];
@@ -233,9 +275,9 @@ static int UOnePRandom(const char *url, const char *username, unsigned int seed,
     return 0;
 }
 
-static int UOnePList(const char *url, const char *username, const pStringHeader p_header, const int debug_level)
+static int UOnePList(const char *url, const char *username, const pStrHeader p_header, const int debug_level)
 {
-    pStringNode p = p_header->next;
+    pStrNode p = p_header->next;
     char *b64message;
     char *response;
     char request[strlen(REQUEST) + SEND_DATA_SIZE + 1];
@@ -318,21 +360,22 @@ int Attack_GuessUsernamePassword(pInput input)
     if (strlen(input->username_path) > 0)
     {
         // if path existed, ignore the usename
-        pStringHeader u_header;
-
-        if (TaskAssignmentForFile(input->username_path, &u_header, 0, input->max_process, input->max_thread, input->serial_num) == -1)
+        pStrHeader u_header;
+        if (MultiProcessControl(input->username_path, &u_header, 0, input->max_process, input->max_thread, input->serial_num) == -1)
         {
-            DisplayError("TaskAssignmentForFile failed");
+            DisplayError("MultiProcessControl failed");
             return -1;
         }
+        TestMultiProcessControl(input->debug_level, u_header);
         if (strlen(input->password_path) > 0)
         {
-            pStringHeader p_header;
-            if (TaskAssignmentForFile(input->password_path, &p_header, 1, input->max_process, input->max_thread, input->serial_num) == -1)
+            pStrHeader p_header;
+            if (MultiProcessControl(input->password_path, &p_header, 1, input->max_process, input->max_thread, input->serial_num) == -1)
             {
-                DisplayError("TaskAssignmentForFile failed");
+                DisplayError("MultiProcessControl failed");
                 return -1;
             }
+            TestMultiProcessControl(input->debug_level, p_header);
             if (UListPList(input->address, u_header, p_header, input->debug_level) == -1)
             {
                 DisplayError("UListPList failed");
@@ -348,17 +391,20 @@ int Attack_GuessUsernamePassword(pInput input)
         // use one username
         if (strlen(input->password_path) > 0)
         {
-            pStringHeader p_header;
-            if (TaskAssignmentForFile(input->password_path, &p_header, 1, input->max_process, input->max_thread, input->serial_num) == -1)
+            pStrHeader p_header;
+            if (MultiProcessControl(input->password_path, &p_header, 1, input->max_process, input->max_thread, input->serial_num) == -1)
             {
-                DisplayError("TaskAssignmentForFile failed");
+                DisplayError("MultiProcessControl failed");
                 return -1;
             }
+            TestMultiProcessControl(input->debug_level, p_header);
+            /*
             if (UOnePList(input->address, input->username, p_header, input->debug_level) == -1)
             {
                 DisplayError("UOnePList failed");
                 return -1;
             }
+            */
             FreeProcessFileBuff(p_header);
         }
         else
@@ -379,7 +425,6 @@ int Attack_GuessUsernamePassword(pInput input)
     FreeMatchModel(mt);
     return 0;
 }
-
 
 /*
 int main(void)

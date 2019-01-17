@@ -66,16 +66,16 @@ typedef struct split_url_output
     int port;
 } SplitURLOutput, *pSplitURLOutput;
 
-typedef struct string_node
+typedef struct str_node
 {
-    struct string_node *next;
+    struct str_node *next;
     char *str;
-} StringNode, *pStringNode;
+} StrNode, *pStrNode;
 
-typedef struct string_header
+typedef struct str_header
 {
-    struct string_node *next;
+    struct str_node *next;
     size_t length;
-} StringHeader, *pStringHeader;
+} StrHeader, *pStrHeader;
 
 #endif
