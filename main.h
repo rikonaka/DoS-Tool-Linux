@@ -1,12 +1,17 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
-/*
-    0  - guess the web passwd (advanced)
-    1  - syn flood attack
-*/
+// 0  - guess the web passwd (advanced)
+// 1  - syn flood attack
 #define GUESS_USERNAME_PASSWORD 0
 #define SYN_FLOOD_ATTACK 1
+
+// username from one string and password from linked list
+#define GUESS_U1PL 0
+// username from one string buf password from random generate
+#define GUESS_U1PR 1
+// list and list
+#define GUESS_ULPL 2
 
 #define DISABLE_SIP 0
 #define ENABLE_SIP 1
@@ -49,6 +54,8 @@ typedef struct user_input
     // field with program
     int seed;
     int serial_num;
+    int guess_attack_type;
+    struct guess_attack_use *gau;
     // char value
     char address[MAX_URL_LENGTH];
     char username[MAX_USERNAME_LENGTH];
@@ -77,5 +84,12 @@ typedef struct str_header
     struct str_node *next;
     size_t length;
 } StrHeader, *pStrHeader;
+
+typedef struct guess_attack_use
+{
+    // if not use the path file, set NULL
+    struct str_header *u_header;
+    struct str_header *p_header;
+} GuessAttackUse, *pGuessAttackUse;
 
 #endif

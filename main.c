@@ -59,8 +59,8 @@ static int CheckInputCompliance(const pInput input)
      * like -U must use with -P .etc
      * 
      * return:
-     * 0 - check pass
-     * 1 - error
+     * 0  - check pass
+     * -1 - error
      */
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter CheckInputCompliance");
@@ -312,72 +312,78 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
     return 0;
 }
 
-static int Run_Attack_GuessUsernamePassword(pInput input)
-{
-    // split the big function
-    extern int Attack_GuessUsernamePassword(pInput input);
-    pthread_t job_tid;
-    int ti;
-    for (ti = 0; ti < input->max_thread; ti++)
-    {
-        input->serial_num += ti;
-        input->seed += ti;
-        int ret = pthread_create(&job_tid, NULL, (void *)Attack_GuessUsernamePassword, input);
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", job_tid);
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
-
-        if (ret != 0)
-        {
-            DisplayError("Create pthread failed");
-            return -1;
-        }
-        pthread_join(job_tid, NULL);
-    }
-    return 0;
-}
-
-static int Run_Attack_SYNFlood(pInput input)
+static int StartSYNFlood(pInput input)
 {
     // run function in thread
     return 0;
 }
 
-static int StartAttackJob(const pInput input)
+static int StartGuess(const pInput input)
 {
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackJob");
-    pid_t job_pid;
-    int pi;
-    for (pi = 0; pi < input->max_process; pi++)
-    {
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pi value: %d", pi);
-        job_pid = fork();
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_pid value: %d", job_pid);
-        if (job_pid == 0)
-        {
-            /* child process */
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "attack_mode value: %d", input->attack_mode);
-            switch (input->attack_mode)
-            {
-            case GUESS_USERNAME_PASSWORD:
-                // get the random seed
-                input->serial_num = pi;
-                input->seed = pi;
-                Run_Attack_GuessUsernamePassword(input);
-                break;
+    extern void FreeProcessFileBuff(pStrHeader p);
+    extern int ProcessFile(const char *path, pStrHeader *output, int flag);
+    extern int GuessAttack(pInput input);
+    pid_t pid;
+    pthread_t tid;
+    int i, j, ret;
+    // store the linked list if use the path file
+    pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
+    gau->u_header = NULL;
+    gau->p_header = NULL;
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackProcess");
 
-            case SYN_FLOOD_ATTACK:
-                /// not finish
-                Run_Attack_SYNFlood(input);
-                break;
+    // we are not allowed the username from linked list but password from random string
+    if (strlen(input->password_path) > 0)
+    {
+        ProcessFile(input->password_path, &(gau->p_header), 1);
+        if (strlen(input->username_path) > 0)
+        {
+            ProcessFile(input->username_path, &(gau->u_header), 0);
+            input->guess_attack_type = GUESS_ULPL;
+        }
+        else
+        {
+            input->guess_attack_type = GUESS_U1PL;
+        }
+    }
+    else
+    {
+        input->guess_attack_type = GUESS_U1PR;
+    }
+
+    input->gau = gau;
+    for (i = 0; i < input->max_process; i++)
+    {
+        pid = fork();
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid value: %d", pid);
+        if (pid == 0)
+        {
+            // child process
+            for (j = 0; j < input->max_thread; j++)
+            {
+                input->serial_num = (i * input->max_thread) + j;
+                input->seed = i + j;
+
+                ret = pthread_create(&tid, NULL, (void *)GuessAttack, input);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", tid);
+                if (ret != 0)
+                {
+                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
+                    DisplayError("Create pthread failed");
+                    return -1;
+                }
+                //pthread_detach(tid);
+                //pthread_join(tid, NULL);
             }
         }
-        else if (job_pid < 0)
+        else if (pid < 0)
         {
             // Error now
             DisplayError("Create process failed");
         }
         else
         {
+            /*
             // Father process
             int wait_val;
             int child_id;
@@ -393,10 +399,20 @@ static int StartAttackJob(const pInput input)
                 // sleep() for test
                 //sleep(1);
             }
+            */
         }
     }
-
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackJob");
+    sleep(10);
+    if (gau->u_header)
+    {
+        FreeProcessFileBuff(gau->u_header);
+    }
+    if (gau->p_header)
+    {
+        FreeProcessFileBuff(gau->p_header);
+    }
+    free(gau);
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
     return 0;
 }
 
@@ -471,40 +487,48 @@ int main(int argc, char *argv[])
 
     pInput input;
 
-    if (InitInput(&input))
+    if (InitInput(&input) == -1)
     {
         DisplayError("Init the input failed");
         return -1;
     }
 
     // processing the user input data
-    if (!ProcessInput(argc, argv, input))
+    if (ProcessInput(argc, argv, input) == -1)
     {
-        //DisplayInfo("Running...");
-        //DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
 
-        if (input->debug_level > 0)
-        {
-            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Sleep 2s for debug...");
-            sleep(2);
-        }
-
-        if (!CheckInputCompliance(input))
-        {
-            /* process user input ready, start attack now */
-            StartAttackJob(input);
-        }
-        else
-        {
-            DisplayError("Check compliance failed, please check your input");
-            DisplayUsage();
-            return -1;
-        }
-    }
-    else
-    {
         DisplayError("Please check you input");
         DisplayUsage();
+        return -1;
+    }
+
+    DisplayInfo("Running...");
+    DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
+
+    if (CheckInputCompliance(input) == -1)
+    {
+        // process user input ready, start attack now
+        DisplayError("Check compliance failed, please check your input");
+        DisplayUsage();
+        return -1;
+    }
+
+    switch (input->attack_mode)
+    {
+    case GUESS_USERNAME_PASSWORD:
+        if (StartGuess(input) == -1)
+        {
+            DisplayError("StartGuess failed");
+            return -1;
+        }
+        break;
+    case SYN_FLOOD_ATTACK:
+        if (StartSYNFlood(input) == -1)
+        {
+            DisplayError("StartSYNFlood failed");
+            return -1;
+        }
+        break;
     }
 
     free(input);

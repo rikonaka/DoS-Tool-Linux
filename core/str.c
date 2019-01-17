@@ -186,69 +186,7 @@ void FreeProcessFileBuff(pStrHeader p)
     free(p);
 }
 
-int GetFileLines(const char *path, size_t *num)
-{
-
-    // count the file lines
-
-    FILE *fp = fopen(path, "r");
-    size_t size = (size_t)COMMON_BUFFER_SIZE;
-    size_t count = 0;
-    size_t i;
-    char *buff = (char *)malloc(size);
-    char ch;
-    if (!fp)
-    {
-        DisplayError("Error: Can not open the username file");
-        return -1;
-    }
-    while (!feof(fp))
-    {
-        ch = fgetc(fp);
-        i = size;
-        if (!memset(buff, 0, size))
-        {
-            DisplayError("GetFileLines memset failed");
-            return -1;
-        }
-        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
-        {
-            if (i <= 0)
-            {
-                size += size;
-                i = size;
-                buff = (char *)realloc(buff, size);
-                if (!buff)
-                {
-                    DisplayError("GetFileLines realloc failed");
-                    return -1;
-                }
-            }
-            if (!sprintf(buff, "%s%c", buff, ch))
-            {
-                DisplayError("GetFileLines sprintf failed");
-                return -1;
-            }
-            //DisplayInfo("%c", ch);
-            ch = fgetc(fp);
-            --i;
-        }
-
-        if (strlen(buff) > 0)
-        {
-            ++count;
-        }
-    }
-    if (fclose(fp))
-    {
-        DisplayError("GetFileLines fclose failed");
-        return -1;
-    }
-    *num = count;
-    return 0;
-}
-
-int ProcessFile(const char *path, pStrHeader *output, int flag, size_t start, size_t end)
+int ProcessFile(const char *path, pStrHeader *output, int flag)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -306,31 +244,28 @@ int ProcessFile(const char *path, pStrHeader *output, int flag, size_t start, si
         u_length = strlen(buff);
         if (u_length > 0)
         {
-            if ((*output)->length >= start && (*output)->length < end)
+            u_list = (pStrNode)malloc(sizeof(StrNode));
+            if (!u_list)
             {
-                u_list = (pStrNode)malloc(sizeof(StrNode));
-                if (!u_list)
-                {
-                    DisplayError("ProcessFile malloc failed");
-                    return -1;
-                }
-                u_list->next = (*output)->next;
-                (*output)->next = u_list;
-                //DisplayInfo("%ld", u_length);
-                // make a space for /0
-                u_list->str = (char *)malloc(u_length + 1);
-                if (!memset(u_list->str, 0, u_length + 1))
-                {
-                    DisplayError("ProcessFile memset failed");
-                    return -1;
-                }
-                if (!strncpy(u_list->str, buff, u_length))
-                {
-                    DisplayError("ProcessFile strncpy failed");
-                    return -1;
-                }
-                ++((*output)->length);
+                DisplayError("ProcessFile malloc failed");
+                return -1;
             }
+            u_list->next = (*output)->next;
+            (*output)->next = u_list;
+            //DisplayInfo("%ld", u_length);
+            // make a space for /0
+            u_list->str = (char *)malloc(u_length + 1);
+            if (!memset(u_list->str, 0, u_length + 1))
+            {
+                DisplayError("ProcessFile memset failed");
+                return -1;
+            }
+            if (!strncpy(u_list->str, buff, u_length))
+            {
+                DisplayError("ProcessFile strncpy failed");
+                return -1;
+            }
+            ++((*output)->length);
             ++count;
         }
     }
