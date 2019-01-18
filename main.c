@@ -378,6 +378,10 @@ static int StartGuess(const pInput input)
         DisplayInfo("Response length is %d", length);
         return 0;
     }
+    else if (input->watch_length > 0)
+    {
+        input->guess_attack_type = GUESS_LENGTH;
+    }
     else if (strlen(input->password_path) > 0)
     {
         ProcessFile(input->password_path, &(gau->p_header), 1);
@@ -503,6 +507,7 @@ static int InitInput(pInput *p)
     (*p)->debug_level = DEBUG_LEVEL_DEFAULT;
     (*p)->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
     (*p)->random_sip_address = RANDOM_SIP_DEFAULT;
+    (*p)->watch_length = 0;
     if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
     {
         DisplayError("Init input strncpy failed");

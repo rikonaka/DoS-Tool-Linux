@@ -32,7 +32,12 @@ extern void FreeBase64(char *b64message);
 
 char *REQUEST;
 char *REQUEST_DATA;
-char *SUCCESS_OR_NOT;
+char *SUCCESS_MODEL;
+
+int CHECK = CheckModel;
+char *RESPONSE;
+int RESPONSE_LENGTH = 0;
+int WATCH_LENGTH = 0;
 
 static void FreeMatchModel(pMatchOutput p)
 {
@@ -71,14 +76,25 @@ static int MatchModel(pMatchOutput *output, const char *input)
     return 0;
 }
 
-static int CheckResponse(char *response)
+static int CheckResponse(void)
 {
-    // if SUCCESS_OR_NOT in the respoonse, we get the right password
+    // if SUCCESS_MODEL in the respoonse, we get the right password
 
-    if (strstr(response, SUCCESS_OR_NOT))
+    if (CHECK == CheckModel)
     {
-        DisplayInfo("Found the password");
-        return 0;
+        if (strstr(RESPONSE, SUCCESS_MODEL))
+        {
+            DisplayInfo("Found the password");
+            return 0;
+        }
+    }
+    else if (CHECK == CheckLength)
+    {
+        if (WATCH_LENGTH == RESPONSE_LENGTH)
+        {
+            DisplayInfo("Found the password");
+            return 0;
+        }
     }
 
     return -1;
@@ -181,7 +197,16 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
 
             // for debug use
             DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
-            if (CheckResponse(response) == 0)
+            if (CHECK == CheckLength)
+            {
+                RESPONSE_LENGTH = strlen(response);
+            }
+            else if (CHECK == CheckModel)
+            {
+                RESPONSE = response;
+            }
+            // now check
+            if (CheckResponse() == 0)
             {
                 DisplayInfo("Username: %s - Password: %s", us->str, p->str);
                 return 0;
@@ -256,7 +281,15 @@ static int UOnePRandom(pInput input)
         }
         // for debug
         DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
-        if (CheckResponse(response) == 0)
+        if (CHECK == CheckLength)
+        {
+            RESPONSE_LENGTH = strlen(response);
+        }
+        else if (CHECK == CheckModel)
+        {
+            RESPONSE = response;
+        }
+        if (CheckResponse() == 0)
         {
             DisplayInfo("Username: %s - Password: %s", input->username, password);
             return 0;
@@ -335,7 +368,15 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
         }
 
         DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
-        if (CheckResponse(response) == 0)
+        if (CHECK == CheckLength)
+        {
+            RESPONSE_LENGTH = strlen(response);
+        }
+        else if (CHECK == CheckModel)
+        {
+            RESPONSE = response;
+        }
+        if (CheckResponse() == 0)
         {
             DisplayInfo("Username: %s - Password: %s", input->username, ps->str);
             return 0;
@@ -420,9 +461,18 @@ int GuessAttack(pInput input)
     }
     REQUEST = mt->request;
     REQUEST_DATA = mt->request_data;
-    SUCCESS_OR_NOT = mt->success_or_not;
+    SUCCESS_MODEL = mt->success_or_not;
 
     DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "serial_num: %d", input->serial_num);
+    if (input->guess_attack_type == GUESS_LENGTH)
+    {
+        CHECK = CheckLength;
+        WATCH_LENGTH = input->watch_length;
+    }
+    else
+    {
+        CHECK = CheckModel;
+    }
 
     if (input->guess_attack_type == GUESS_GET_RESPONSE_LENGTH)
     {

@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define GET_RANDOM_USERNAME 1
-#define GET_RANDOM_PASSWORD 2
+#define CheckModel 0
+#define CheckLength 1
 
 char *FEIXUN_FWR_604H_REQUEST = "POST /goform/formLogin HTTP/1.1\r\n"
                                 "Host: %s\r\n"

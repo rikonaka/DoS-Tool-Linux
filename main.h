@@ -14,6 +14,8 @@
 #define GUESS_ULPL 2
 // get the return value length
 #define GUESS_GET_RESPONSE_LENGTH 3
+// use the response length judge the password is right or not
+#define GUESS_LENGTH 4
 
 #define DISABLE_SIP 0
 #define ENABLE_SIP 1
