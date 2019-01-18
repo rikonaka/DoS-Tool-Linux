@@ -20,12 +20,12 @@ static int DisplayUsage(void)
      */
     char *usage = "\n"
                   "Usage:   dostool [option]\n"
-                  "Example: ./dostool -a 0 -u \"JayChou\" -i \"http:\\\\192,168.1.1:80/login.asp\"\n"
-                  "         ./dostool -a 0 -U \"/home/test/username.txt\" -P \"/home/test/password.txt\"\n"
-                  "         ./dostool -a 0 -u \"JayChou\" -P \"/home/test/password.txt\"\n"
-                  "         ./dostool -a 0 -P \"/home/test/password.txt\"\n"
+                  "Example: ./dostool -a 0 -u \"admin\" -i \"http:\\\\192,168.1.1:80/login.asp\"\n"
+                  "         ./dostool -a 0 -U \"/path/username.txt\" -P \"/path/password.txt\"\n"
+                  "         ./dostool -a 0 -u \"admin\" -P \"/path/password.txt\"\n"
+                  "         ./dostool -a 0 -P \"/path/password.txt\"\n"
                   "         ./dostool -a 1 -i \"192.168.1.1:80\"\n"
-                  "         -i \"http:\\\\192,168.1.1:80/login.asp\"\n\n"
+                  "         -i \"http:\\\\192.168.1.1:80/login.asp\"\n\n"
                   "         -a    Indicate attack mode\n"
                   "               0    Guess the web password\n"
                   "               1    Syn flood attack\n\n"
@@ -46,7 +46,9 @@ static int DisplayUsage(void)
                   "               1    enable random source ip address (default)\n\n"
                   "         -m    Type of router\n"
                   "               feixun_fwr_604h not_sure\n\n"
-                  "         -h    Show this message\n";
+                  "         -h    Show this message\n\n"
+                  "         --get-response-length    Get the response length for test\n"
+                  "         --set-watch-length       Indicate a length, if response's length not equal this, return";
 
     printf("%s", usage);
     return 0;
@@ -96,6 +98,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
      */
     int i;
     char *ptmp;
+    char *ptmp2;
 
     for (i = 1; i < argc; i++)
     {
@@ -106,206 +109,236 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
             return -1;
         }
 
-        switch (*(ptmp + 1))
+        ptmp2 = (char *)strstr(++ptmp, "-");
+        if (ptmp2)
         {
-        case 'a':
-            // int
-            if (argv[++i])
+            // --option
+            if (strstr(ptmp2, "get-response-length"))
             {
-                switch (*argv[i])
+                input->get_response_length = ENABLE;
+            }
+            else if (strstr(ptmp2, "set-watch-length"))
+            {
+                if (argv[++i])
                 {
-                case '0':
-                    input->attack_mode = GUESS_USERNAME_PASSWORD;
-                    break;
-                case '1':
-                    input->attack_mode = SYN_FLOOD_ATTACK;
-                    break;
-                default:
-                    DisplayWarning("Value of the -a parameter is not allowed, use default value now");
+                    input->get_response_length = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayError("Can not found value of --set-watch-length parameter");
+                    return -1;
+                }
+            }
+            else
+            {
+                DisplayError("Illegal input");
+                return -1;
+            }
+        }
+        else
+        {
+            // -option
+            switch (*ptmp)
+            {
+            case 'a':
+                // int
+                if (argv[++i])
+                {
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        input->attack_mode = GUESS_USERNAME_PASSWORD;
+                        break;
+                    case '1':
+                        input->attack_mode = SYN_FLOOD_ATTACK;
+                        break;
+                    default:
+                        DisplayWarning("Value of the -a parameter is not allowed, use default value now");
+                        input->attack_mode = ATTACK_MODE_DEFAULT;
+                        break;
+                    }
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -a parameter, use default value now");
                     input->attack_mode = ATTACK_MODE_DEFAULT;
-                    break;
+                    //return -1;
                 }
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -a parameter, use default value now");
-                input->attack_mode = ATTACK_MODE_DEFAULT;
-                //return -1;
-            }
-            break;
+                break;
 
-        case 'd':
-            // int
-            if (argv[++i])
-            {
-                switch (*argv[i])
+            case 'd':
+                // int
+                if (argv[++i])
                 {
-                case '0':
-                    input->debug_level = DEBUG_OFF;
-                    break;
-                case '1':
-                    input->debug_level = DEBUG_LEVEL_1;
-                    break;
-                case '2':
-                    input->debug_level = DEBUG_LEVEL_2;
-                    break;
-                case '3':
-                    input->debug_level = DEBUG_LEVEL_3;
-                    break;
-                default:
-                    DisplayWarning("Value of -d parameter is not allowed, use default value now");
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        input->debug_level = DEBUG_OFF;
+                        break;
+                    case '1':
+                        input->debug_level = DEBUG_LEVEL_1;
+                        break;
+                    case '2':
+                        input->debug_level = DEBUG_LEVEL_2;
+                        break;
+                    case '3':
+                        input->debug_level = DEBUG_LEVEL_3;
+                        break;
+                    default:
+                        DisplayWarning("Value of -d parameter is not allowed, use default value now");
+                        input->debug_level = DEBUG_LEVEL_DEFAULT;
+                        break;
+                    }
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -d parameter, use default value now");
                     input->debug_level = DEBUG_LEVEL_DEFAULT;
-                    break;
+                    //return -1;
                 }
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -d parameter, use default value now");
-                input->debug_level = DEBUG_LEVEL_DEFAULT;
-                //return -1;
-            }
-            break;
+                break;
 
-        case 'u':
-            // char
-            if (argv[++i])
-            {
-                strncpy(input->username, argv[i], MAX_USERNAME_LENGTH);
-            }
-            else
-            {
-                DisplayError("Can not found value of -u parameter, use the default value now");
-                strncpy(input->username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
-            }
-            break;
-
-        case 'U':
-            // char
-            if (argv[++i])
-            {
-                strncpy(input->username_path, argv[i], MAX_USERNAME_PATH_LENGTH);
-            }
-            else
-            {
-                DisplayError("Can not found value of -U parameter");
-                return -1;
-            }
-            break;
-
-        case 'P':
-            // char
-            if (argv[++i])
-            {
-                strncpy(input->password_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
-            }
-            else
-            {
-                DisplayError("Can not found value of -P parameter");
-                return -1;
-            }
-            break;
-
-        case 't':
-            // int
-            if (argv[++i])
-            {
-                input->max_thread = atoi(argv[i]);
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -t parameter, use default value now");
-                input->max_thread = THREAD_NUM_DEFAULT;
-                //return -1;
-            }
-            break;
-
-        case 'p':
-            // int
-            if (argv[++i])
-            {
-                input->max_process = atoi(argv[i]);
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -p parameter, use default value now");
-                input->max_process = PROCESS_NUM_DEFAULT;
-                //return -1;
-            }
-            break;
-
-        case 'r':
-            // int
-            if (argv[++i])
-            {
-                input->random_password_length = atoi(argv[i]);
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -r parameter, use default value now");
-                input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
-                //return -1;
-            }
-            break;
-
-        case 'i':
-            // char
-            if (argv[++i])
-            {
-                strncpy(input->address, argv[i], MAX_URL_LENGTH);
-            }
-            else
-            {
-                DisplayError("Can not found value of -i parameter");
-                return -1;
-            }
-            break;
-
-        case 'R':
-            // int
-            if (argv[++i])
-            {
-                switch (*argv[i])
+            case 'u':
+                // char
+                if (argv[++i])
                 {
-                case '0':
-                    input->random_sip_address = DISABLE_SIP;
-                    break;
-                case '1':
-                    input->random_sip_address = ENABLE_SIP;
-                    break;
-                default:
-                    DisplayWarning("Value of -R parameter is not allowed, use default value now");
-                    input->random_sip_address = ENABLE_SIP;
-                    break;
+                    strncpy(input->username, argv[i], MAX_USERNAME_LENGTH);
                 }
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -i parameter, use default value now");
-                input->random_sip_address = RANDOM_SIP_DEFAULT;
-            }
-            break;
+                else
+                {
+                    DisplayWarning("Can not found value of -u parameter, use the default value now");
+                    strncpy(input->username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
+                }
+                break;
 
-        case 'm':
-            // char
-            if (argv[++i])
-            {
-                strncpy(input->model_type, argv[i], MAX_MODEL_TYPE_LENGTH);
-            }
-            else
-            {
-                DisplayWarning("Can not found value of -m parameter use default value now");
-                strncpy(input->model_type, (char *)MODEL_TYPE_DEFAULT, MAX_MODEL_TYPE_LENGTH);
-            }
-            break;
+            case 'U':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->username_path, argv[i], MAX_USERNAME_PATH_LENGTH);
+                }
+                else
+                {
+                    DisplayError("Can not found value of -U parameter");
+                    return -1;
+                }
+                break;
 
-        case 'h':
-            DisplayUsage();
-            return 0;
+            case 'P':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->password_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
+                }
+                else
+                {
+                    DisplayError("Can not found value of -P parameter");
+                    return -1;
+                }
+                break;
 
-        default:
-            DisplayError("Please check you input");
-            DisplayUsage();
-            return -1;
+            case 't':
+                // int
+                if (argv[++i])
+                {
+                    input->max_thread = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -t parameter, use default value now");
+                    input->max_thread = THREAD_NUM_DEFAULT;
+                    //return -1;
+                }
+                break;
+
+            case 'p':
+                // int
+                if (argv[++i])
+                {
+                    input->max_process = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -p parameter, use default value now");
+                    input->max_process = PROCESS_NUM_DEFAULT;
+                    //return -1;
+                }
+                break;
+
+            case 'r':
+                // int
+                if (argv[++i])
+                {
+                    input->random_password_length = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -r parameter, use default value now");
+                    input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
+                    //return -1;
+                }
+                break;
+
+            case 'i':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->address, argv[i], MAX_URL_LENGTH);
+                }
+                else
+                {
+                    DisplayError("Can not found value of -i parameter");
+                    return -1;
+                }
+                break;
+
+            case 'R':
+                // int
+                if (argv[++i])
+                {
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        input->random_sip_address = DISABLE_SIP;
+                        break;
+                    case '1':
+                        input->random_sip_address = ENABLE_SIP;
+                        break;
+                    default:
+                        DisplayWarning("Value of -R parameter is not allowed, use default value now");
+                        input->random_sip_address = ENABLE_SIP;
+                        break;
+                    }
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -i parameter, use default value now");
+                    input->random_sip_address = RANDOM_SIP_DEFAULT;
+                }
+                break;
+
+            case 'm':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->model_type, argv[i], MAX_MODEL_TYPE_LENGTH);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -m parameter use default value now");
+                    strncpy(input->model_type, (char *)MODEL_TYPE_DEFAULT, MAX_MODEL_TYPE_LENGTH);
+                }
+                break;
+
+            case 'h':
+                DisplayUsage();
+                return 0;
+
+            default:
+                DisplayError("Please check you input");
+                DisplayUsage();
+                return -1;
+            }
         }
     }
 
@@ -333,7 +366,19 @@ static int StartGuess(const pInput input)
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackProcess");
 
     // we are not allowed the username from linked list but password from random string
-    if (strlen(input->password_path) > 0)
+    if (input->get_response_length == ENABLE)
+    {
+        input->guess_attack_type = GUESS_GET_RESPONSE_LENGTH;
+        int length = GuessAttack(input);
+        if (length == -1)
+        {
+            DisplayError("GuessAttack failed");
+            return -1;
+        }
+        DisplayInfo("Response length is %d", length);
+        return 0;
+    }
+    else if (strlen(input->password_path) > 0)
     {
         ProcessFile(input->password_path, &(gau->p_header), 1);
         if (strlen(input->username_path) > 0)

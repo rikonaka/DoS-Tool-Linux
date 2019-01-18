@@ -348,6 +348,66 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
     return 0;
 }
 
+static int UTestPTest(pInput input, int *length)
+{
+    char *b64message;
+    char *response;
+    char request[strlen(REQUEST) + SEND_DATA_SIZE + 1];
+    char data[SEND_DATA_SIZE + 1];
+    char *test_password = "this_world_only_one_password_is_this";
+    pSplitURLOutput sp;
+
+    if (SplitURL(input->address, &sp) == -1)
+    {
+        DisplayError("UTestPTest SplitURL failed");
+        return -1;
+    }
+
+    // base64
+    if (!memset(request, 0, sizeof(request)))
+    {
+        DisplayError("UTestPTest memset failed");
+        return -1;
+    }
+    if (!memset(data, 0, sizeof(data)))
+    {
+        DisplayError("UTestPTest memset failed");
+        return -1;
+    }
+    if (Base64Encode(&b64message, (unsigned char *)test_password, strlen(test_password)) == -1)
+    {
+        DisplayError("Base64Encode failed");
+        return -1;
+    }
+
+    // combined data now
+    if (!sprintf(data, REQUEST_DATA, input->username, b64message))
+    {
+        DisplayError("UTestPTest sprintf failed");
+        return -1;
+    }
+    if (!sprintf(request, REQUEST, sp->host, input->address, strlen(data), data))
+    {
+        DisplayError("UTestPTest sprintf failed");
+        return -1;
+    }
+
+    // send now
+    DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, test_password);
+    if (HTTPPost(input->address, request, &response, 0) == -1)
+    {
+        DisplayError("HTTPPost failed");
+        return -1;
+    }
+
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
+    (*length) = (int)strlen(response);
+    FreeHTTPPostBuff(response);
+    FreeBase64(b64message);
+
+    return 0;
+}
+
 int GuessAttack(pInput input)
 {
     // start attack
@@ -364,7 +424,17 @@ int GuessAttack(pInput input)
 
     DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "serial_num: %d", input->serial_num);
 
-    if (input->guess_attack_type == GUESS_U1PL)
+    if (input->guess_attack_type == GUESS_GET_RESPONSE_LENGTH)
+    {
+        int length;
+        if (UTestPTest(input, &length) != -1)
+        {
+            return length;
+        }
+        else
+            return -1;
+    }
+    else if (input->guess_attack_type == GUESS_U1PL)
     {
         size_t p_cut = (input->gau->p_header->length) / (((size_t)input->max_process) * ((size_t)input->max_thread));
         size_t p_start = (size_t)input->serial_num * p_cut;

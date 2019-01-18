@@ -12,6 +12,8 @@
 #define GUESS_U1PR 1
 // list and list
 #define GUESS_ULPL 2
+// get the return value length
+#define GUESS_GET_RESPONSE_LENGTH 3
 
 #define DISABLE_SIP 0
 #define ENABLE_SIP 1
@@ -42,6 +44,9 @@
 #define RECV_TIME_OUT 9 // s
 #define MODEL_TYPE_DEFAULT "not_sure"
 
+#define ENABLE 0
+#define DISABLE -1
+
 typedef struct user_input
 {
     // has the defalut value
@@ -56,6 +61,9 @@ typedef struct user_input
     int serial_num;
     int guess_attack_type;
     struct guess_attack_use *gau;
+    // didn't have defalut value and not field with program
+    int get_response_length;
+    int watch_length;
     // char value
     char address[MAX_URL_LENGTH];
     char username[MAX_USERNAME_LENGTH];
