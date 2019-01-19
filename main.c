@@ -362,7 +362,7 @@ static int StartGuess(const pInput input)
     int i, j, ret;
     int status = 0;
     pThreadControlNode tcn;
-    
+
     // store the linked list if use the path file
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
     gau->u_header = NULL;
@@ -463,7 +463,8 @@ static int StartGuess(const pInput input)
         // Father process
         while ((wpid = wait(&status)) > 0)
         {
-            //nothing here
+            // nothing here
+            // wait the child process end
         }
     }
     // for test
