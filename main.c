@@ -358,6 +358,7 @@ static int StartGuess(const pInput input)
     extern int GuessAttack(pInput input);
     pid_t pid;
     pthread_t tid;
+    pthread_attr_t attr;
     int i, j, ret;
     // store the linked list if use the path file
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
@@ -412,8 +413,9 @@ static int StartGuess(const pInput input)
             {
                 input->serial_num = (i * input->max_thread) + j;
                 input->seed = i + j;
-
-                ret = pthread_create(&tid, NULL, (void *)GuessAttack, input);
+                pthread_attr_init(&attr);
+                pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+                ret = pthread_create(&tid, &attr, (void *)GuessAttack, input);
                 DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", tid);
                 if (ret != 0)
                 {
@@ -421,7 +423,7 @@ static int StartGuess(const pInput input)
                     DisplayError("Create pthread failed");
                     return -1;
                 }
-                pthread_detach(tid);
+                //pthread_detach(tid);
                 //pthread_join(tid, NULL);
             }
         }
@@ -430,9 +432,9 @@ static int StartGuess(const pInput input)
             // Error now
             DisplayError("Create process failed");
         }
+        /*
         else
         {
-            /*
             // Father process
             int wait_val;
             int child_id;
@@ -448,8 +450,8 @@ static int StartGuess(const pInput input)
                 // sleep() for test
                 //sleep(1);
             }
-            */
         }
+        */
     }
     // for test
     sleep(10);
@@ -461,7 +463,11 @@ static int StartGuess(const pInput input)
     {
         FreeProcessFileBuff(gau->p_header);
     }
-    free(gau);
+    if (gau)
+    {
+        free(gau);
+    }
+    pthread_attr_destroy(&attr);
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
     return 0;
 }
@@ -582,6 +588,9 @@ int main(int argc, char *argv[])
         break;
     }
 
-    free(input);
+    if (input)
+    {
+        free(input);
+    }
     return 0;
 }

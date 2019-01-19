@@ -54,7 +54,10 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     if (buff_size < 0)
     {
         DisplayError("DisplayDebug vsnprintf failed");
-        free(buff);
+        if (buf)
+        {
+            free(buff);
+        }
         return -1;
     }
 
@@ -64,8 +67,10 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     time_struct = localtime(&t);
     printf("\033[0;32m%d-%d-%d %d:%d:%d DEBUG [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
     va_end(arg);
-
-    free(buff);
+    if (buff)
+    {
+        free(buff);
+    }
     return 0;
 }
 
@@ -103,7 +108,10 @@ int DisplayInfo(const char *fmt, ...)
     if (buff_size < 0)
     {
         DisplayError("DisplayInfo vsnprintf failed");
-        free(buff);
+        if (buff)
+        {
+            free(buff);
+        }
         return -1;
     }
 
@@ -115,7 +123,10 @@ int DisplayInfo(const char *fmt, ...)
     printf("\033[0;32m%d-%d-%d %d:%d:%d INFO [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
 
     va_end(arg);
-    free(buff);
+    if (buff)
+    {
+        free(buff);
+    }
     return 0;
 }
 
@@ -153,7 +164,10 @@ int DisplayWarning(const char *fmt, ...)
     if (buff_size < 0)
     {
         DisplayError("DisplayWarning vsnprintf failed");
-        free(buff);
+        if (buff)
+        {
+            free(buff);
+        }
         return -1;
     }
 
@@ -201,7 +215,10 @@ int DisplayError(const char *fmt, ...)
     if (buff_size < 0)
     {
         DisplayError("DisplayError vsnprintf failed");
-        free(buff);
+        if (buff)
+        {
+            free(buff);
+        }
         return -1;
     }
 
@@ -212,7 +229,10 @@ int DisplayError(const char *fmt, ...)
     // highlight and red
     printf("\033[0;31m%d-%d-%d %d:%d:%d ERROR [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
     va_end(arg);
-    free(buff);
+    if (buff)
+    {
+        free(buff);
+    }
     return 0;
 }
 

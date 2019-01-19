@@ -46,8 +46,8 @@
 #define RECV_TIME_OUT 9 // s
 #define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
 
-#define ENABLE 0
-#define DISABLE -1
+#define ENABLE 1
+#define DISABLE 0
 
 typedef struct user_input
 {

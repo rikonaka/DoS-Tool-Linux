@@ -42,7 +42,10 @@ int WATCH_LENGTH = 0;
 
 static void FreeMatchModel(pMatchOutput p)
 {
-    free(p);
+    if (p)
+    {
+        free(p);
+    }
 }
 
 static int MatchModel(pMatchOutput *output, const char *input)

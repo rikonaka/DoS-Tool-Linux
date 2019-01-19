@@ -139,7 +139,10 @@ static int TCPConnectClose(int socket)
 
 void FreeHTTPPostBuff(char *p)
 {
-    free(p);
+    if (*p)
+    {
+        free(p);
+    }
 }
 
 size_t HTTPPost(const char *url, const char *request, char **response, int debug_level)

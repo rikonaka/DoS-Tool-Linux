@@ -14,9 +14,18 @@ extern int DisplayError(const char *fmt, ...);
 
 void FreeSplitURLBuff(pSplitURLOutput p)
 {
-    free(p->host);
-    free(p->suffix);
-    free(p);
+    if (p->host)
+    {
+        free(p->host);
+    }
+    if (p->suffix)
+    {
+        free(p->suffix);
+    }
+    if (p)
+    {
+        free(p);
+    }
 }
 
 int SplitURL(const char *url, pSplitURLOutput *output)
@@ -100,13 +109,19 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     (*output)->suffix = suffix_buff;
     (*output)->port = atoi(port_buff);
 
-    free(port_buff);
+    if (port_buff)
+    {
+        free(port_buff);
+    }
     return 0;
 }
 
 void FreeRandomPasswordBuff(char *password)
 {
-    free(password);
+    if (password)
+    {
+        free(password);
+    }
 }
 
 int GetRandomPassword(char **rebuf, unsigned int seed, const int length)
@@ -171,7 +186,10 @@ void FreeProcessFileBuff(pStrHeader p)
     while (n_next)
     {
         //DisplayInfo("Free <%s> space now", n->username);
-        free(n);
+        if (n)
+        {
+            free(n);
+        }
         --(p->length);
         n = n_next;
         n_next = n_next->next;
@@ -182,8 +200,14 @@ void FreeProcessFileBuff(pStrHeader p)
         DisplayWarning("Free the space error");
     }
 
-    free(n);
-    free(p);
+    if (n)
+    {
+        free(n);
+    }
+    if (p)
+    {
+        free(p);
+    }
 }
 
 int ProcessFile(const char *path, pStrHeader *output, int flag)
