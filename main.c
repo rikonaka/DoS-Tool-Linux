@@ -356,10 +356,13 @@ static int StartGuess(const pInput input)
     extern void FreeProcessFileBuff(pStrHeader p);
     extern int ProcessFile(const char *path, pStrHeader *output, int flag);
     extern int GuessAttack(pInput input);
-    pid_t pid;
-    pthread_t tid;
+    pid_t pid, wpid;
+    pthread_t tid[input->max_thread];
     pthread_attr_t attr;
     int i, j, ret;
+    int status = 0;
+    pThreadControlNode tcn;
+    
     // store the linked list if use the path file
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
     gau->u_header = NULL;
@@ -402,29 +405,54 @@ static int StartGuess(const pInput input)
     }
 
     input->gau = gau;
+    input->tch = (pThreadControlHeader)malloc(sizeof(ThreadControlHeader));
+    input->tch->next = NULL;
+    input->tch->length = 0;
     for (i = 0; i < input->max_process; i++)
     {
         pid = fork();
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid value: %d", pid);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid: %d", pid);
         if (pid == 0)
         {
             // child process
             for (j = 0; j < input->max_thread; j++)
             {
-                input->serial_num = (i * input->max_thread) + j;
+                //input->serial_num = (i * input->max_thread) + j;
+                tcn = (pThreadControlNode)malloc(sizeof(ThreadControlNode));
                 input->seed = i + j;
-                pthread_attr_init(&attr);
-                pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-                ret = pthread_create(&tid, &attr, (void *)GuessAttack, input);
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "job_tid value: %d", tid);
+                if (pthread_attr_init(&attr))
+                {
+                    DisplayError("StartGuess pthread_attr_init failed");
+                    return -1;
+                }
+                //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+                if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
+                {
+                    DisplayError("StartGuess pthread_attr_setdetachstate failed");
+                    return -1;
+                }
+                // create thread
+                ret = pthread_create(&tid[j], &attr, (void *)GuessAttack, input);
+                //printf("j is: %d\n", j);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+                // here we make a map
+                tcn->tid = tid[j];
+                tcn->id = j;
                 if (ret != 0)
                 {
-                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret value: %d", ret);
+                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
                     DisplayError("Create pthread failed");
                     return -1;
                 }
-                //pthread_detach(tid);
-                //pthread_join(tid, NULL);
+                tcn->next = input->tch->next;
+                input->tch->next = tcn;
+                pthread_attr_destroy(&attr);
+            }
+            //pthread_detach(tid);
+            // join them all
+            for (j = 0; j < input->max_thread; j++)
+            {
+                pthread_join(tid[j], NULL);
             }
         }
         else if (pid < 0)
@@ -432,29 +460,14 @@ static int StartGuess(const pInput input)
             // Error now
             DisplayError("Create process failed");
         }
-        /*
-        else
+        // Father process
+        while ((wpid = wait(&status)) > 0)
         {
-            // Father process
-            int wait_val;
-            int child_id;
-            child_id = wait(&wait_val);
-            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "child exit, process id: %d", child_id);
-            if (WIFEXITED(wait_val))
-            {
-                DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "child exited with code %d", WEXITSTATUS(wait_val));
-            }
-            else
-            {
-                DisplayError("Child exited unnormally");
-                // sleep() for test
-                //sleep(1);
-            }
+            //nothing here
         }
-        */
     }
     // for test
-    sleep(10);
+    //sleep(10);
     if (gau->u_header)
     {
         FreeProcessFileBuff(gau->u_header);
@@ -467,7 +480,6 @@ static int StartGuess(const pInput input)
     {
         free(gau);
     }
-    pthread_attr_destroy(&attr);
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
     return 0;
 }

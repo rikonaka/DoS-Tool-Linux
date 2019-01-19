@@ -37,43 +37,17 @@
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF
-#define PROCESS_NUM_DEFAULT 4
-#define THREAD_NUM_DEFAULT 2
+#define PROCESS_NUM_DEFAULT 1
+#define THREAD_NUM_DEFAULT 8
 #define RANDOM_PASSWORD_LENGTH_DEFAULT 8
 #define RANDOM_SIP_DEFAULT 1 // default open it for attack safety
 #define PORT_DEFAULT 80
 #define USERNAME_DEFAULT "admin"
-#define RECV_TIME_OUT 9 // s
+#define RECV_TIME_OUT 99 // s
 #define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
 
 #define ENABLE 1
 #define DISABLE 0
-
-typedef struct user_input
-{
-    // has the defalut value
-    int attack_mode;
-    int random_password_length;
-    int random_sip_address;
-    int debug_level;
-    int max_process;
-    int max_thread;
-    // field with program
-    int seed;
-    int serial_num;
-    int guess_attack_type;
-    struct guess_attack_use *gau;
-    // didn't have defalut value and not field with program
-    int get_response_length;
-    int watch_length;
-    // char value
-    char address[MAX_URL_LENGTH];
-    char username[MAX_USERNAME_LENGTH];
-    char username_path[MAX_USERNAME_PATH_LENGTH];
-    char password_path[MAX_PASSWORD_PATH_LENGTH];
-    char model_type[MAX_MODEL_TYPE_LENGTH];
-    // coming soon
-} Input, *pInput;
 
 // defined by str.h
 typedef struct split_url_output
@@ -101,5 +75,45 @@ typedef struct guess_attack_use
     struct str_header *u_header;
     struct str_header *p_header;
 } GuessAttackUse, *pGuessAttackUse;
+
+typedef struct thread_control_node
+{
+    struct thread_control_node *next;
+    pthread_t tid;
+    int id;
+} ThreadControlNode, *pThreadControlNode;
+
+typedef struct thread_control_header
+{
+    struct thread_control_node *next;
+    size_t length;
+} ThreadControlHeader, *pThreadControlHeader;
+
+typedef struct user_input
+{
+    // has the defalut value
+    int attack_mode;
+    int random_password_length;
+    int random_sip_address;
+    int debug_level;
+    int max_process;
+    int max_thread;
+    // field with program
+    int seed;
+    pThreadControlHeader tch;
+    int guess_attack_type;
+    struct guess_attack_use *gau;
+    //int serial_num;
+    // didn't have defalut value and not field with program
+    int get_response_length;
+    int watch_length;
+    // char value
+    char address[MAX_URL_LENGTH];
+    char username[MAX_USERNAME_LENGTH];
+    char username_path[MAX_USERNAME_PATH_LENGTH];
+    char password_path[MAX_PASSWORD_PATH_LENGTH];
+    char model_type[MAX_MODEL_TYPE_LENGTH];
+    // coming soon
+} Input, *pInput;
 
 #endif

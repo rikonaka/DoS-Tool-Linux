@@ -2,10 +2,10 @@
 
 CC   = gcc
 SRCS = main.c         \
-       core/debug.c   \
-	   core/base64.c  \
-	   core/http.c    \
-	   core/str.c     \
+       tool/debug.c   \
+	   tool/base64.c  \
+	   tool/http.c    \
+	   tool/str.c     \
 	   attack/guess.c \
 	   attack/syn_flood_dos.c 
 

@@ -54,7 +54,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     if (buff_size < 0)
     {
         DisplayError("DisplayDebug vsnprintf failed");
-        if (buf)
+        if (buff)
         {
             free(buff);
         }

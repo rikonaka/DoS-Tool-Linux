@@ -362,14 +362,16 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
         }
 
         // send now
-        DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, ps->str);
+        pthread_t self;
+        self = pthread_self();
+        DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "tid: %lu, try username: %s, password: %s", self, input->username, ps->str);
         if (HTTPPost(input->address, request, &response, 0) == -1)
         {
             DisplayError("HTTPPost failed");
             return -1;
         }
 
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
+        //DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
         if (CHECK == CheckLength)
         {
             RESPONSE_LENGTH = strlen(response);
@@ -451,6 +453,37 @@ static int UTestPTest(pInput input, int *length)
     return 0;
 }
 
+static unsigned long MultiThreadControl(pInput input, size_t *start, size_t *end, int flag)
+{
+    /*
+     * flag == 0 use u_header
+     * flag == 1 use p_header
+     */
+    pthread_t self = pthread_self();
+    pThreadControlNode node = input->tch->next;
+    size_t cut;
+    if (flag == UHEADER)
+    {
+        cut = (input->gau->u_header->length) / (((size_t)input->max_process) * ((size_t)input->max_thread));
+    }
+    else if (flag == PHEADER)
+    {
+        cut = (input->gau->p_header->length) / (((size_t)input->max_process) * ((size_t)input->max_thread));
+    }
+    while (node)
+    {
+        if (node->tid == self)
+        {
+            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "thread id: %d", node->id);
+            *start = (size_t)node->id * cut;
+            *end = ((size_t)node->id + 1) * cut;
+            return 0;
+        }
+        node = node->next;
+    }
+    return self;
+}
+
 int GuessAttack(pInput input)
 {
     // start attack
@@ -465,7 +498,6 @@ int GuessAttack(pInput input)
     REQUEST_DATA = mt->request_data;
     SUCCESS_MODEL = mt->success_or_not;
 
-    DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "serial_num: %d", input->serial_num);
     if (input->guess_attack_type == GUESS_LENGTH)
     {
         CHECK = CheckLength;
@@ -488,9 +520,15 @@ int GuessAttack(pInput input)
     }
     else if (input->guess_attack_type == GUESS_U1PL)
     {
-        size_t p_cut = (input->gau->p_header->length) / (((size_t)input->max_process) * ((size_t)input->max_thread));
-        size_t p_start = (size_t)input->serial_num * p_cut;
-        size_t p_end = ((size_t)input->serial_num + 1) * p_cut;
+        size_t p_start, p_end;
+        pthread_t tid = 0;
+        tid = MultiThreadControl(input, &p_start, &p_end, PHEADER);
+        if (tid)
+        {
+            DisplayError("GuessAttack MultiThreadControl can not found the tid");
+            DisplayError("tid: %ld", tid);
+            return -1;
+        }
         if (UOnePList(input, p_start, p_end) == -1)
         {
             DisplayError("GuessAttack UOnePList failed");
@@ -507,13 +545,23 @@ int GuessAttack(pInput input)
     }
     else if (input->guess_attack_type == GUESS_ULPL)
     {
-        size_t u_cut = (input->gau->u_header->length) / (((size_t)input->max_process) * ((size_t)input->max_thread));
-        size_t u_start = (size_t)input->serial_num * u_cut;
-        size_t u_end = ((size_t)input->serial_num + 1) * u_cut;
-
-        size_t p_cut = (input->gau->p_header->length) / (((size_t)input->max_process) * ((size_t)input->max_thread));
-        size_t p_start = (size_t)input->serial_num * p_cut;
-        size_t p_end = ((size_t)input->serial_num + 1) * p_cut;
+        size_t u_start, u_end, p_start, p_end;
+        pthread_t tid = 0;
+        tid = MultiThreadControl(input, &u_start, &u_end, UHEADER);
+        if (tid)
+        {
+            DisplayError("GuessAttack MultiThreadControl can not found the tid");
+            DisplayError("tid: %ld", tid);
+            return -1;
+        }
+        tid = 0;
+        tid = MultiThreadControl(input, &p_start, &p_end, PHEADER);
+        if (tid)
+        {
+            DisplayError("GuessAttack MultiThreadControl can not found the tid");
+            DisplayError("tid: %ld", tid);
+            return -1;
+        }
         if (UListPList(input, u_start, u_end, p_start, p_end) == -1)
         {
             DisplayError("GuessAttack UListPList failed");

@@ -118,7 +118,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
 
 void FreeRandomPasswordBuff(char *password)
 {
-    if (password)
+    if (*password)
     {
         free(password);
     }
