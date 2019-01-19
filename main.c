@@ -421,7 +421,7 @@ static int StartGuess(const pInput input)
                     DisplayError("Create pthread failed");
                     return -1;
                 }
-                //pthread_detach(tid);
+                pthread_detach(tid);
                 //pthread_join(tid, NULL);
             }
         }
@@ -451,6 +451,7 @@ static int StartGuess(const pInput input)
             */
         }
     }
+    // for test
     sleep(10);
     if (gau->u_header)
     {

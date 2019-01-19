@@ -30,6 +30,7 @@ extern size_t Base64Encode(char **b64message, const unsigned char *buffer, size_
 extern size_t Base64Decode(unsigned char **buffer, char *b64message);
 extern void FreeBase64(char *b64message);
 
+// value for check
 char *REQUEST;
 char *REQUEST_DATA;
 char *SUCCESS_MODEL;
@@ -62,10 +63,8 @@ static int MatchModel(pMatchOutput *output, const char *input)
     }
     else if (strstr(input, "not_sure"))
     {
-        //pMatchOutput header = *output;
-        MatchModel(output, "feixun_fwr_604h");
-        //(*output) = (*output)->next;
-        //MatchModel((*output)->next, "others")
+        // defalut value for test
+        MatchModel(output, MODEL_TYPE_DEFAULT);
     }
     else
     {

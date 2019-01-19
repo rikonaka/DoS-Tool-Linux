@@ -44,7 +44,7 @@
 #define PORT_DEFAULT 80
 #define USERNAME_DEFAULT "admin"
 #define RECV_TIME_OUT 9 // s
-#define MODEL_TYPE_DEFAULT "not_sure"
+#define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
 
 #define ENABLE 0
 #define DISABLE -1
