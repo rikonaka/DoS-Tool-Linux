@@ -6,6 +6,7 @@
 
 int SYNFloodAttack(pInput input)
 {
+    /*
     char *rand_ip_addr = (char *)calloc(20, sizeof(char));
     int rport;
     struct AHTTP_INPUT *atmp = (struct AHTTP_INPUT *)malloc(sizeof(struct AHTTP_INPUT));
@@ -32,5 +33,6 @@ int SYNFloodAttack(pInput input)
         dosattack(atmp);
     }
     free(atmp);
+    */
     return 0;
 }
