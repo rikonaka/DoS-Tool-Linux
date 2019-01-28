@@ -34,6 +34,7 @@
 #define COMMON_BUFFER_SIZE 16
 #define SEND_DATA_SIZE 2048
 #define RECEIVE_DATA_SIZE 2048
+#define SYN_FLOOD_IP_BUFFER_SIZE 128
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF
@@ -41,10 +42,11 @@
 #define THREAD_NUM_DEFAULT 8
 #define RANDOM_PASSWORD_LENGTH_DEFAULT 8
 #define RANDOM_SIP_DEFAULT 1 // default open it for attack safety
-#define PORT_DEFAULT 80
 #define USERNAME_DEFAULT "admin"
 #define RECV_TIME_OUT 99 // s
 #define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
+#define HTTP_PORT_DEFAULT 80
+#define HTTPS_PORT_DEFAULT 443
 
 #define ENABLE 1
 #define DISABLE 0

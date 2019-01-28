@@ -15,6 +15,9 @@
 
 #include "../main.h"
 
+#define HTTP_FLAG 0
+#define HTTPS_FLAG 1
+
 // from ../core/debug.h
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);
@@ -91,7 +94,7 @@ static ssize_t TCPSend(const int socket, const char *buff, int flag)
     size_t buff_size = sizeof(buff);
 
     // make sure the program had sending all data
-    if (flag == 0)
+    if (flag == HTTP_FLAG)
     {
         // http send
         while (sent_total_size < buff_size)
@@ -105,7 +108,7 @@ static ssize_t TCPSend(const int socket, const char *buff, int flag)
             sent_total_size += sent_size;
         }
     }
-    else if (flag == 1)
+    else if (flag == HTTPS_FLAG)
     {
         while (sent_total_size < buff_size)
         {
@@ -139,7 +142,7 @@ static ssize_t TCPRecv(int socket, char **rebuff, int flag)
     ssize_t recv_total_size = 0;
     ssize_t recv_size = 0;
     char *buff = (char *)malloc(RECEIVE_DATA_SIZE);
-    if (flag == 0)
+    if (flag == HTTP_FLAG)
     {
         for (;;)
         {
@@ -164,7 +167,7 @@ static ssize_t TCPRecv(int socket, char **rebuff, int flag)
             recv_total_size += recv_size;
         }
     }
-    else if (flag == 1)
+    else if (flag == HTTPS_FLAG)
     {
         for (;;)
         {
@@ -201,7 +204,7 @@ static int TCPConnectClose(int socket)
     return 0;
 }
 
-void FreeHTTPPostBuff(char *p)
+void FreeHTTPBuff(char *p)
 {
     if (p)
     {
@@ -209,14 +212,14 @@ void FreeHTTPPostBuff(char *p)
     }
 }
 
-size_t HTTPPost(const char *url, const char *request, char **response, int debug_level)
+size_t HTTP(const char *url, const char *request, char **response, int debug_level)
 {
     /*
      * use the HTTP post method post 'request_data'
      * then, return the response_data size
      */
 
-    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPost");
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTP");
 
     // from ../core/str.h
     extern int SplitURL(const char *url, pSplitURLOutput *output);
@@ -248,22 +251,22 @@ size_t HTTPPost(const char *url, const char *request, char **response, int debug
 
     // 2 send
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Sending data...");
-    if (TCPSend(sock, request, 0) < 0)
+    if (TCPSend(sock, request, HTTP_FLAG) < 0)
     {
         DisplayError("TCPSend failed");
     }
 
     // 3 recv
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing data...");
-    if (TCPRecv(sock, response, 0) <= 0)
+    if (TCPRecv(sock, response, HTTP_FLAG) <= 0)
     {
         DisplayError("TCPRecv failed");
     }
-    //DisplayDebug(DEBUG_LEVEL_2, debug_level, "Data: %s", response);
+    DisplayDebug(DEBUG_LEVEL_2, debug_level, "Data: %s", response);
 
     // 4 close
     TCPConnectClose(sock);
-    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Exit HttpPostMethod");
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Exit HTTP");
 
     return strlen(*response);
 }
@@ -312,7 +315,7 @@ static int ShowCerts(SSL *ssl, int debug_level)
     return 0;
 }
 
-void FreeHTTPsPostBuff(char *p)
+void FreeHTTPsBuff(char *p)
 {
     if (p)
     {
@@ -320,14 +323,14 @@ void FreeHTTPsPostBuff(char *p)
     }
 }
 
-size_t HTTPsPost(const char *url, const char *request, char **response, int debug_level)
+size_t HTTPS(const char *url, const char *request, char **response, int debug_level)
 {
     /*
      * use the HTTPs post method post 'request_data'
      * then, return the response_data size
      */
 
-    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPPost");
+    DisplayDebug(DEBUG_LEVEL_3, debug_level, "Enter HTTPS");
 
     // from ../core/str.h
     extern int SplitURL(const char *url, pSplitURLOutput *output);
@@ -353,7 +356,7 @@ size_t HTTPsPost(const char *url, const char *request, char **response, int debu
     // 1 ssl init
     if (InitCTX(&ctx) == -1)
     {
-        DisplayError("HTTPsPost InitCTX failed");
+        DisplayError("HTTPS InitCTX failed");
         return -1;
     }
 
@@ -371,7 +374,7 @@ size_t HTTPsPost(const char *url, const char *request, char **response, int debu
     SSL_set_fd(ssl, sock);
     if (SSL_connect(ssl) < 0)
     {
-        DisplayError("HTTPsPost SSL_connect failed");
+        DisplayError("HTTPS SSL_connect failed");
         ERR_print_errors_fp(stderr);
         return -1;
     }
@@ -381,24 +384,24 @@ size_t HTTPsPost(const char *url, const char *request, char **response, int debu
     DisplayDebug(DEBUG_LEVEL_1, debug_level, "Connect with %s encryption", SSL_get_cipher(ssl));
     if (ShowCerts(ssl, debug_level) == -1)
     {
-        DisplayError("HTTPsPost ShowCert failed");
+        DisplayError("HTTPS ShowCert failed");
         return -1;
     }
 
     // 4 send
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Sending data...");
-    if (TCPSend(sock, request, 1) < 0)
+    if (TCPSend(sock, request, HTTPS_FLAG) < 0)
     {
         DisplayError("TCPSend failed");
     }
 
     // 5 recv
     DisplayDebug(DEBUG_LEVEL_3, debug_level, "Recvevicing data...");
-    if (TCPRecv(sock, response, 1) <= 0)
+    if (TCPRecv(sock, response, HTTPS_FLAG) <= 0)
     {
         DisplayError("TCPRecv failed");
     }
-    //DisplayDebug(DEBUG_LEVEL_2, debug_level, "Data: %s", response);
+    DisplayDebug(DEBUG_LEVEL_2, debug_level, "Data: %s", response);
 
     // 6 close
     TCPConnectClose(sock);

