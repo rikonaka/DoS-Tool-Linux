@@ -11,6 +11,8 @@
 
 #define DISABLE_SIP 0
 #define ENABLE_SIP 1
+#define SIP_ADDRESS "192.168.1.99"
+#define SIP_PORT 9999
 
 typedef struct pseudo_header
 {

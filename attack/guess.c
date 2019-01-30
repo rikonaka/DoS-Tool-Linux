@@ -15,9 +15,9 @@ extern int DisplayError(const char *fmt, ...);
 
 // from ../core/str.c
 extern int GetRandomPassword(char **rebuf, unsigned int seed, const int length);
+extern void FreeSplitURLBuff(pSplitURLOutput p);
 extern int SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomPasswordBuff(char *password);
-extern void FreeSplitURLBuff(pSplitURLOutput p);
 extern void FreeProcessFileBuff(pStrHeader p);
 extern int ProcessFile(const char *path, pStrHeader *output, int flag);
 
