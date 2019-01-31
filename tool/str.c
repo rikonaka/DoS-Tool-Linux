@@ -147,7 +147,6 @@ int SplitURL(const char *url, pSplitURLOutput *output)
                 ++ptmp;
             }
         }
-        free(purl);
     }
     // copy end
 
@@ -243,6 +242,10 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     if (port_buff)
     {
         free(port_buff);
+    }
+    if (purl)
+    {
+        free(purl);
     }
     return 0;
 }
