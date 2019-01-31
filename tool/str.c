@@ -41,22 +41,60 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     // 1 - host ip address
     // 2 - port
     // 3 - suffix
-    int i;
-    size_t url_len = strlen(url);
+    int i = 0;
+    //size_t url_len = strlen(url);
     (*output) = (pSplitURLOutput)malloc(sizeof(SplitURLOutput));
+    char *purl = (char *)malloc(sizeof(char));
+    char *ptmp = purl;
+    if (!ptmp)
+    {
+        DisplayError("SplitURL malloc failed, %s", strerror(errno));
+        return -1;
+    }
+    if (!strcpy(ptmp, url))
+    {
+        DisplayError("SplitURL strcpy failed, %s", strerror(errno));
+        return -1;
+    }
     //      12           3
     // http://192.168.1.1/index.html
-    char *first_slash_position = strchr(url, '/');
-    char *second_slash_position = strchr((first_slash_position + 1), '/');
-    char *third_slash_position = strchr((second_slash_position + 1), '/');
-    /* if url like http://192.168.1.1:8080/index.html */
-    char *colon_position = strchr((second_slash_position + 1), ':');
-    char *ptmp;
-
-    (*output)->protocol = (char *)malloc(sizeof(char));
+    char *first_slash_position = strchr(purl, '/');
+    char *second_slash_position;
+    char *third_slash_position;
+    // if url like http://192.168.1.1:8080/index.html
+    char *colon_position;
+    char *protocol_buff = (char *)malloc(sizeof(char));
     char *host_buff = (char *)malloc(sizeof(char));
     char *suffix_buff = (char *)malloc(sizeof(char));
     char *port_buff = (char *)malloc(sizeof(char));
+
+    if (first_slash_position)
+    {
+        second_slash_position = strchr((first_slash_position + 1), '/');
+        // there is not allow only one slash in the url
+        // like this: 192.168.1.1/index.html is not allowed
+        if (!second_slash_position)
+        {
+            DisplayError("SplitURL found the URL is not complete");
+            return -1;
+        }
+        colon_position = strchr(second_slash_position + 1, ':');
+    }
+    else
+    {
+        colon_position = strchr(purl, ':');
+        second_slash_position = NULL;
+    }
+
+    if (second_slash_position)
+    {
+        third_slash_position = strchr((second_slash_position + 1), '/');
+    }
+    else
+    {
+        third_slash_position = NULL;
+    }
+
     if (!memset(host_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
@@ -74,15 +112,43 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     }
 
     // copy the host to host_buff
-    ptmp = (second_slash_position + 1);
-    i = 0;
-    while (i < url_len && ptmp != colon_position && ptmp != third_slash_position)
+    // i first use in this place
+    if (second_slash_position)
     {
-        host_buff[i] = *ptmp;
-        ++i;
-        ++ptmp;
+        ptmp = (second_slash_position + 1);
+        i = 0;
+        while (*ptmp && ptmp != colon_position && ptmp != third_slash_position)
+        {
+            host_buff[i] = *ptmp;
+            ++i;
+            ++ptmp;
+        }
+        host_buff[i] = '\0';
     }
-    host_buff[i] = '\0';
+    else
+    {
+        if (colon_position)
+        {
+            i = 0;
+            while (*ptmp && ptmp != colon_position)
+            {
+                host_buff[i] = *ptmp;
+                ++i;
+                ++ptmp;
+            }
+        }
+        else
+        {
+            i = 0;
+            while (*ptmp)
+            {
+                host_buff[i] = *ptmp;
+                ++i;
+                ++ptmp;
+            }
+        }
+        free(purl);
+    }
     // copy end
 
     // copy the port if existed
@@ -101,7 +167,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     else
     {
         // if the port is not indicate in the URL
-        if (strstr(url, "https"))
+        if (strstr(purl, "https"))
         {
             if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
             {
@@ -109,7 +175,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
                 return -1;
             }
         }
-        else if (strstr(url, "http"))
+        else if (strstr(purl, "http"))
         {
             if (!sprintf(port_buff, "%d", HTTP_PORT_DEFAULT))
             {
@@ -121,24 +187,24 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     // copy end
 
     // filling the protocol here
-    if (!memset((*output)->protocol, 0, sizeof(char)))
+    if (!memset(protocol_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
         return -1;
     }
 
-    if (strstr(url, "https"))
+    if (strstr(purl, "https"))
     {
 
-        if (!strcpy((*output)->protocol, "https"))
+        if (!strcpy(protocol_buff, "https"))
         {
             DisplayError("SplitURL strcpy failed");
             return -1;
         }
     }
-    else if (strstr(url, "http"))
+    else if (strstr(purl, "http"))
     {
-        if (!strcpy((*output)->protocol, "http"))
+        if (!strcpy(protocol_buff, "http"))
         {
             DisplayError("SplitURL strcpy failed");
             return -1;
@@ -146,7 +212,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     }
     else
     {
-        if (!strcpy((*output)->protocol, "not_set"))
+        if (!strcpy(protocol_buff, "not_set"))
         {
             DisplayError("SplitURL strcpy failed");
             return -1;
@@ -169,6 +235,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     }
     // end copy
 
+    (*output)->protocol = protocol_buff;
     (*output)->host = host_buff;
     (*output)->suffix = suffix_buff;
     (*output)->port = atoi(port_buff);
@@ -464,26 +531,34 @@ int GetRandomPort(int *output)
 }
 
 /*
-int main(void)
+int main(int argc, char *argv[])
 {
-    //char *input = "http://192.168.1.1:80/index.html";
-    char *input = "http://192.168.1.1/index.html";
-    pSplitURLOutput s;
+    // for test
+    if (argc == 1)
+    {
+        return 0;
+    }
 
-    SplitURL(input, &s);
-    printf("host: %s, suffix: %s, port: %d\n", s->host, s->suffix, s->port);
-    FreeSplitURL(s);
-
-    char *random;
-    GetRandomPassword(&random, 10, 8);
-    DisplayInfo("%s", random);
-    FreeRandomPasswordBuff(random);
-
-    char *path = "/home/hero/Documents/Code/DoS-Tool/wordlists/others/best1050.txt";
-    pStrHeader p;
-    ProcessFile(path, &p, 0);
-    //TestCharList(p);
-    FreeProcessFileBuff(p);
+    // test the SplitURL work
+    if (strcmp(argv[1], "--spliturl-test") == 0)
+    {
+        pSplitURLOutput output;
+        SplitURL(argv[2], &output);
+        if (output->protocol)
+        {
+            printf("%s\n", output->protocol);
+        }
+        if (output->host)
+        {
+            printf("%s\n", output->host);
+        }
+        printf("%d\n", output->port);
+        if (output->suffix)
+        {
+            printf("%s\n", output->suffix);
+        }
+        FreeSplitURLBuff(output);
+    }
 
     return 0;
 }

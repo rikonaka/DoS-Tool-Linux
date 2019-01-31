@@ -590,7 +590,7 @@ int GuessAttack(pInput input)
     }
     FreeMatchModel(mt);
     pthread_exit(NULL);
-    return 0;
+    //return 0;
 }
 
 /*

