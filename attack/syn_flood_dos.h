@@ -28,8 +28,8 @@ typedef struct pseudo_header
 typedef struct syn_struct
 {
     int loop;
-    char src_ip[SYN_FLOOD_IP_BUFFER_SIZE];
-    char dst_ip[SYN_FLOOD_IP_BUFFER_SIZE];
+    char *src_ip;
+    char *dst_ip;
     int src_port;
     int dst_port;
 } SYNStruct, *pSYNStruct;

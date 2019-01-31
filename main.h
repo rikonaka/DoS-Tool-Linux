@@ -29,12 +29,12 @@
 #define MAX_PASSWORD_LENGTH 16
 #define MAX_USERNAME_PATH_LENGTH 100
 #define MAX_PASSWORD_PATH_LENGTH 100
-#define MAX_URL_LENGTH 100
+#define MAX_URL_LENGTH 50
 #define MAX_MODEL_TYPE_LENGTH 20
 #define COMMON_BUFFER_SIZE 16
 #define SEND_DATA_SIZE 2048
 #define RECEIVE_DATA_SIZE 2048
-#define SYN_FLOOD_IP_BUFFER_SIZE 128
+#define SYN_FLOOD_IP_BUFFER_SIZE 20
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF
@@ -47,6 +47,7 @@
 #define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
 #define HTTP_PORT_DEFAULT 80
 #define HTTPS_PORT_DEFAULT 443
+#define EACH_IP_REPEAT_TIME 1024
 
 #define ENABLE 1
 #define DISABLE 0
@@ -54,9 +55,10 @@
 // defined by str.h
 typedef struct split_url_output
 {
+    char *protocol;
     char *host;
-    char *suffix;
     int port;
+    char *suffix;
 } SplitURLOutput, *pSplitURLOutput;
 
 typedef struct str_node
@@ -81,7 +83,7 @@ typedef struct guess_attack_use
 typedef struct thread_control_node
 {
     struct thread_control_node *next;
-    pthread_t tid;
+    unsigned long tid; // typedef unsigned long pthread_t
     int id;
 } ThreadControlNode, *pThreadControlNode;
 
@@ -100,6 +102,7 @@ typedef struct user_input
     int debug_level;
     int max_process;
     int max_thread;
+    int each_ip_repeat;
     // field with program
     int seed;
     pThreadControlHeader tch;

