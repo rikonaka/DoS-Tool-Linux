@@ -4,8 +4,9 @@ CC   = gcc
 SRCS = main.c         \
        tool/debug.c   \
 	   tool/base64.c  \
-	   tool/https.c    \
+	   tool/https.c   \
 	   tool/str.c     \
+	   tool/version.c \
 	   attack/guess.c \
 	   attack/syn_flood_dos.c 
 

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "tool/https.c" which used to connect web as http method.
 - "tool/str.c" which used to handle functions related to strings.
 - "CHANGLOG.md" which show the change log of code.
+- "tool/version.h" which store the program current version.
 
 ### Changed
 - Rewrite "debug.c" funcion, add DisplayDebug, DisplayInfo, DisplayError, DisplayWarning function.

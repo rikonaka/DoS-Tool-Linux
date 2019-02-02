@@ -626,6 +626,9 @@ int main(int argc, char *argv[])
       main function
      */
 
+    extern void FreeGetCurrentVersionBuff(char *p);
+    extern int GetCurrentVersion(char **output);
+
     if (argc == 1)
     {
         DisplayError("Need more parameter");
@@ -634,7 +637,6 @@ int main(int argc, char *argv[])
     }
 
     pInput input;
-
     if (InitInput(&input) == -1)
     {
         DisplayError("Init the input failed");
@@ -649,6 +651,11 @@ int main(int argc, char *argv[])
         DisplayUsage();
         return -1;
     }
+
+    char *version;
+    GetCurrentVersion(&version);
+    DisplayInfo("dos-tool version %s", version);
+    FreeGetCurrentVersionBuff(version);
 
     DisplayInfo("Running...");
     DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
