@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rewrite "main.c", "guess.c", "syn_flood_dos.c".
 - Rewrite "Makefile".
 
-## 0.0.1 - 2017-11-28
+## 0.10 - 2017-11-28
 ### Added
 - Can work good at my company's network.
 
-[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/master...HEAD
+[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.10...HEAD
