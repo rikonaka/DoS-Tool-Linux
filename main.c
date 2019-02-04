@@ -362,6 +362,7 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
 static int StartSYNFlood(pInput input)
 {
     // run function in thread
+    // this attack type must run as root
     extern int SYNFloodAttack(pInput input);
 
     pid_t pid, wpid;
@@ -415,7 +416,6 @@ static int StartSYNFlood(pInput input)
         }
         else if (pid < 0)
         {
-            // Error now
             DisplayError("Create process failed");
         }
         // Father process
