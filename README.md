@@ -14,6 +14,8 @@ DoS-Tool is written in pure C, in order to keep the resource usage as low as pos
 
 ### Distribution-specific guide
 
+#### Install from source
+
 - Debian & Ubuntu
 
 ```bash
