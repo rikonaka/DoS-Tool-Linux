@@ -17,13 +17,13 @@ DoS-Tool is written in pure C, in order to keep the resource usage as low as pos
 - Debian & Ubuntu
 
 ```bash
-sudo apt install openssl libssl-dev
+sudo apt install make gcc openssl libssl-dev
 ```
 
 - RHEL & Fedora
 
 ```bash
-sudo yum install openssl openssl-devel
+sudo yum install make gcc openssl openssl-devel
 ```
 
 Then
@@ -47,7 +47,7 @@ Example:
 ./dostool -a 0 -U "/path/username.txt" -P "/path/password.txt"
 ./dostool -a 0 -u "admin" -P "/path/password.txt"
 ./dostool -a 0 -P "/path/password.txt"
-./dostool -a 1 -i "192.168.1.1:80" -i "http:\\192.168.1.1:80/login.asp"
+./dostool -a 1 -i "192.168.1.1:80"
 
 -a <attack_mode>        Indicate attack mode
                         0    Guess the web password
