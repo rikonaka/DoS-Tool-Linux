@@ -27,8 +27,6 @@ static int DisplayUsage(void)
                   "./dostool -a 0 -P \"/path/password.txt\"\n"
                   "./dostool -a 1 -i \"192.168.1.1:80\"\n"
                   "\n"
-                  "-i \"http:\\\\192.168.1.1:80/login.asp\"\n"
-                  "\n"
                   "-a <attack_mode>        Indicate attack mode\n"
                   "                        0    Guess the web password\n"
                   "                        1    Syn flood attack\n"
@@ -60,7 +58,7 @@ static int DisplayUsage(void)
                   "\n"
                   "--get-response-length   Get the response length for test\n"
                   "\n"
-                  "--set-watch-length      Indicate a length, if response's length not equal this, return"
+                  "--set-watch-length      Indicate a length, if response's length not equal this, return\n"
                   "\n"
                   "-R    Use the random source IP address in dos attack (can not use in the guess password attack)\n"
                   "      0    turn off the random source ip address which can protect you true IP in the local net\n"
@@ -364,7 +362,8 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
 
             case 'h':
                 DisplayUsage();
-                return 0;
+                //return 0;
+                exit(0);
 
             default:
                 DisplayError("Please check you input");

@@ -12,10 +12,35 @@ DoS-Tool is written in pure C, in order to keep the resource usage as low as pos
 
 ## Installation
 
+### Distribution-specific guide
+
+- Debian & Ubuntu
+
+```bash
+sudo apt install openssl libssl-dev
+```
+
+- RHEL & Fedora
+
+```bash
+sudo yum install openssl openssl-devel
+```
+
+Then
+
+```c
+make
+```
+
+## Uninstallation
+
+```c
+make clean
+```
 
 ## Usage
 
-Usage: dostool [option]
+Usage: ./dostool [option]
 
 Example:
 ./dostool -a 0 -u "admin" -i "http:\\192.168.1.1:80/login.asp
