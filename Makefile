@@ -15,7 +15,7 @@ EXEC = dos-tool
 
 start: $(OBJS)
 		$(CC) -o $(EXEC) $(OBJS) -g -Wall -lpthread -lcrypto -lssl
-		@echo 'complie done'
+		@echo 'Compiled'
 
 .c.o:
 		$(CC) -o $@ -c $< -g -Wall -lpthread -lcrypto -lss
@@ -23,4 +23,4 @@ start: $(OBJS)
 clean:
 		rm -f $(OBJS)
 		rm -f $(EXEC)
-		@echo 'clean done'
+		@echo 'Clean up'
