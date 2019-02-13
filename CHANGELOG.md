@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - tool folder.
 - attack folder.
 
-## 0.20 - 2019-2-14
+## [0.20] - 2019-2-14
 
 ### Added
 
@@ -43,4 +43,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Can work good at my company's network.
 
 [Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.20...HEAD
-[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.10...v0.20
+[0.20]: https://github.com/rikonaka/Dos-Tool/compare/v0.10...v0.20
