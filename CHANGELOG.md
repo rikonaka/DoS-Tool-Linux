@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Reorganize the file structure.
+
+### Removed
+
+- tool folder.
+- attack folder.
+
+## [0.20] - 2019-2-14
+
 ### Added
 
 - Start rewrite the whole code.
@@ -31,4 +42,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Can work good at my company's network.
 
-[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.10...HEAD
+[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.30...HEAD
+[0.20]: https://github.com/rikonaka/Dos-Tool/compare/v0.20...HEAD

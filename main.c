@@ -329,14 +329,14 @@ static int ProcessInput(const int argc, char *argv[], pInput input)
                     switch (*argv[i])
                     {
                     case '0':
-                        input->random_sip_address = DISABLE_SIP;
+                        input->random_sip_address = DISABLE;
                         break;
                     case '1':
-                        input->random_sip_address = ENABLE_SIP;
+                        input->random_sip_address = ENABLE;
                         break;
                     default:
                         DisplayWarning("Value of -R parameter is not allowed, use default value now");
-                        input->random_sip_address = ENABLE_SIP;
+                        input->random_sip_address = ENABLE;
                         break;
                     }
                 }
@@ -644,7 +644,7 @@ int main(int argc, char *argv[])
      */
 
     extern void FreeGetCurrentVersionBuff(char *p);
-    extern int GetCurrentVersion(char **output);
+    extern char *GetCurrentVersion(char **output);
 
     if (argc == 1)
     {
@@ -670,7 +670,11 @@ int main(int argc, char *argv[])
     }
 
     char *version;
-    GetCurrentVersion(&version);
+    if (!GetCurrentVersion(&version))
+    {
+        DisplayError("GetCurrentVersion failed");
+        return -1;
+    }
     DisplayInfo("dos-tool version %s", version);
     FreeGetCurrentVersionBuff(version);
 

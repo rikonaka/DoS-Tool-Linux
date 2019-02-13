@@ -13,7 +13,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#include "../main.h"
+#include "main.h"
 
 #define HTTP_FLAG 0
 #define HTTPS_FLAG 1

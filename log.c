@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../main.h"
+#include "main.h"
 
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);

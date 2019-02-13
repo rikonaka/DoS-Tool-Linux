@@ -13,8 +13,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "syn_flood_dos.h"
-#include "../main.h"
+#include "attack_syn_flood_dos.h"
+#include "main.h"
 
 // from ../core/debug.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);

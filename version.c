@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "../main.h"
+#include "main.h"
 
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);
@@ -19,14 +19,14 @@ void FreeGetCurrentVersionBuff(char *p)
     }
 }
 
-int GetCurrentVersion(char **output)
+char *GetCurrentVersion(char **output)
 {
     // return the current version of this code
     *output = (char *)malloc(sizeof(char));
     if (!strncpy((*output), version, strlen(version)))
     {
         DisplayError("GetCurrentVersion strncpy failed");
-        return -1;
+        return NULL;
     }
-    return 0;
+    return (*output);
 }

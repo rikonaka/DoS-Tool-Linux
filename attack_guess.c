@@ -4,8 +4,10 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "../main.h"
-#include "guess.h"
+#include "main.h"
+#include "attack_guess.h"
+#include "router/feixun.h"
+#include "router/tplink.h"
 
 // from ../core/debug.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
@@ -66,7 +68,7 @@ static int MatchModel(pMatchOutput *output, const char *input)
         (*output)->success_or_not = FEIXUN_FWR_604H_POST_SUCCESS;
         (*output)->next = NULL;
     }
-    else if (strstr(input, "nextcloud15"))
+    else if (strstr(input, "tplink"))
     {
         (*output) = (pMatchOutput)malloc(sizeof(MatchOutput));
         if (!(*output))
@@ -74,9 +76,9 @@ static int MatchModel(pMatchOutput *output, const char *input)
             DisplayError("MatchModel malloc failed");
             return -1;
         }
-        (*output)->request = NEXTCLOUD15_POST_REQUEST;
-        (*output)->request_data = NEXTCLOUD15_POST_REQUEST_DATA;
-        (*output)->success_or_not = NEXTCLOUD15_POST_SUCCESS;
+        (*output)->request = TPLINK_POST_REQUEST;
+        (*output)->request_data = TPLINK_POST_REQUEST_DATA;
+        (*output)->success_or_not = TPLINK_SUCCESS;
         (*output)->next = NULL;
     }
     else if (strstr(input, "not_sure"))

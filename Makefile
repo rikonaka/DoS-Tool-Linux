@@ -1,14 +1,16 @@
 .SUFFIXES:.c .o
 
 CC   = gcc
-SRCS = main.c         \
-       tool/debug.c   \
-	   tool/base64.c  \
-	   tool/https.c   \
-	   tool/str.c     \
-	   tool/version.c \
-	   attack/guess.c \
-	   attack/syn_flood_dos.c 
+SRCS = main.c\
+       log.c\
+	   base64.c\
+	   https.c\
+	   str.c\
+	   version.c\
+	   attack_guess.c\
+	   router/feixun.c\
+	   router/tplink.c\
+	   attack_syn_flood_dos.c 
 
 OBJS = $(SRCS:.c=.o)
 EXEC = dos-tool
