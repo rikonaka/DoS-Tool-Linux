@@ -9,6 +9,9 @@
 #include "router/feixun.h"
 #include "router/tplink.h"
 
+// waste too many time in the guess password module
+// and now this module will not work any more until dos module compelete
+
 // from ../core/debug.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);
