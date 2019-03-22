@@ -9,7 +9,7 @@ extern int DisplayWarning(const char *fmt, ...);
 extern int DisplayError(const char *fmt, ...);
 
 // char *version = "v0.10";
-char *version = "v0.20";
+const char *version = "0.20";
 
 void FreeGetCurrentVersionBuff(char *p)
 {
