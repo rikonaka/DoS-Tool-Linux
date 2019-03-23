@@ -1,0 +1,373 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../main.h"
+
+extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DisplayInfo(const char *fmt, ...);
+extern int DisplayWarning(const char *fmtsring, ...);
+extern int DisplayError(const char *fmt, ...);
+
+pInput *ProcessInput(const int argc, char *argv[], pInput input)
+{
+    /*
+        understood the user input meaning
+     */
+    int i;
+    char *ptmp;
+    char *ptmp2;
+
+    for (i = 1; i < argc; i++)
+    {
+        ptmp = (char *)strstr(argv[i], "-");
+        if (!ptmp)
+        {
+            printf("Illegal input\n");
+            return NULL;
+        }
+
+        ptmp2 = (char *)strstr(++ptmp, "-");
+        if (ptmp2)
+        {
+            // --option
+            if (strstr(ptmp2, "get-response-length"))
+            {
+                input->get_response_length = ENABLE;
+            }
+            else if (strstr(ptmp2, "set-watch-length"))
+            {
+                if (argv[++i])
+                {
+                    input->get_response_length = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayError("Can not found value of --set-watch-length parameter");
+                    return NULL;
+                }
+            }
+            else if (strstr(ptmp2, "ip-repeat-time"))
+            {
+                if (argv[++i])
+                {
+                    input->each_ip_repeat = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayError("Can not found value of --ip-repeat-time parameter");
+                    return NULL;
+                }
+            }
+            else
+            {
+                DisplayError("Illegal input");
+                return NULL;
+            }
+        }
+        else
+        {
+            // -option
+            switch (*ptmp)
+            {
+            case 'a':
+                // int
+                if (argv[++i])
+                {
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        input->attack_mode = GUESS_USERNAME_PASSWORD;
+                        break;
+                    case '1':
+                        input->attack_mode = SYN_FLOOD_ATTACK;
+                        break;
+                    default:
+                        DisplayWarning("Value of the -a parameter is not allowed, use default value now");
+                        input->attack_mode = ATTACK_MODE_DEFAULT;
+                        break;
+                    }
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -a parameter, use default value now");
+                    input->attack_mode = ATTACK_MODE_DEFAULT;
+                    // return NULL;
+                }
+                break;
+
+            case 'd':
+                // int
+                if (argv[++i])
+                {
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        input->debug_level = DEBUG_OFF;
+                        break;
+                    case '1':
+                        input->debug_level = DEBUG_LEVEL_1;
+                        break;
+                    case '2':
+                        input->debug_level = DEBUG_LEVEL_2;
+                        break;
+                    case '3':
+                        input->debug_level = DEBUG_LEVEL_3;
+                        break;
+                    default:
+                        DisplayWarning("Value of -d parameter is not allowed, use default value now");
+                        input->debug_level = DEBUG_LEVEL_DEFAULT;
+                        break;
+                    }
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -d parameter, use default value now");
+                    input->debug_level = DEBUG_LEVEL_DEFAULT;
+                    // return NULL;
+                }
+                break;
+
+            case 'u':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->username, argv[i], MAX_USERNAME_LENGTH);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -u parameter, use the default value now");
+                    strncpy(input->username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
+                }
+                break;
+
+            case 'U':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->username_path, argv[i], MAX_USERNAME_PATH_LENGTH);
+                }
+                else
+                {
+                    DisplayError("Can not found value of -U parameter");
+                    return NULL;
+                }
+                break;
+
+            case 'P':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->password_path, argv[i], MAX_PASSWORD_PATH_LENGTH);
+                }
+                else
+                {
+                    DisplayError("Can not found value of -P parameter");
+                    return NULL;
+                }
+                break;
+
+            case 't':
+                // int
+                if (argv[++i])
+                {
+                    input->max_thread = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -t parameter, use default value now");
+                    input->max_thread = THREAD_NUM_DEFAULT;
+                    // return NULL;
+                }
+                break;
+
+            case 'p':
+                // int
+                if (argv[++i])
+                {
+                    input->max_process = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -p parameter, use default value now");
+                    input->max_process = PROCESS_NUM_DEFAULT;
+                    // return NULL;
+                }
+                break;
+
+            case 'r':
+                // int
+                if (argv[++i])
+                {
+                    input->random_password_length = atoi(argv[i]);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -r parameter, use default value now");
+                    input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
+                    // return NULL;
+                }
+                break;
+
+            case 'i':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->address, argv[i], MAX_URL_LENGTH);
+                }
+                else
+                {
+                    DisplayError("Can not found value of -i parameter");
+                    return NULL;
+                }
+                break;
+
+            case 'R':
+                // int
+                if (argv[++i])
+                {
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        input->random_sip_address = DISABLE;
+                        break;
+                    case '1':
+                        input->random_sip_address = ENABLE;
+                        break;
+                    default:
+                        DisplayWarning("Value of -R parameter is not allowed, use default value now");
+                        input->random_sip_address = ENABLE;
+                        break;
+                    }
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -i parameter, use default value now");
+                    input->random_sip_address = RANDOM_SIP_DEFAULT;
+                }
+                break;
+
+            case 'm':
+                // char
+                if (argv[++i])
+                {
+                    strncpy(input->model_type, argv[i], MAX_MODEL_TYPE_LENGTH);
+                }
+                else
+                {
+                    DisplayWarning("Can not found value of -m parameter use default value now");
+                    strncpy(input->model_type, (char *)MODEL_TYPE_DEFAULT, MAX_MODEL_TYPE_LENGTH);
+                }
+                break;
+
+            case 'h':
+                DisplayUsage();
+                //return 0;
+                exit(0);
+
+            default:
+                DisplayError("Please check you input");
+                DisplayUsage();
+                return NULL;
+            }
+        }
+    }
+
+    return input;
+}
+
+int CheckInputCompliance(const pInput input)
+{
+    /*
+     * check the compliance of user input
+     * like -U must use with -P .etc
+     * 
+     * return:
+     * 0  - check pass
+     * -1 - error
+     */
+
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter CheckInputCompliance");
+
+    // in the dos attack mode, can not appear 'http' in the address
+    if (input->attack_mode != 0)
+    {
+        if (strstr(input->address, "http"))
+        {
+            DisplayError("Please check your address, this should not appear http or https");
+            return 1;
+        }
+    }
+
+    // -U must with -P
+    if (strlen(input->username_path) > 0)
+    {
+        if (strlen(input->password_path) == 0)
+        {
+            DisplayError("Place check your -U paratemer, -U must use with -P");
+            return 1;
+        }
+    }
+
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit CheckInputCompliance");
+    return 0;
+}
+
+pInput *InitInput(pInput *p)
+{
+    // make sure the buff is clean
+    (*p) = (pInput)malloc(sizeof(Input));
+    if (!(*p))
+    {
+        DisplayError("Init input malloc failed");
+        return NULL;
+    }
+    if (!memset((*p)->address, 0, sizeof((*p)->address)))
+    {
+        DisplayError("Init input memset failed");
+        return NULL;
+    }
+    if (!memset((*p)->username, 0, sizeof((*p)->username)))
+    {
+        DisplayError("Init input memset failed");
+        return NULL;
+    }
+    if (!memset((*p)->username_path, 0, sizeof((*p)->username_path)))
+    {
+        DisplayError("Init input memset failed");
+        return NULL;
+    }
+    if (!memset((*p)->password_path, 0, sizeof((*p)->password_path)))
+    {
+        DisplayError("Init input memset failed");
+        return NULL;
+    }
+    if (!memset((*p)->model_type, 0, sizeof((*p)->model_type)))
+    {
+        DisplayError("Init input memset failed");
+        return NULL;
+    }
+
+    // field default value
+    (*p)->attack_mode = ATTACK_MODE_DEFAULT;
+    (*p)->max_process = PROCESS_NUM_DEFAULT;
+    (*p)->max_thread = THREAD_NUM_DEFAULT;
+    (*p)->debug_level = DEBUG_LEVEL_DEFAULT;
+    (*p)->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
+    (*p)->random_sip_address = RANDOM_SIP_DEFAULT;
+    (*p)->watch_length = 0;
+    (*p)->each_ip_repeat = EACH_IP_REPEAT_TIME;
+    (*p)->test_type = -1;
+    if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
+    {
+        DisplayError("Init input strncpy failed");
+        return NULL;
+    }
+    if (!strncpy((*p)->model_type, (char *)MODEL_TYPE_DEFAULT, strlen((char *)MODEL_TYPE_DEFAULT)))
+    {
+        DisplayError("Init input strncpy failed");
+        return NULL;
+    }
+
+    return (*p);
+}
