@@ -4,7 +4,7 @@
 
 #include "../main.h"
 
-int DisplayUsage(void)
+void DisplayUsage(void)
 {
     /*
         show the useage info
@@ -60,5 +60,4 @@ int DisplayUsage(void)
                   "";
 
     printf("%s", usage);
-    return 0;
 }

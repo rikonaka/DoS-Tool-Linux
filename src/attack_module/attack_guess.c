@@ -24,7 +24,7 @@ extern void FreeSplitURLBuff(pSplitURLOutput p);
 extern pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomPasswordBuff(char *password);
 extern void FreeProcessFileBuff(pStrHeader p);
-extern int ProcessFile(const char *path, pStrHeader *output, int flag);
+extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
 
 // from ../core/http.c
 extern size_t HTTPMethod(const char *url, const char *request, char **response, int debug_level);
@@ -595,7 +595,6 @@ int GuessAttack(pInput input)
         return 1;
     }
     FreeMatchModelBuff(mt);
-    pthread_exit(NULL);
     return 0;
 }
 

@@ -60,7 +60,7 @@ size_t Base64Decode(unsigned char **buffer, char *b64message)
     if (length != decode_len)
     {
         /* something wrong now */
-        return 0;
+        return (size_t)NULL;
     }
 
     BIO_free_all(bio);

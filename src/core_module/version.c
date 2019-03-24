@@ -26,7 +26,7 @@ char *GetCurrentVersion(char **output)
     if (!strncpy((*output), version, strlen(version)))
     {
         DisplayError("GetCurrentVersion strncpy failed");
-        return NULL;
+        return (char *)NULL;
     }
     return (*output);
 }

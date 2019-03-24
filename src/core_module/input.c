@@ -24,7 +24,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
         if (!ptmp)
         {
             printf("Illegal input\n");
-            return NULL;
+            return (pInput *)NULL;
         }
 
         ptmp2 = (char *)strstr(++ptmp, "-");
@@ -44,7 +44,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of --set-watch-length parameter");
-                    return NULL;
+                    return (pInput *)NULL;
                 }
             }
             else if (strstr(ptmp2, "ip-repeat-time"))
@@ -56,13 +56,13 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of --ip-repeat-time parameter");
-                    return NULL;
+                    return (pInput *)NULL;
                 }
             }
             else
             {
                 DisplayError("Illegal input");
-                return NULL;
+                return (pInput *)NULL;
             }
         }
         else
@@ -150,7 +150,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of -U parameter");
-                    return NULL;
+                    return (pInput *)NULL;
                 }
                 break;
 
@@ -163,7 +163,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of -P parameter");
-                    return NULL;
+                    return (pInput *)NULL;
                 }
                 break;
 
@@ -218,7 +218,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of -i parameter");
-                    return NULL;
+                    return (pInput *)NULL;
                 }
                 break;
 
@@ -268,7 +268,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
             default:
                 DisplayError("Please check you input");
                 DisplayUsage();
-                return NULL;
+                return (pInput *)NULL;
             }
         }
     }
@@ -320,32 +320,32 @@ pInput *InitInput(pInput *p)
     if (!(*p))
     {
         DisplayError("Init input malloc failed");
-        return NULL;
+        return (pInput *)NULL;
     }
     if (!memset((*p)->address, 0, sizeof((*p)->address)))
     {
         DisplayError("Init input memset failed");
-        return NULL;
+        return (pInput *)NULL;
     }
     if (!memset((*p)->username, 0, sizeof((*p)->username)))
     {
         DisplayError("Init input memset failed");
-        return NULL;
+        return (pInput *)NULL;
     }
     if (!memset((*p)->username_path, 0, sizeof((*p)->username_path)))
     {
         DisplayError("Init input memset failed");
-        return NULL;
+        return (pInput *)NULL;
     }
     if (!memset((*p)->password_path, 0, sizeof((*p)->password_path)))
     {
         DisplayError("Init input memset failed");
-        return NULL;
+        return (pInput *)NULL;
     }
     if (!memset((*p)->model_type, 0, sizeof((*p)->model_type)))
     {
         DisplayError("Init input memset failed");
-        return NULL;
+        return (pInput *)NULL;
     }
 
     // field default value
@@ -361,12 +361,12 @@ pInput *InitInput(pInput *p)
     if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
     {
         DisplayError("Init input strncpy failed");
-        return NULL;
+        return (pInput *)NULL;
     }
     if (!strncpy((*p)->model_type, (char *)MODEL_TYPE_DEFAULT, strlen((char *)MODEL_TYPE_DEFAULT)))
     {
         DisplayError("Init input strncpy failed");
-        return NULL;
+        return (pInput *)NULL;
     }
 
     return (*p);

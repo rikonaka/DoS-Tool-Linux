@@ -50,27 +50,27 @@ static int TCPConnectCreate(const char *host, int port)
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         DisplayError("Init socket failed: %s", strerror(errno));
-        return NULL;
+        return (int)NULL;
     }
 
     /* setsockopt sucess return 0 */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
         DisplayError("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
-        return NULL;
+        return (int)NULL;
     }
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(struct timeval)))
     {
         DisplayError("setsockopt SO_RCVTIMEO failed: %s", strerror(errno));
-        return NULL;
+        return (int)NULL;
     }
 
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         close(sock);
         DisplayError("Connect host failed: %s", strerror(errno));
-        return NULL;
+        return (int)NULL;
     }
 
     return sock;
@@ -103,7 +103,7 @@ static ssize_t TCPSend(const int socket, const char *buff, int flag)
             if (sent_size < 0)
             {
                 DisplayError("TCP send data failed");
-                return NULL;
+                return (size_t)NULL;
             }
             sent_total_size += sent_size;
         }
@@ -116,7 +116,7 @@ static ssize_t TCPSend(const int socket, const char *buff, int flag)
             if (sent_size < 0)
             {
                 DisplayError("TCP via ssl send data failed");
-                return NULL;
+                return (size_t)NULL;
             }
             sent_total_size += sent_size;
         }
@@ -124,7 +124,7 @@ static ssize_t TCPSend(const int socket, const char *buff, int flag)
     else
     {
         DisplayError("TCPSend flag set wrong");
-        return NULL;
+        return (size_t)NULL;
     }
 
     // function will return the sizeof send data bytes
@@ -150,7 +150,7 @@ static ssize_t TCPRecv(int socket, char **rebuff, int flag)
             if (recv_size < 0)
             {
                 DisplayError("TCP recv data failed");
-                return NULL;
+                return (ssize_t)NULL;
             }
             else if (recv_size == 0)
             {
@@ -162,7 +162,7 @@ static ssize_t TCPRecv(int socket, char **rebuff, int flag)
             if (!buff)
             {
                 DisplayError("TCPRecv realloc failed");
-                return NULL;
+                return (ssize_t)NULL;
             }
             recv_total_size += recv_size;
         }
@@ -175,7 +175,7 @@ static ssize_t TCPRecv(int socket, char **rebuff, int flag)
             if (recv_size < 0)
             {
                 DisplayError("TCP via https recv data failed");
-                return NULL;
+                return (ssize_t)NULL;
             }
             else if (recv_size == 0)
             {
@@ -186,7 +186,7 @@ static ssize_t TCPRecv(int socket, char **rebuff, int flag)
             if (!buff)
             {
                 DisplayError("TCPRecv via https realloc failed");
-                return NULL;
+                return (ssize_t)NULL;
             }
             recv_total_size += recv_size;
         }
@@ -232,12 +232,12 @@ size_t HTTPMethod(const char *url, const char *request, char **response, int deb
     if (!url || !request)
     {
         DisplayError("url or post_str not find");
-        return NULL;
+        return (size_t)NULL;
     }
     if (SplitURL(url, &sp))
     {
         DisplayError("ProcessURL failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     DisplayDebug(DEBUG_LEVEL_2, debug_level, "host_addr: %s suffix:%s port:%d", sp->host, sp->suffix, sp->port);
@@ -246,7 +246,7 @@ size_t HTTPMethod(const char *url, const char *request, char **response, int deb
     if (!sock)
     {
         DisplayError("TCPConnectCreate failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     // 2 send
@@ -285,7 +285,7 @@ static SSL_CTX *InitCTX(SSL_CTX **output)
     {
         DisplayError("InitCTX failed");
         ERR_print_errors_fp(stderr);
-        return NULL;
+        return (SSL_CTX *)NULL;
     }
     return (*output);
 }
@@ -345,19 +345,19 @@ size_t HTTPSMethod(const char *url, const char *request, char **response, int de
     if (!url || !request)
     {
         DisplayError("url or post_str not find");
-        return NULL;
+        return (size_t)NULL;
     }
     if (!SplitURL(url, &sp))
     {
         DisplayError("ProcessURL failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     // 1 ssl init
     if (!InitCTX(&ctx))
     {
         DisplayError("HTTPSMethod InitCTX failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     DisplayDebug(DEBUG_LEVEL_2, debug_level, "host_addr: %s suffix:%s port:%d", sp->host, sp->suffix, sp->port);
@@ -366,7 +366,7 @@ size_t HTTPSMethod(const char *url, const char *request, char **response, int de
     if (!sock)
     {
         DisplayError("TCPConnectCreate failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     // 3 add ssl
@@ -376,7 +376,7 @@ size_t HTTPSMethod(const char *url, const char *request, char **response, int de
     {
         DisplayError("HTTPSMethod SSL_connect failed");
         ERR_print_errors_fp(stderr);
-        return NULL;
+        return (size_t)NULL;
     }
     // use the global value
     GLOBAL_SSL = ssl;
@@ -386,7 +386,7 @@ size_t HTTPSMethod(const char *url, const char *request, char **response, int de
     {
         // failed
         DisplayError("HTTPSMethod ShowCert failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     // 4 send
@@ -394,7 +394,7 @@ size_t HTTPSMethod(const char *url, const char *request, char **response, int de
     if (!TCPSend(sock, request, HTTPS_FLAG))
     {
         DisplayError("TCPSend failed");
-        return NULL;
+        return (size_t)NULL;
     }
 
     // 5 recv
@@ -402,7 +402,7 @@ size_t HTTPSMethod(const char *url, const char *request, char **response, int de
     if (!TCPRecv(sock, response, HTTPS_FLAG))
     {
         DisplayError("TCPRecv failed");
-        return NULL;
+        return (size_t)NULL;
     }
     DisplayDebug(DEBUG_LEVEL_2, debug_level, "Data: %s", response);
 

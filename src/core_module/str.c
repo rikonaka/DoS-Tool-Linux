@@ -49,12 +49,12 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     if (!ptmp)
     {
         DisplayError("SplitURL malloc failed, %s", strerror(errno));
-        return NULL;
+        return (pSplitURLOutput *)NULL;
     }
     if (!strcpy(ptmp, url))
     {
         DisplayError("SplitURL strcpy failed, %s", strerror(errno));
-        return NULL;
+        return (pSplitURLOutput *)NULL;
     }
     //      12           3
     // http://192.168.1.1/index.html
@@ -76,7 +76,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!second_slash_position)
         {
             DisplayError("SplitURL found the URL is not complete");
-            return NULL;
+            return (pSplitURLOutput *)NULL;
         }
         colon_position = strchr(second_slash_position + 1, ':');
     }
@@ -98,17 +98,17 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     if (!memset(host_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
-        return NULL;
+        return (pSplitURLOutput *)NULL;
     }
     if (!memset(suffix_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
-        return NULL;
+        return (pSplitURLOutput *)NULL;
     }
     if (!memset(port_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
-        return NULL;
+        return (pSplitURLOutput *)NULL;
     }
 
     // copy the host to host_buff
@@ -171,7 +171,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
             if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
             {
                 DisplayError("SplitURL sprintf failed");
-                return NULL;
+                return (pSplitURLOutput *)NULL;
             }
         }
         else if (strstr(purl, "http"))
@@ -179,7 +179,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
             if (!sprintf(port_buff, "%d", HTTP_PORT_DEFAULT))
             {
                 DisplayError("SplitURL sprintf failed");
-                return NULL;
+                return (pSplitURLOutput *)NULL;
             }
         }
     }
@@ -189,7 +189,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     if (!memset(protocol_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
-        return NULL;
+        return (pSplitURLOutput *)NULL;
     }
 
     if (strstr(purl, "https"))
@@ -198,7 +198,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(protocol_buff, "https"))
         {
             DisplayError("SplitURL strcpy failed");
-            return NULL;
+            return (pSplitURLOutput *)NULL;
         }
     }
     else if (strstr(purl, "http"))
@@ -206,7 +206,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(protocol_buff, "http"))
         {
             DisplayError("SplitURL strcpy failed");
-            return NULL;
+            return (pSplitURLOutput *)NULL;
         }
     }
     else
@@ -214,7 +214,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(protocol_buff, "not_set"))
         {
             DisplayError("SplitURL strcpy failed");
-            return NULL;
+            return (pSplitURLOutput *)NULL;
         }
     }
     // end copy
@@ -266,12 +266,12 @@ char *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
     if (!r_password)
     {
         DisplayError("GetRandomPassword malloc failed");
-        return NULL;
+        return (char *)NULL;
     }
     if (!memset(r_password, 0, MAX_PASSWORD_LENGTH))
     {
         DisplayError("GetRandomPassword memset failed");
-        return NULL;
+        return (char *)NULL;
     }
     int r_num;
     int i;
@@ -290,7 +290,7 @@ char *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
             if (!sprintf(r_password, "%s%c", r_password, r_num))
             {
                 DisplayError("GetRandomPassword sprintf failed");
-                return NULL;
+                return (char *)NULL;
             }
         }
     }
@@ -342,7 +342,7 @@ void FreeProcessFileBuff(pStrHeader p)
     }
 }
 
-int ProcessFile(const char *path, pStrHeader *output, int flag)
+pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -361,7 +361,7 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
     if (!(*output))
     {
         DisplayError("ProcessFile malloc failed");
-        return 1;
+        return (pStrHeader *)NULL;
     }
     pStrNode u_list;
     (*output)->length = 0;
@@ -375,7 +375,7 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
     if (!fp)
     {
         DisplayError("Error: Can not open the username file");
-        return 1;
+        return (pStrHeader *)NULL;
     }
     while (!feof(fp))
     {
@@ -383,7 +383,7 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
         if (!memset(buff, 0, LENGTH + 1))
         {
             DisplayError("ProcessFile memset failed");
-            return 1;
+            return (pStrHeader *)NULL;
         }
         ch = fgetc(fp);
         while (ch && ch != '\n' && ch != '\r' && !feof(fp))
@@ -391,7 +391,7 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
             if (!sprintf(buff, "%s%c", buff, ch))
             {
                 DisplayError("ProcessFile sprintf failed");
-                return 1;
+                return (pStrHeader *)NULL;
             }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
@@ -404,7 +404,7 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
             if (!u_list)
             {
                 DisplayError("ProcessFile malloc failed");
-                return 1;
+                return (pStrHeader *)NULL;
             }
             u_list->next = (*output)->next;
             (*output)->next = u_list;
@@ -414,12 +414,12 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
             if (!memset(u_list->str, 0, u_length + 1))
             {
                 DisplayError("ProcessFile memset failed");
-                return 1;
+                return (pStrHeader *)NULL;
             }
             if (!strncpy(u_list->str, buff, u_length))
             {
                 DisplayError("ProcessFile strncpy failed");
-                return 1;
+                return (pStrHeader *)NULL;
             }
             ++((*output)->length);
             ++count;
@@ -428,9 +428,9 @@ int ProcessFile(const char *path, pStrHeader *output, int flag)
     if (fclose(fp))
     {
         DisplayError("ProcessFile fclose failed");
-        return 1;
+        return (pStrHeader *)NULL;
     }
-    return 0;
+    return (*output);
 }
 
 static int GetRandomNumForIP(int seed, int *output)
@@ -446,7 +446,7 @@ static int GetRandomNumForIP(int seed, int *output)
     // [1, 254] except space[32]
     // 252 = 254 - 1 - 1
     *output = 1 + (int)(rand() % 252);
-    return 0;
+    return (*output);
 }
 
 void FreeRandomIPBuff(char *p)
@@ -457,7 +457,7 @@ void FreeRandomIPBuff(char *p)
     }
 }
 
-int GetRandomIP(char **output)
+char *GetRandomIP(char **output)
 {
     /*
      * Return the random ip address
@@ -469,23 +469,23 @@ int GetRandomIP(char **output)
     if (!(*output))
     {
         DisplayError("GetRandomIP malloc failed, %s", strerror(errno));
-        return 1;
+        return (char *)NULL;
     }
     if (!memset((*output), 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
     {
         DisplayError("GetRandomIP memset failed, %s", strerror(errno));
-        return 1;
+        return (char *)NULL;
     }
     char *random_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
     if (!random_ip)
     {
         DisplayError("GetRandomIP malloc failed, %s", strerror(errno));
-        return 1;
+        return (char *)NULL;
     }
     if (!memset(random_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
     {
         DisplayError("GetRandomIP memset failed, %s", strerror(errno));
-        return 1;
+        return (char *)NULL;
     }
 
     // 1   2   3 4
@@ -493,15 +493,11 @@ int GetRandomIP(char **output)
     for (i = 0; i < 4; i++)
     {
         // ip has four num like 192 168 1 1
-        if (GetRandomNumForIP(i, &random_num) == -1)
-        {
-            DisplayError("GetRandomIP failed");
-            return 1;
-        }
+        GetRandomNumForIP(i, &random_num);
         if (!sprintf(random_ip, "%s.%d", random_ip, random_num))
         {
             DisplayError("GetRandomIP sprintf failed, %s", strerror(errno));
-            return 1;
+            return (char *)NULL;
         }
     }
 
@@ -510,10 +506,10 @@ int GetRandomIP(char **output)
     if (!strncpy((*output), delete, strlen(delete)))
     {
         DisplayError("GetRandomIP strncpy failed");
-        return 1;
+        return (char *)NULL;
     }
     free(random_ip);
-    return 0;
+    return (*output);
 }
 
 int GetRandomPort(int *output)
@@ -530,7 +526,7 @@ int GetRandomPort(int *output)
     // 9997 = 9999 - 1 - 1
     random_number = 1 + (int)(rand() % 9997);
     *output = random_number;
-    return 0;
+    return (*output);
 }
 
 /*

@@ -17,13 +17,13 @@ extern int ProcessInput(const int argc, char *argv[], pInput input);
 extern int CheckInputCompliance(const pInput input);
 extern int InitInput(pInput *p);
 
-extern int DisplayUsage(void);
+extern void DisplayUsage(void);
 
 static int StartSYNFlood(pInput input)
 {
     // run function in thread
     // this attack type must run as root
-    extern int SYNFloodAttack(pInput input);
+    extern int SYNFloodAttack_Thread(pInput input);
 
     pid_t pid, wpid;
     pthread_t tid[input->max_thread];
@@ -55,7 +55,7 @@ static int StartSYNFlood(pInput input)
                     return 1;
                 }
                 // create thread
-                ret = pthread_create(&tid[j], &attr, (void *)SYN_FLOOD_ATTACK, input);
+                ret = pthread_create(&tid[j], &attr, (void *)SYNFloodAttack_Thread, input);
                 //printf("j is: %d\n", j);
                 DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
                 // here we make a map
@@ -91,8 +91,9 @@ static int StartSYNFlood(pInput input)
 static int StartGuess(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
-    extern int ProcessFile(const char *path, pStrHeader *output, int flag);
-    extern int GuessAttack(pInput input);
+    extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
+    extern int GuessAttack_Thread(pInput input);
+
     pid_t pid, wpid;
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
@@ -110,10 +111,10 @@ static int StartGuess(const pInput input)
     if (input->get_response_length == ENABLE)
     {
         input->guess_attack_type = GUESS_GET_RESPONSE_LENGTH;
-        int length = GuessAttack(input);
+        int length = GuessAttack_Thread(input);
         if (length == -1)
         {
-            DisplayError("GuessAttack failed");
+            DisplayError("GuessAttack_Thread failed");
             return 1;
         }
         DisplayInfo("Response length is %d", length);
@@ -169,7 +170,7 @@ static int StartGuess(const pInput input)
                     return 1;
                 }
                 // create thread
-                ret = pthread_create(&tid[j], &attr, (void *)GuessAttack, input);
+                ret = pthread_create(&tid[j], &attr, (void *)GuessAttack_Thread, input);
                 //printf("j is: %d\n", j);
                 DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
                 // here we make a map
@@ -221,8 +222,6 @@ static int StartGuess(const pInput input)
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
     return 0;
 }
-
-
 
 int main(int argc, char *argv[])
 {
