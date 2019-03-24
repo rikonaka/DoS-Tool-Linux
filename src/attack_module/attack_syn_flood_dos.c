@@ -66,6 +66,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
         {
             DisplayWarning("You shoud check max file number use 'ulimit -n' in linux");
             DisplayWarning("And change the max file number use 'ulimit -n <setting number>'");
+            DisplayWarning("Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time");
         }
         return 1;
     }
