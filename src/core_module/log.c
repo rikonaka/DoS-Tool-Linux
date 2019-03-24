@@ -176,7 +176,7 @@ int DisplayWarning(const char *fmt, ...)
     time(&t);
     time_struct = localtime(&t);
     // highlight and yellow
-    printf("\033[0;33m%d-%d-%d %d:%d:%d WARNING [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
+    printf("\033[0;35m%d-%d-%d %d:%d:%d WARNING [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
 
     va_end(arg);
     free(buff);

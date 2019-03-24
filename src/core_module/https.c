@@ -47,29 +47,39 @@ static int TCPConnectCreate(const char *host, int port)
     //server_addr.sin_addr = *((struct in_addr *)he->h_addr);
     //server_addr.sin_addr = *((struct in_addr *)he->h_addr_list);
 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
     {
-        DisplayError("Init socket failed: %s", strerror(errno));
+        DisplayError("Create socket failed: %s(%d)", strerror(errno), errno);
+        if (errno == 1)
+        {
+            DisplayWarning("This program should run as root user");
+        }
+        else if (errno == 24)
+        {
+            DisplayWarning("You shoud check max file number use 'ulimit -n' in linux");
+            DisplayWarning("And change the max file number use 'ulimit -n <setting number>'");
+        }
         return 0;
     }
 
     /* setsockopt sucess return 0 */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
-        DisplayError("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
+        DisplayError("setsockopt SO_REUSEADDR failed: %s(%d)", strerror(errno), errno);
         return 0;
     }
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(struct timeval)))
     {
-        DisplayError("setsockopt SO_RCVTIMEO failed: %s", strerror(errno));
+        DisplayError("setsockopt SO_RCVTIMEO failed: %s(%d)", strerror(errno), errno);
         return 0;
     }
 
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         close(sock);
-        DisplayError("Connect host failed: %s", strerror(errno));
+        DisplayError("Connect host failed: %s(%d)", strerror(errno), errno);
         return 0;
     }
 

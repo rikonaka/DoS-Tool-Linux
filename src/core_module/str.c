@@ -48,12 +48,12 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     char *ptmp = purl;
     if (!ptmp)
     {
-        DisplayError("SplitURL malloc failed, %s", strerror(errno));
+        DisplayError("SplitURL malloc failed: %s(%d)", strerror(errno), errno);
         return (pSplitURLOutput *)NULL;
     }
     if (!strcpy(ptmp, url))
     {
-        DisplayError("SplitURL strcpy failed, %s", strerror(errno));
+        DisplayError("SplitURL strcpy failed: %s(%d)", strerror(errno), errno);
         return (pSplitURLOutput *)NULL;
     }
     //      12           3
@@ -480,23 +480,23 @@ char *GetRandomIP(char **output)
     (*output) = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
     if (!(*output))
     {
-        DisplayError("GetRandomIP malloc failed, %s", strerror(errno));
+        DisplayError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     if (!memset((*output), 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
     {
-        DisplayError("GetRandomIP memset failed, %s", strerror(errno));
+        DisplayError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     char *random_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
     if (!random_ip)
     {
-        DisplayError("GetRandomIP malloc failed, %s", strerror(errno));
+        DisplayError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     if (!memset(random_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
     {
-        DisplayError("GetRandomIP memset failed, %s", strerror(errno));
+        DisplayError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
 
@@ -508,7 +508,7 @@ char *GetRandomIP(char **output)
         GetRandomNumForIP(i, &random_num);
         if (!sprintf(random_ip, "%s.%d", random_ip, random_num))
         {
-            DisplayError("GetRandomIP sprintf failed, %s", strerror(errno));
+            DisplayError("GetRandomIP sprintf failed: %s(%d)", strerror(errno), errno);
             return (char *)NULL;
         }
     }
@@ -517,7 +517,7 @@ char *GetRandomIP(char **output)
     char *delete = random_ip + 1;
     if (!strncpy((*output), delete, strlen(delete)))
     {
-        DisplayError("GetRandomIP strncpy failed");
+        DisplayError("GetRandomIP strncpy failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     free(random_ip);
