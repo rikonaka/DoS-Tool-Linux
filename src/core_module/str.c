@@ -95,6 +95,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         third_slash_position = NULL;
     }
 
+    /* not useful
     if (!memset(host_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
@@ -110,6 +111,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         DisplayError("SplitURL memset failed");
         return (pSplitURLOutput *)NULL;
     }
+    */
 
     // copy the host to host_buff
     // i first use in this place
@@ -147,6 +149,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
                 ++ptmp;
             }
         }
+        host_buff[i] = '\0';
     }
     // copy end
 
@@ -232,6 +235,15 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         }
         suffix_buff[i] = '\0';
     }
+    else
+    {
+        if (!strcpy(suffix_buff, "not_set"))
+        {
+            DisplayError("SplitURL strcpy failed");
+            return (pSplitURLOutput *)NULL;
+        }
+    }
+
     // end copy
 
     (*output)->protocol = protocol_buff;

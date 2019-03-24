@@ -65,7 +65,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     struct tm *time_struct;
     time(&t);
     time_struct = localtime(&t);
-    printf("\033[0;32m%d-%d-%d %d:%d:%d DEBUG [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
+    printf("\033[0;34m%d-%d-%d %d:%d:%d DEBUG [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
     va_end(arg);
     if (buff)
     {

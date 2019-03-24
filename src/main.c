@@ -88,19 +88,6 @@ static int StartSYNFlood(pInput input)
     return 0;
 }
 
-static int StartTestSYNFlood(pInput input)
-{
-    // run function in thread
-    // this attack type must run as root
-    extern int SYNFloodAttack_Thread(pInput input);
-
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
-
-    SYNFloodAttack_Thread(input);
-
-    return 0;
-}
-
 static int StartGuess(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
@@ -236,18 +223,30 @@ static int StartGuess(const pInput input)
     return 0;
 }
 
+static int StartTestSYNFlood(pInput input)
+{
+    // run function in thread
+    // this attack type must run as root
+    extern int SYNFloodAttack_Thread(pInput input);
+
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNTestFlood");
+
+    SYNFloodAttack_Thread(input);
+
+    return 0;
+}
+
 static int StartTestGuess(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
     extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
     extern int GuessAttack_Thread(pInput input);
 
-
     // store the linked list if use the path file
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
     gau->u_header = NULL;
     gau->p_header = NULL;
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackProcess");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackTestProcess");
 
     // we are not allowed the username from linked list but password from random string
     if (input->get_response_length == ENABLE)
@@ -289,10 +288,9 @@ static int StartTestGuess(const pInput input)
     input->tch->next = NULL;
     input->tch->length = 0;
 
+    // no thread create for test
     GuessAttack_Thread(input);
 
-    // for test
-    //sleep(10);
     if (gau->u_header)
     {
         FreeProcessFileBuff(gau->u_header);
@@ -386,27 +384,29 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
-    switch (input->attack_mode)
+    else if (check_input == 0)
     {
-    case GUESS_USERNAME_PASSWORD:
-        if (StartGuess(input))
+        switch (input->attack_mode)
         {
-            DisplayError("StartGuess failed");
-            return 1;
-        }
-        break;
+        case GUESS_USERNAME_PASSWORD:
+            if (StartGuess(input))
+            {
+                DisplayError("StartGuess failed");
+                return 1;
+            }
+            break;
 
-    case SYN_FLOOD_ATTACK:
-        if (StartSYNFlood(input))
-        {
-            DisplayError("StartSYNFlood failed");
-            return 1;
-        }
-        break;
+        case SYN_FLOOD_ATTACK:
+            if (StartSYNFlood(input))
+            {
+                DisplayError("StartSYNFlood failed");
+                return 1;
+            }
+            break;
 
-    default:
-        break;
+        default:
+            break;
+        }
     }
 
     if (input)
