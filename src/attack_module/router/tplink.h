@@ -18,7 +18,7 @@ this.securityEncode = function(a, c, b)
 */
 
 /* *** there is not finish yet *** */
-char *TPLINK_POST_REQUEST = "POST /goform/formLogin HTTP/1.1\r\n"
+char *TPLINK_POST_REQUEST = "POST /goform/formLogin HTTPMethod/1.1\r\n"
                             "Host: %s\r\n"
                             "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:64.0) Gecko/20100101 Firefox/64.0\r\n"
                             "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"

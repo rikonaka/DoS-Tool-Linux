@@ -37,7 +37,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     if (buff_size < 0)
     {
         DisplayError("DisplayDebug get buffer_size failed");
-        return -1;
+        return 1;
     }
 
     // for '\0'
@@ -46,7 +46,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
     if (!buff)
     {
         DisplayError("DisplayDebug malloc failed");
-        return -1;
+        return 1;
     }
 
     va_start(arg, fmt);
@@ -58,7 +58,7 @@ int DisplayDebug(const int message_debug_level, const int user_debug_level, cons
         {
             free(buff);
         }
-        return -1;
+        return 1;
     }
 
     time_t t;
@@ -91,7 +91,7 @@ int DisplayInfo(const char *fmt, ...)
     if (buff_size < 0)
     {
         DisplayError("DisplayInfo get buffer_size failed");
-        return -1;
+        return 1;
     }
 
     // for '\0'
@@ -100,7 +100,7 @@ int DisplayInfo(const char *fmt, ...)
     if (!buff)
     {
         DisplayError("DisplayInfo malloc failed");
-        return -1;
+        return 1;
     }
 
     va_start(arg, fmt);
@@ -112,7 +112,7 @@ int DisplayInfo(const char *fmt, ...)
         {
             free(buff);
         }
-        return -1;
+        return 1;
     }
 
     time_t t;
@@ -147,7 +147,7 @@ int DisplayWarning(const char *fmt, ...)
     if (buff_size < 0)
     {
         DisplayError("DisplayWarning get buffer_size failed");
-        return -1;
+        return 1;
     }
 
     // for '\0'
@@ -156,7 +156,7 @@ int DisplayWarning(const char *fmt, ...)
     if (!buff)
     {
         DisplayError("DisplayWarning malloc failed");
-        return -1;
+        return 1;
     }
 
     va_start(arg, fmt);
@@ -168,7 +168,7 @@ int DisplayWarning(const char *fmt, ...)
         {
             free(buff);
         }
-        return -1;
+        return 1;
     }
 
     time_t t;
@@ -198,7 +198,7 @@ int DisplayError(const char *fmt, ...)
     if (buff_size < 0)
     {
         DisplayError("DisplayError get buffer_size failed");
-        return -1;
+        return 1;
     }
 
     // for '\0'
@@ -207,7 +207,7 @@ int DisplayError(const char *fmt, ...)
     if (!buff)
     {
         DisplayError("DisplayError malloc failed");
-        return -1;
+        return 1;
     }
 
     va_start(arg, fmt);
@@ -219,7 +219,7 @@ int DisplayError(const char *fmt, ...)
         {
             free(buff);
         }
-        return -1;
+        return 1;
     }
 
     time_t t;
