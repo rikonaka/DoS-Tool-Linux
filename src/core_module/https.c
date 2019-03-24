@@ -50,27 +50,27 @@ static int TCPConnectCreate(const char *host, int port)
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         DisplayError("Init socket failed: %s", strerror(errno));
-        return (int)NULL;
+        return 0;
     }
 
     /* setsockopt sucess return 0 */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
         DisplayError("setsockopt SO_REUSEADDR failed: %s", strerror(errno));
-        return (int)NULL;
+        return 0;
     }
 
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(struct timeval)))
     {
         DisplayError("setsockopt SO_RCVTIMEO failed: %s", strerror(errno));
-        return (int)NULL;
+        return 0;
     }
 
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         close(sock);
         DisplayError("Connect host failed: %s", strerror(errno));
-        return (int)NULL;
+        return 0;
     }
 
     return sock;

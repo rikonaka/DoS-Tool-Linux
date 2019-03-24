@@ -7,6 +7,8 @@ SRCS = main.c\
 	   core_module/https.c\
 	   core_module/str.c\
 	   core_module/version.c\
+	   core_module/input.c\
+	   core_module/usage.c\
 	   attack_module/router/feixun.c\
 	   attack_module/router/tplink.c\
 	   attack_module/attack_guess.c\

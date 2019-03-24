@@ -7,7 +7,7 @@
 void DisplayUsage(void)
 {
     /*
-        show the useage info
+     * show the useage info
      */
     char *usage = "\n"
                   "Usage: dostool [option]\n\n"
@@ -55,7 +55,11 @@ void DisplayUsage(void)
                   "      0    turn off the random source ip address which can protect you true IP in the local net\n"
                   "      1    enable random source ip address (default)\n"
                   "\n"
-                  "--ip-repeat-time         if you use the -R, indicate the each random ip repeat send times(default 1024)\n"
+                  "--ip-repeat-time         If you use the -R, indicate the each random ip repeat send times(default 1024)\n"
+                  "\n"
+                  "--test-guess               Test the syn flood attack module\n"
+                  "\n"
+                  "--test-syn               Test the syn flood attack module\n"
                   "\n"
                   "";
 

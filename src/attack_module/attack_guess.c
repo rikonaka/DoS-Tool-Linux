@@ -504,7 +504,7 @@ static unsigned long MultiThreadControl(pInput input, size_t *start, size_t *end
     return self;
 }
 
-int GuessAttack(pInput input)
+int GuessAttack_Thread(pInput input)
 {
     // start attack
 

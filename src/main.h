@@ -49,6 +49,10 @@
 #define HTTPS_PORT_DEFAULT 443
 #define EACH_IP_REPEAT_TIME 1024
 
+#define TEST_TYPE_NON 0
+#define TEST_TYPE_GUESS -1
+#define TEST_TYPE_SYN_FLOOD -2
+
 #define ENABLE 1
 #define DISABLE 0
 
@@ -103,9 +107,9 @@ typedef struct user_input
     int max_process;
     int max_thread;
     int each_ip_repeat;
-    // -1 is not test
-    // 0 is guess
-    // 1 is syn flood
+    // 0 is not test
+    // -1 is guess
+    // -2 is syn flood
     int test_type;
     // field with program
     int seed;

@@ -9,7 +9,9 @@ extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmt, ...);
 
-pInput *ProcessInput(const int argc, char *argv[], pInput input)
+extern void DisplayUsage(void);
+
+pInput ProcessInput(const int argc, char *argv[], pInput input)
 {
     /*
         understood the user input meaning
@@ -24,7 +26,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
         if (!ptmp)
         {
             printf("Illegal input\n");
-            return (pInput *)NULL;
+            return (pInput)NULL;
         }
 
         ptmp2 = (char *)strstr(++ptmp, "-");
@@ -44,7 +46,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of --set-watch-length parameter");
-                    return (pInput *)NULL;
+                    return (pInput)NULL;
                 }
             }
             else if (strstr(ptmp2, "ip-repeat-time"))
@@ -56,13 +58,21 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of --ip-repeat-time parameter");
-                    return (pInput *)NULL;
+                    return (pInput)NULL;
                 }
+            }
+            else if (strstr(ptmp2, "test-guess"))
+            {
+                input->test_type = TEST_TYPE_GUESS;
+            }
+            else if (strstr(ptmp2, "test-syn"))
+            {
+                input->test_type = TEST_TYPE_SYN_FLOOD;
             }
             else
             {
                 DisplayError("Illegal input");
-                return (pInput *)NULL;
+                return (pInput)NULL;
             }
         }
         else
@@ -150,7 +160,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of -U parameter");
-                    return (pInput *)NULL;
+                    return (pInput)NULL;
                 }
                 break;
 
@@ -163,7 +173,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of -P parameter");
-                    return (pInput *)NULL;
+                    return (pInput)NULL;
                 }
                 break;
 
@@ -218,7 +228,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
                 else
                 {
                     DisplayError("Can not found value of -i parameter");
-                    return (pInput *)NULL;
+                    return (pInput)NULL;
                 }
                 break;
 
@@ -268,7 +278,7 @@ pInput *ProcessInput(const int argc, char *argv[], pInput input)
             default:
                 DisplayError("Please check you input");
                 DisplayUsage();
-                return (pInput *)NULL;
+                return (pInput)NULL;
             }
         }
     }
@@ -288,6 +298,12 @@ int CheckInputCompliance(const pInput input)
      */
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter CheckInputCompliance");
+
+    if (input->test_type != -1)
+    {
+        DisplayInfo("Test model: %d", input->test_type);
+        return input->test_type;
+    }
 
     // in the dos attack mode, can not appear 'http' in the address
     if (input->attack_mode != 0)
@@ -357,7 +373,7 @@ pInput *InitInput(pInput *p)
     (*p)->random_sip_address = RANDOM_SIP_DEFAULT;
     (*p)->watch_length = 0;
     (*p)->each_ip_repeat = EACH_IP_REPEAT_TIME;
-    (*p)->test_type = -1;
+    (*p)->test_type = TEST_TYPE_NON;
     if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
     {
         DisplayError("Init input strncpy failed");
@@ -369,5 +385,5 @@ pInput *InitInput(pInput *p)
         return (pInput *)NULL;
     }
 
-    return (*p);
+    return p;
 }

@@ -247,7 +247,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     {
         free(purl);
     }
-    return (*output);
+    return output;
 }
 
 void FreeRandomPasswordBuff(char *password)
@@ -430,7 +430,7 @@ pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
         DisplayError("ProcessFile fclose failed");
         return (pStrHeader *)NULL;
     }
-    return (*output);
+    return output;
 }
 
 static int GetRandomNumForIP(int seed, int *output)

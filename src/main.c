@@ -88,6 +88,19 @@ static int StartSYNFlood(pInput input)
     return 0;
 }
 
+static int StartTestSYNFlood(pInput input)
+{
+    // run function in thread
+    // this attack type must run as root
+    extern int SYNFloodAttack_Thread(pInput input);
+
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
+
+    SYNFloodAttack_Thread(input);
+
+    return 0;
+}
+
 static int StartGuess(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
@@ -223,14 +236,88 @@ static int StartGuess(const pInput input)
     return 0;
 }
 
+static int StartTestGuess(const pInput input)
+{
+    extern void FreeProcessFileBuff(pStrHeader p);
+    extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
+    extern int GuessAttack_Thread(pInput input);
+
+
+    // store the linked list if use the path file
+    pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
+    gau->u_header = NULL;
+    gau->p_header = NULL;
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackProcess");
+
+    // we are not allowed the username from linked list but password from random string
+    if (input->get_response_length == ENABLE)
+    {
+        input->guess_attack_type = GUESS_GET_RESPONSE_LENGTH;
+        int length = GuessAttack_Thread(input);
+        if (length == -1)
+        {
+            DisplayError("GuessAttack_Thread failed");
+            return 1;
+        }
+        DisplayInfo("Response length is %d", length);
+        return 0;
+    }
+    else if (input->watch_length > 0)
+    {
+        input->guess_attack_type = GUESS_LENGTH;
+    }
+    else if (strlen(input->password_path) > 0)
+    {
+        ProcessFile(input->password_path, &(gau->p_header), 1);
+        if (strlen(input->username_path) > 0)
+        {
+            ProcessFile(input->username_path, &(gau->u_header), 0);
+            input->guess_attack_type = GUESS_ULPL;
+        }
+        else
+        {
+            input->guess_attack_type = GUESS_U1PL;
+        }
+    }
+    else
+    {
+        input->guess_attack_type = GUESS_U1PR;
+    }
+
+    input->gau = gau;
+    input->tch = (pThreadControlHeader)malloc(sizeof(ThreadControlHeader));
+    input->tch->next = NULL;
+    input->tch->length = 0;
+
+    GuessAttack_Thread(input);
+
+    // for test
+    //sleep(10);
+    if (gau->u_header)
+    {
+        FreeProcessFileBuff(gau->u_header);
+    }
+    if (gau->p_header)
+    {
+        FreeProcessFileBuff(gau->p_header);
+    }
+    if (gau)
+    {
+        free(gau);
+    }
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     /*
-      main function
+     * main function
      */
 
     extern void FreeGetCurrentVersionBuff(char *p);
     extern char *GetCurrentVersion(char **output);
+    int check_input;
 
     if (argc == 1)
     {
@@ -267,12 +354,37 @@ int main(int argc, char *argv[])
     DisplayInfo("Running...");
     DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
 
-    if (CheckInputCompliance(input))
+    check_input = CheckInputCompliance(input);
+    if (check_input > 0)
     {
         // process user input ready, start attack now
         DisplayError("Check compliance failed, please check your input");
         DisplayUsage();
         return 1;
+    }
+    else if (check_input < 0)
+    {
+        switch (check_input)
+        {
+        case TEST_TYPE_GUESS:
+            if (StartTestGuess(input))
+            {
+                DisplayError("StartTestGuess failed");
+                return 1;
+            }
+            break;
+
+        case TEST_TYPE_SYN_FLOOD:
+            if (StartTestSYNFlood(input))
+            {
+                DisplayError("StartTestSYNFlood failed");
+                return 1;
+            }
+            break;
+
+        default:
+            break;
+        }
     }
 
     switch (input->attack_mode)
@@ -284,12 +396,16 @@ int main(int argc, char *argv[])
             return 1;
         }
         break;
+
     case SYN_FLOOD_ATTACK:
         if (StartSYNFlood(input))
         {
             DisplayError("StartSYNFlood failed");
             return 1;
         }
+        break;
+
+    default:
         break;
     }
 
