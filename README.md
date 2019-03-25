@@ -56,7 +56,7 @@ make clean
 Usage: dostool [option]
 
 Example:
-./dostool -a 0 -i http:\\192.168.1.1:80/login.asp -u "admin" -P "/path/password.txt" (use username admin and password file to guess)
+./dostool -a 0 -i http:\\192.168.1.1:80/login.asp -u admin -P /path/password.txt (use username admin and password file to guess)
 ./dostool -a 1 -i 192.168.1.1:80 (use syn flood attack 192.168.1.1's port 80)
 ./dostool -a 2 -i 192.168.1.1:80 (use udp flood attack 192.168.1.1's port 80)
 
@@ -79,14 +79,14 @@ Example:
 -m <type>               type of router
                             feixun_fwr_604h .etc
 -h                      show this message
--R                      Use the random source IP address in dos attack (can not use in the guess password attack)
+-R                      use the random source IP address in dos attack (can not use in the guess password attack)
                             0    turn off the random source ip address which can protect you true IP in the local net
                             1    enable random source ip address (default)
 
 --get-response-length   get the response length for test
---set-watch-length      Indicate a length, if response's length not equal this, return
---ip-repeat-time        If you use the -R, indicate the each random ip repeat send times(default 10240)
---test-guess            Test the guess module
---test-syn              Test the syn flood attack module
---test-udp              Test the udp flood attack module
+--set-watch-length      indicate a length, if response's length not equal this, return
+--ip-repeat-time        if you use the -R, indicate the each random ip repeat send times(default 10240)
+--test-guess            test the guess module
+--test-syn              test the syn flood attack module
+--test-udp              test the udp flood attack module
 ```
