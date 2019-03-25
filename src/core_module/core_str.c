@@ -354,7 +354,7 @@ void FreeProcessFileBuff(pStrHeader p)
     }
 }
 
-pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
+pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -372,21 +372,21 @@ pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
-        DisplayError("ProcessFile malloc failed");
+        DisplayError("ProcessGuessAttackFile malloc failed");
         return (pStrHeader *)NULL;
     }
-    pStrNode u_list;
+    pStrNode str_node;
     (*output)->length = 0;
     (*output)->next = NULL;
     char buff[LENGTH + 1];
     char ch;
-    size_t u_length = 0;
+    size_t str_length = 0;
     size_t count = 0;
 
     FILE *fp = fopen(path, "r");
     if (!fp)
     {
-        DisplayError("Error: Can not open the username file");
+        DisplayError("Error: Can not open the guess username or password file");
         return (pStrHeader *)NULL;
     }
     while (!feof(fp))
@@ -394,7 +394,7 @@ pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
         // if stack error, change here
         if (!memset(buff, 0, LENGTH + 1))
         {
-            DisplayError("ProcessFile memset failed");
+            DisplayError("ProcessGuessAttackFile memset failed");
             return (pStrHeader *)NULL;
         }
         ch = fgetc(fp);
@@ -402,35 +402,35 @@ pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
         {
             if (!sprintf(buff, "%s%c", buff, ch))
             {
-                DisplayError("ProcessFile sprintf failed");
+                DisplayError("ProcessGuessAttackFile sprintf failed");
                 return (pStrHeader *)NULL;
             }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
         }
 
-        u_length = strlen(buff);
-        if (u_length > 0)
+        str_length = strlen(buff);
+        if (str_length > 0)
         {
-            u_list = (pStrNode)malloc(sizeof(StrNode));
-            if (!u_list)
+            str_node = (pStrNode)malloc(sizeof(StrNode));
+            if (!str_node)
             {
-                DisplayError("ProcessFile malloc failed");
+                DisplayError("ProcessGuessAttackFile malloc failed");
                 return (pStrHeader *)NULL;
             }
-            u_list->next = (*output)->next;
-            (*output)->next = u_list;
-            //DisplayInfo("%ld", u_length);
+            str_node->next = (*output)->next;
+            (*output)->next = str_node;
+            //DisplayInfo("%ld", str_length);
             // make a space for /0
-            u_list->str = (char *)malloc(u_length + 1);
-            if (!memset(u_list->str, 0, u_length + 1))
+            str_node->str = (char *)malloc(str_length + 1);
+            if (!memset(str_node->str, 0, str_length + 1))
             {
-                DisplayError("ProcessFile memset failed");
+                DisplayError("ProcessGuessAttackFile memset failed");
                 return (pStrHeader *)NULL;
             }
-            if (!strncpy(u_list->str, buff, u_length))
+            if (!strncpy(str_node->str, buff, str_length))
             {
-                DisplayError("ProcessFile strncpy failed");
+                DisplayError("ProcessGuessAttackFile strncpy failed");
                 return (pStrHeader *)NULL;
             }
             ++((*output)->length);
@@ -439,7 +439,7 @@ pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag)
     }
     if (fclose(fp))
     {
-        DisplayError("ProcessFile fclose failed");
+        DisplayError("ProcessGuessAttackFile fclose failed");
         return (pStrHeader *)NULL;
     }
     return output;
@@ -541,6 +541,145 @@ int GetRandomPort(int *output)
     random_number = 1 + (int)(rand() % 9997);
     *output = random_number;
     return (*output);
+}
+
+int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc)
+{
+    // locate the str linked list element
+    if (loc < 0 || loc > p->length)
+    {
+        DisplayError("LocateStrNodeElement loc illegal");
+        return 1;
+    }
+    size_t count = 0;
+    pStrNode t = p->next;
+    while (count != loc)
+    {
+        t = t->next;
+        ++count;
+    }
+
+    *element = t;
+    return 0;
+}
+
+void FreeProcessACKIPListBuff(pStrHeader p)
+{
+    // free it
+    pStrNode n = p->next;
+    pStrNode n_next = n->next;
+    while (n_next)
+    {
+        //DisplayInfo("Free <%s> space now", n->username);
+        if (n)
+        {
+            free(n);
+        }
+        --(p->length);
+        n = n_next;
+        n_next = n_next->next;
+    }
+
+    if (p->length != 1)
+    {
+        DisplayWarning("Free the space error");
+    }
+
+    if (n)
+    {
+        free(n);
+    }
+    if (p)
+    {
+        free(p);
+    }
+}
+
+pStrHeader *ProcessACKIPListFile(pStrHeader *output)
+{
+    // return NULL = failed
+    // return something = success
+
+    (*output) = (pStrHeader)malloc(sizeof(StrHeader));
+    if (!(*output))
+    {
+        DisplayError("ProcessACKIPListFile malloc failed");
+        return (pStrHeader *)NULL;
+    }
+    pStrNode str_node;
+    (*output)->length = 0;
+    (*output)->next = NULL;
+    char buff[IP_BUFFER_SIZE];
+    char ch;
+    size_t str_length = 0;
+    size_t count = 0;
+
+    // the file path and file name is default here
+    FILE *fp = fopen(ACK_IP_LIST_NAME, "r");
+    if (!fp)
+    {
+        DisplayError("Error: Can not open the ack ip list file");
+        DisplayError("%s(%d)", strerror(errno), errno);
+        return (pStrHeader *)NULL;
+    }
+    while (!feof(fp))
+    {
+        // if stack error, change here
+        if (!memset(buff, 0, IP_BUFFER_SIZE))
+        {
+            DisplayError("ProcessACKIPListFile memset failed");
+            return (pStrHeader *)NULL;
+        }
+        ch = fgetc(fp);
+        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
+        {
+            if (!sprintf(buff, "%s%c", buff, ch))
+            {
+                DisplayError("ProcessACKIPListFile sprintf failed");
+                return (pStrHeader *)NULL;
+            }
+            //DisplayInfo("%c", ch);
+            ch = fgetc(fp);
+        }
+
+        str_length = strlen(buff);
+        if (str_length > 0 && buff[0] != '#')
+        {
+            str_node = (pStrNode)malloc(sizeof(StrNode));
+            if (!str_node)
+            {
+                DisplayError("ProcessACKIPLIstFile malloc failed");
+                return (pStrHeader *)NULL;
+            }
+            str_node->next = (*output)->next;
+            (*output)->next = str_node;
+            //DisplayInfo("%ld", str_length);
+            // make a space for /0
+            str_node->str = (char *)malloc(str_length + 1);
+            if (!memset(str_node->str, 0, str_length + 1))
+            {
+                DisplayError("ProcessACKIPListFile memset failed");
+                return (pStrHeader *)NULL;
+            }
+            if (!strncpy(str_node->str, buff, str_length))
+            {
+                DisplayError("ProcessACKIPListFile strncpy failed");
+                return (pStrHeader *)NULL;
+            }
+            // init the node lock as 0
+            str_node->lock = 0;
+            ++((*output)->length);
+            ++count;
+        }
+    }
+    if (fclose(fp))
+    {
+        DisplayError("ProcessACKIPListFile fclose failed");
+        return (pStrHeader *)NULL;
+    }
+    return output;
+    // for test
+    //return (pStrHeader *)NULL;
 }
 
 /*

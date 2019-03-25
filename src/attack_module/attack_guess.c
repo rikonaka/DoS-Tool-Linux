@@ -29,7 +29,8 @@ extern void FreeSplitURLBuff(pSplitURLOutput p);
 extern pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomPasswordBuff(char *password);
 extern void FreeProcessFileBuff(pStrHeader p);
-extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
+extern pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
+extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 
 // from ../core/http.c
 extern size_t HTTPMethod(const char *url, const char *request, char **response, int debug_level);
@@ -127,26 +128,6 @@ static int CheckResponse(void)
     return 1;
 }
 
-static int LocateElement(const pStrHeader p, pStrNode *element, const size_t loc)
-{
-    // locate the str linked list element
-    if (loc < 0 || loc > p->length)
-    {
-        DisplayError("LocateElement loc illegal");
-        return 1;
-    }
-    size_t count = 0;
-    pStrNode t = p->next;
-    while (count != loc)
-    {
-        t = t->next;
-        ++count;
-    }
-
-    *element = t;
-    return 0;
-}
-
 static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start, size_t p_end)
 {
     // username is a list and password is list too
@@ -156,13 +137,29 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
         return 1;
     }
     pStrNode us;
-    LocateElement(input->gau->u_header, &us, u_start);
+    if (LocateStrNodeElement(input->gau->u_header, &us, u_start))
+    {
+        DisplayError("UListPList LocateStrNodeElement failed");
+        return 1;
+    }
     pStrNode ue;
-    LocateElement(input->gau->u_header, &ue, u_end);
+    if (LocateStrNodeElement(input->gau->u_header, &ue, u_end))
+    {
+        DisplayError("UListPList LocateStrNodeElement failed");
+        return 1;
+    }
     pStrNode ps;
-    LocateElement(input->gau->p_header, &ps, p_start);
+    if (LocateStrNodeElement(input->gau->p_header, &ps, p_start))
+    {
+        DisplayError("UListPList LocateStrNodeElement failed");
+        return 1;
+    }
     pStrNode pe;
-    LocateElement(input->gau->p_header, &pe, p_end);
+    if (LocateStrNodeElement(input->gau->p_header, &pe, p_end))
+    {
+        DisplayError("UListPList LocateStrNodeElement failed");
+        return 1;
+    }
     pStrNode p;
     char *b64message;
     char *response;
@@ -339,9 +336,9 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
     }
 
     pStrNode ps;
-    LocateElement(input->gau->p_header, &ps, p_start);
+    LocateStrNodeElement(input->gau->p_header, &ps, p_start);
     pStrNode pe;
-    LocateElement(input->gau->p_header, &pe, p_end);
+    LocateStrNodeElement(input->gau->p_header, &pe, p_end);
     char *b64message;
     char *response;
     char request[strlen(REQUEST) + SEND_DATA_SIZE + 1];
@@ -606,7 +603,7 @@ static int AttackThread(pInput input)
 int StartGuessAttack(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
-    extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
+    extern pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
 
     pid_t pid, wpid;
     pthread_t tid[input->max_thread];
@@ -640,10 +637,10 @@ int StartGuessAttack(const pInput input)
     }
     else if (strlen(input->password_path) > 0)
     {
-        ProcessFile(input->password_path, &(gau->p_header), 1);
+        ProcessGuessAttackFile(input->password_path, &(gau->p_header), 1);
         if (strlen(input->username_path) > 0)
         {
-            ProcessFile(input->username_path, &(gau->u_header), 0);
+            ProcessGuessAttackFile(input->username_path, &(gau->u_header), 0);
             input->guess_attack_type = GUESS_ULPL;
         }
         else
@@ -790,7 +787,7 @@ int StartGuessAttack(const pInput input)
 int StartGuessTest(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
-    extern pStrHeader *ProcessFile(const char *path, pStrHeader *output, int flag);
+    extern pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
     extern int GuessAttack_Thread(pInput input);
 
     // store the linked list if use the path file
@@ -818,10 +815,10 @@ int StartGuessTest(const pInput input)
     }
     else if (strlen(input->password_path) > 0)
     {
-        ProcessFile(input->password_path, &(gau->p_header), 1);
+        ProcessGuessAttackFile(input->password_path, &(gau->p_header), 1);
         if (strlen(input->username_path) > 0)
         {
-            ProcessFile(input->username_path, &(gau->u_header), 0);
+            ProcessGuessAttackFile(input->username_path, &(gau->u_header), 0);
             input->guess_attack_type = GUESS_ULPL;
         }
         else

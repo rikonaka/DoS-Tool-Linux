@@ -1,13 +1,5 @@
-#ifndef _ATTACK_SYN_FLOOD_DOS_H
-#define _ATTACK_SYN_FLOOD_DOS_H
-//#include <sys/socket.h>
-// For exit(0);
-//#include <netinet/tcp.h>
-// Provides declarations for ip header
-//#include <netinet/ip.h>
-//#include <netinet/in.h>
-//#include <arpa/inet.h>
-//#include "../main.h"
+#ifndef _ATTACK_ACK_REFLECT_DOS_H
+#define _ATTACK_ACK_REFLECT_DOS_H
 
 typedef struct pseudo_header
 {

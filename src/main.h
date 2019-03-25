@@ -7,6 +7,7 @@
 #define GUESS 0
 #define SYN_FLOOD_ATTACK 1
 #define UDP_FLOOD_ATTACK 2
+#define ACK_REFLECT_ATTACK 3
 
 // username from one string and password from linked list
 #define GUESS_U1PL 0
@@ -51,11 +52,15 @@
 #define HTTPS_PORT_DEFAULT 443
 #define EACH_IP_REPEAT_TIME 10240
 #define SYN_FLOOD_PORT_DEFAULT 80
+#define UDP_FLOOD_PORT_DEFAULT 80
+#define ACK_REFLECT_PORT_DEFAULT 80
+#define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
 
 #define TEST_TYPE_NON 0
 #define TEST_TYPE_GUESS -1
 #define TEST_TYPE_SYN_FLOOD -2
 #define TEST_TYPE_UDP_FLOOD -3
+#define TEST_TYPE_ACK_REFLECT -4
 
 #define DEFAULT_ADDRESS "192.168.99.99"
 #define DEFAULT_PORT 9999
@@ -76,6 +81,7 @@ typedef struct str_node
 {
     struct str_node *next;
     char *str;
+    int lock;
 } StrNode, *pStrNode;
 
 typedef struct str_header
@@ -134,6 +140,7 @@ typedef struct user_input
     char password_path[MAX_PASSWORD_PATH_LENGTH];
     char model_type[MAX_MODEL_TYPE_LENGTH];
     // coming soon
+    pStrHeader str_header;
 } Input, *pInput;
 
 #endif

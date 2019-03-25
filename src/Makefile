@@ -9,9 +9,11 @@ SRCS = main.c\
 	core_module/core_version.c\
 	core_module/core_input.c\
 	core_module/core_usage.c\
+	core_module/core_others.c\
 	attack_module/attack_guess.c\
 	attack_module/attack_syn_flood_dos.c\
     attack_module/attack_udp_flood_dos.c\
+    attack_module/attack_ack_reflect_dos.c\
 	attack_module/router/feixun.c\
 	attack_module/router/tplink.c
 

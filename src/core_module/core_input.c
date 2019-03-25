@@ -73,6 +73,10 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
             {
                 input->test_type = TEST_TYPE_UDP_FLOOD;
             }
+            else if (strstr(ptmp2, "test-ack"))
+            {
+                input->test_type = TEST_TYPE_ACK_REFLECT;
+            }
             else
             {
                 DisplayError("Illegal input");
@@ -100,6 +104,10 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
 
                     case '2':
                         input->attack_mode = UDP_FLOOD_ATTACK;
+                        break;
+
+                    case '3':
+                        input->attack_mode = ACK_REFLECT_ATTACK;
                         break;
 
                     default:
