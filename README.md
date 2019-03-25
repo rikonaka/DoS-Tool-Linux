@@ -30,8 +30,18 @@ sudo yum install make gcc openssl openssl-devel
 
 Then
 
+```
+cd Dos-Tool/src
+```
+
 ```c
 make
+```
+
+## Run
+
+```
+./dos-tool [option]
 ```
 
 ## Uninstallation
@@ -42,7 +52,7 @@ make clean
 
 ## Usage
 
-```
+```bash
 Usage: dostool [option]
 
 Example:
