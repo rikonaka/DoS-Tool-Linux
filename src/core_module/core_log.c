@@ -236,6 +236,14 @@ int DisplayError(const char *fmt, ...)
     return 0;
 }
 
+
+void SignalExit(int signo)
+{
+    // for show message
+    DisplayWarning("Quit the program now");
+    exit(0);
+}
+
 /*
 int main(void)
 {

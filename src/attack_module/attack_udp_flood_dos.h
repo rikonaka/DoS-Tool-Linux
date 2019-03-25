@@ -1,9 +1,10 @@
 #ifndef _ATTACK_UDP_FLOOD_DOS
 #define _ATTACK_UDP_FLOOD_DOS
 
+// for UDP padding size
+// make sure the size is very small
+// same traffic will send more packages that make the target busy
 #define PADDING_SIZE 1
-#define N_LOOP 10
-#define U_WAITING 100000
 
 typedef struct udp_struct
 {

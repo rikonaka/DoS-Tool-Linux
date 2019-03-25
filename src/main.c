@@ -22,6 +22,9 @@ extern int StartSYNFloodTest(const pInput input);
 extern int StartGuessAttack(const pInput input);
 extern int StartGuessTest(const pInput input);
 
+extern int StartUDPFloodAttack(const pInput input);
+extern int StartUDPFloodTest(const pInput input);
+
 int main(int argc, char *argv[])
 {
     /*
@@ -77,12 +80,13 @@ int main(int argc, char *argv[])
     }
     else if (check_input < 0)
     {
+        // test the module here
         switch (check_input)
         {
         case TEST_TYPE_GUESS:
             if (StartGuessTest(input))
             {
-                DisplayError("StartTestGuess failed");
+                DisplayError("StartGuessTest failed");
                 return 1;
             }
             break;
@@ -90,7 +94,15 @@ int main(int argc, char *argv[])
         case TEST_TYPE_SYN_FLOOD:
             if (StartSYNFloodTest(input))
             {
-                DisplayError("StartTestSYNFlood failed");
+                DisplayError("StartSYNFloodTest failed");
+                return 1;
+            }
+            break;
+
+        case TEST_TYPE_UDP_FLOOD:
+            if (StartUDPFloodTest(input))
+            {
+                DisplayError("StartUDPFloodTest failed");
                 return 1;
             }
             break;
@@ -101,9 +113,10 @@ int main(int argc, char *argv[])
     }
     else if (check_input == 0)
     {
+        // really attack funtion is here
         switch (input->attack_mode)
         {
-        case GUESS_USERNAME_PASSWORD:
+        case GUESS:
             if (StartGuessAttack(input))
             {
                 DisplayError("StartGuess failed");
@@ -115,6 +128,14 @@ int main(int argc, char *argv[])
             if (StartSYNFloodAttack(input))
             {
                 DisplayError("StartSYNFlood failed");
+                return 1;
+            }
+            break;
+
+        case UDP_FLOOD_ATTACK:
+            if (StartUDPFloodAttack(input))
+            {
+                DisplayError("StartUDPFlood failed");
                 return 1;
             }
             break;

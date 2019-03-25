@@ -69,6 +69,10 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
             {
                 input->test_type = TEST_TYPE_SYN_FLOOD;
             }
+            else if (strstr(ptmp2, "test-udp"))
+            {
+                input->test_type = TEST_TYPE_UDP_FLOOD;
+            }
             else
             {
                 DisplayError("Illegal input");
@@ -87,11 +91,17 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                     switch (*argv[i])
                     {
                     case '0':
-                        input->attack_mode = GUESS_USERNAME_PASSWORD;
+                        input->attack_mode = GUESS;
                         break;
+
                     case '1':
                         input->attack_mode = SYN_FLOOD_ATTACK;
                         break;
+
+                    case '2':
+                        input->attack_mode = UDP_FLOOD_ATTACK;
+                        break;
+
                     default:
                         DisplayWarning("Value of the -a parameter is not allowed, use default value now");
                         input->attack_mode = ATTACK_MODE_DEFAULT;
@@ -115,15 +125,19 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                     case '0':
                         input->debug_level = DEBUG_OFF;
                         break;
+
                     case '1':
                         input->debug_level = DEBUG_LEVEL_1;
                         break;
+
                     case '2':
                         input->debug_level = DEBUG_LEVEL_2;
                         break;
+
                     case '3':
                         input->debug_level = DEBUG_LEVEL_3;
                         break;
+
                     default:
                         DisplayWarning("Value of -d parameter is not allowed, use default value now");
                         input->debug_level = DEBUG_LEVEL_DEFAULT;

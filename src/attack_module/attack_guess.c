@@ -603,13 +603,6 @@ static int AttackThread(pInput input)
     return 0;
 }
 
-static void SignalExit(int signo)
-{
-    // for show message
-    DisplayInfo("Quit the program now");
-    exit(0);
-}
-
 int StartGuessAttack(const pInput input)
 {
     extern void FreeProcessFileBuff(pStrHeader p);
@@ -668,6 +661,7 @@ int StartGuessAttack(const pInput input)
     input->tch->next = NULL;
     input->tch->length = 0;
 
+    extern void SignalExit(int signo);
     signal(SIGINT, SignalExit);
     if (input->max_process <= 1)
     {

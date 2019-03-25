@@ -1,10 +1,12 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
-// 0  - guess the web passwd (advanced)
-// 1  - syn flood attack
-#define GUESS_USERNAME_PASSWORD 0
+// 0 - guess the web passwd (advanced, not point now)
+// 1 - syn flood attack
+// 2 - udp flood attack
+#define GUESS 0
 #define SYN_FLOOD_ATTACK 1
+#define UDP_FLOOD_ATTACK 2
 
 // username from one string and password from linked list
 #define GUESS_U1PL 0
@@ -34,8 +36,7 @@
 #define COMMON_BUFFER_SIZE 16
 #define SEND_DATA_SIZE 2048
 #define RECEIVE_DATA_SIZE 2048
-#define SYN_FLOOD_IP_BUFFER_SIZE 20
-#define UDP_FLOOD_IP_BUFFER_SIZE 20
+#define IP_BUFFER_SIZE 20
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF
@@ -54,6 +55,10 @@
 #define TEST_TYPE_NON 0
 #define TEST_TYPE_GUESS -1
 #define TEST_TYPE_SYN_FLOOD -2
+#define TEST_TYPE_UDP_FLOOD -3
+
+#define DEFAULT_ADDRESS "192.168.99.99"
+#define DEFAULT_PORT 9999
 
 #define ENABLE 1
 #define DISABLE 0

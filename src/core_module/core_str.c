@@ -477,24 +477,26 @@ char *GetRandomIP(char **output)
 
     int i;
     int random_num = 0;
-    (*output) = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
+    // 012345678901234
+    // 255.255.255.255
+    (*output) = (char *)malloc(IP_BUFFER_SIZE);
     if (!(*output))
     {
         DisplayError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
-    if (!memset((*output), 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
+    if (!memset((*output), 0, IP_BUFFER_SIZE))
     {
         DisplayError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
-    char *random_ip = (char *)malloc(SYN_FLOOD_IP_BUFFER_SIZE + 1);
+    char *random_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!random_ip)
     {
         DisplayError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
-    if (!memset(random_ip, 0, SYN_FLOOD_IP_BUFFER_SIZE + 1))
+    if (!memset(random_ip, 0, IP_BUFFER_SIZE))
     {
         DisplayError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
