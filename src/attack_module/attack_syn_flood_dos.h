@@ -9,9 +9,6 @@
 #include <arpa/inet.h>
 #include "../main.h"
 
-#define SIP_ADDRESS "192.168.1.99"
-#define SIP_PORT 9999
-
 typedef struct pseudo_header
 {
     // Needed for checksum calculation
