@@ -9,7 +9,8 @@ extern int DisplayWarning(const char *fmt, ...);
 extern int DisplayError(const char *fmt, ...);
 
 // char *version = "v0.10";
-const char *version = "0.20";
+// const char *version = "0.20";
+const char *version = "0.30"; // 2019-3-25
 
 void FreeGetCurrentVersionBuff(char *p)
 {

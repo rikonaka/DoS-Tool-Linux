@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
         DisplayError("GetCurrentVersion failed");
         return 1;
     }
-    DisplayInfo("dos-tool version %s", version);
+    DisplayInfo("dos-tool version: %s", version);
     FreeGetCurrentVersionBuff(version);
 
     DisplayInfo("Running...");

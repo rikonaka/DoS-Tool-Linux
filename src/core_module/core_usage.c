@@ -9,6 +9,15 @@ void DisplayUsage(void)
     /*
      * show the useage info
      */
+
+    extern void FreeGetCurrentVersionBuff(char *p);
+    extern char *GetCurrentVersion(char **output);
+
+    char *version;
+    GetCurrentVersion(&version);
+    printf("Version: %s", version);
+    FreeGetCurrentVersionBuff(version);
+
     char *usage = "\n"
                   "Usage: dos-tool [option]\n\n"
                   "Example:\n"
