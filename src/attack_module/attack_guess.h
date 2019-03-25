@@ -9,8 +9,6 @@
 #define UHEADER 0
 #define PHEADER 1
 
-
-
 typedef struct match_output
 {
     char *request;
