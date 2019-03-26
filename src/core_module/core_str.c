@@ -606,10 +606,11 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
         DisplayError("ProcessACKIPListFile malloc failed");
         return (pStrHeader)NULL;
     }
+
     pStrNode str_node;
     (*output)->length = 0;
     (*output)->next = NULL;
-    char buff[IP_BUFFER_SIZE];
+    char *buff = (char *)malloc(IP_BUFFER_SIZE);
     char ch;
     size_t str_length = 0;
     size_t count = 0;
@@ -622,6 +623,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
         DisplayError("%s(%d)", strerror(errno), errno);
         return (pStrHeader)NULL;
     }
+
     while (!feof(fp))
     {
         // if stack error, change here
@@ -630,6 +632,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
             DisplayError("ProcessACKIPListFile memset failed");
             return (pStrHeader)NULL;
         }
+
         ch = fgetc(fp);
         while (ch && ch != '\n' && ch != '\r' && !feof(fp))
         {
@@ -654,34 +657,19 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
             }
             str_node->next = (*output)->next;
             (*output)->next = str_node;
-            //DisplayInfo("%ld", str_length);
             // make a space for /0
             str_node->str = (char *)malloc(str_length + 1);
-            // char *test = (char *)malloc(1600 * sizeof(char));
-            char *test = (char *)calloc(16, sizeof(char));
-            DisplayInfo("test size: %u", sizeof(test));
-            DisplayInfo("str_node str_length: %d", str_length);
-            DisplayInfo("str_node->str size: %u", sizeof(str_node->str));
-            //DisplayInfo("sizeof(char): %u", sizeof(char));
             if (!memset(str_node->str, 0, str_length + 1))
             {
                 DisplayError("ProcessACKIPListFile memset failed");
                 return (pStrHeader)NULL;
             }
-            if (!strncpy(str_node->str, buff, str_length + 1))
+            if (!memcpy(str_node->str, buff, str_length + 1))
             {
                 DisplayError("ProcessACKIPListFile strncpy failed");
                 return (pStrHeader)NULL;
             }
-            DisplayInfo("str_node->str size: %u", sizeof(str_node->str));
-            DisplayInfo("str_node->str len: %d", strlen(str_node->str));
-            char b[10] = "12345678";
-            DisplayInfo("b size: %u", sizeof(b));
-            DisplayInfo("b len: %d", strlen(b));
-
-            //DisplayInfo("test here: %s", str_node->str[sizeof(str_node->str) - 1]);
             // init the node lock as 0
-            str_node->lock = 0;
             ++((*output)->length);
             ++count;
         }
@@ -691,25 +679,24 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
         DisplayError("ProcessACKIPListFile fclose failed");
         return (pStrHeader)NULL;
     }
-    //DisplayWarning(">>> 1 <<<");
-    pStrNode node = (*output)->next;
-    while (node)
-    {
-        DisplayInfo("Node value: %s", node->str);
-        node = node->next;
-    }
+    free(buff);
     return (*output);
 }
 
 void ProcessACKIPListFileTest(void)
 {
+    DisplayInfo("Enter ProcessACKIPLIstFileTest");
     pStrHeader header;
-    // ProcessACKIPListFile(&header);
-    if (!ProcessACKIPListFile(&header))
+    ProcessACKIPListFile(&header);
+    //DisplayInfo(">>> 2 <<<");
+    DisplayInfo("Length: %ld", header->length);
+    //printf("%ld", header->length);
+    pStrNode node = header->next;
+    while (node)
     {
-        DisplayError("ProcessACKIPListFile failed");
+        DisplayInfo("Value: %s", node->str);
+        node = node->next;
     }
-    DisplayInfo("Length: %d", header->length);
 
     FreeProcessACKIPListBuff(header);
 }

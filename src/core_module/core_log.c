@@ -121,6 +121,7 @@ int DisplayInfo(const char *fmt, ...)
     time_struct = localtime(&t);
     // highlight and green
     printf("\033[0;32m%d-%d-%d %d:%d:%d INFO [%s]\033[0m\n", time_struct->tm_year + 1900, time_struct->tm_mon, time_struct->tm_mday, time_struct->tm_hour, time_struct->tm_min, time_struct->tm_sec, buff);
+    //printf("\033[0;32m INFO [%s]\033[0m\n", buff);
 
     va_end(arg);
     if (buff)
@@ -235,7 +236,6 @@ int DisplayError(const char *fmt, ...)
     }
     return 0;
 }
-
 
 void SignalExit(int signo)
 {

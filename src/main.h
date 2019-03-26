@@ -37,12 +37,12 @@
 #define COMMON_BUFFER_SIZE 16
 #define SEND_DATA_SIZE 2048
 #define RECEIVE_DATA_SIZE 2048
-#define IP_BUFFER_SIZE 20
+#define IP_BUFFER_SIZE 1024 // keep this value very very big or you will get the SIGABRT or stack doverflow
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF
 #define PROCESS_NUM_DEFAULT 1
-#define THREAD_NUM_DEFAULT 8
+#define THREAD_NUM_DEFAULT 4
 #define RANDOM_PASSWORD_LENGTH_DEFAULT 8
 #define RANDOM_SIP_DEFAULT 1 // default open it for attack safety
 #define USERNAME_DEFAULT "admin"
@@ -82,7 +82,6 @@ typedef struct str_node
 {
     struct str_node *next;
     char *str;
-    int lock;
 } StrNode, *pStrNode;
 
 typedef struct str_header

@@ -73,13 +73,13 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
             {
                 input->test_type = TEST_TYPE_UDP_FLOOD;
             }
-            else if (strstr(ptmp2, "test-ack"))
-            {
-                input->test_type = TEST_TYPE_ACK_REFLECT;
-            }
             else if (strstr(ptmp2, "test-ack-ip-list"))
             {
                 input->test_type = TEST_TYPE_ACK_IP_LIST;
+            }
+            else if (strstr(ptmp2, "test-ack"))
+            {
+                input->test_type = TEST_TYPE_ACK_REFLECT;
             }
             else
             {
