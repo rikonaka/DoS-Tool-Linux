@@ -19,6 +19,8 @@ typedef struct syn_struct
     char *dst_ip;
     int src_port;
     int dst_port;
+    int debug_level;
+    int each_ip_repeat;
 } SYNStruct, *pSYNStruct;
 
 #endif

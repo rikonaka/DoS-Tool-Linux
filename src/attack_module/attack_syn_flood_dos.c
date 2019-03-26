@@ -285,7 +285,7 @@ static int AttackThread(pInput input)
             if (SendSYN(syn_struct, input->debug_level))
             {
                 DisplayError("AttackThread Attack failed");
-                return 1;
+                //return 1;
             }
         }
         FreeRandomIPBuff(syn_struct->src_ip);

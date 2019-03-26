@@ -37,7 +37,7 @@
 #define COMMON_BUFFER_SIZE 16
 #define SEND_DATA_SIZE 2048
 #define RECEIVE_DATA_SIZE 2048
-#define IP_BUFFER_SIZE 1024 // keep this value very very big or you will get the SIGABRT or stack doverflow
+#define IP_BUFFER_SIZE 128 // keep this value very very big or you will get the SIGABRT or stack doverflow
 
 #define ATTACK_MODE_DEFAULT 1
 #define DEBUG_LEVEL_DEFAULT 0 // DEBUG_OFF
@@ -50,7 +50,7 @@
 #define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
 #define HTTP_PORT_DEFAULT 80
 #define HTTPS_PORT_DEFAULT 443
-#define EACH_IP_REPEAT_TIME 10240
+#define EACH_IP_REPEAT_TIME 1024 // should be very big
 #define SYN_FLOOD_PORT_DEFAULT 80
 #define UDP_FLOOD_PORT_DEFAULT 80
 #define ACK_REFLECT_PORT_DEFAULT 80

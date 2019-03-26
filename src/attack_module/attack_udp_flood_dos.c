@@ -218,7 +218,7 @@ static int AttackThread(const pInput input)
             if (SendUDP(udp_struct, input->debug_level))
             {
                 DisplayError("AttackThread Attack failed");
-                return 1;
+                //return 1;
             }
         }
         FreeRandomIPBuff(udp_struct->src_ip);

