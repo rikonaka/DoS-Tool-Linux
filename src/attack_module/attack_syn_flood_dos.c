@@ -32,6 +32,12 @@ extern int DisplayError(const char *fmt, ...);
 
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 
+extern void FreeSplitURLBuff(pSplitURLOutput p);
+extern pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output);
+extern void FreeRandomIPBuff(char *p);
+extern char *GetRandomIP(char **output);
+extern int GetRandomPort(int *output);
+
 //int attack(const struct AHTTP_INPUT *ainput)
 static int SendSYN(const pSYNStruct ss, const int debug_level)
 {
@@ -202,11 +208,6 @@ static void FreeSYNStructBuff(pSYNStruct input)
 static int AttackThread(pInput input)
 {
     // now we start the syn flood attack
-    extern void FreeSplitURLBuff(pSplitURLOutput p);
-    extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern void FreeRandomIPBuff(char *p);
-    extern char *GetRandomIP(char **output);
-    extern int GetRandomPort(int *output);
 
     pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
     pSplitURLOutput split_result;

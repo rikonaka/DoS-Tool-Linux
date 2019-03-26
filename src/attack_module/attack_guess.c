@@ -26,10 +26,10 @@ extern int DisplayError(const char *fmt, ...);
 // from ../core/str.c
 extern char *GetRandomPassword(char **rebuf, unsigned int seed, const int length);
 extern void FreeSplitURLBuff(pSplitURLOutput p);
-extern pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output);
+extern pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomPasswordBuff(char *password);
 extern void FreeProcessFileBuff(pStrHeader p);
-extern pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
+extern pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
 extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 
 // from ../core/http.c
@@ -602,9 +602,6 @@ static int AttackThread(pInput input)
 
 int StartGuessAttack(const pInput input)
 {
-    extern void FreeProcessFileBuff(pStrHeader p);
-    extern pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
-
     pid_t pid, wpid;
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
@@ -786,10 +783,6 @@ int StartGuessAttack(const pInput input)
 
 int StartGuessTest(const pInput input)
 {
-    extern void FreeProcessFileBuff(pStrHeader p);
-    extern pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
-    extern int GuessAttack_Thread(pInput input);
-
     // store the linked list if use the path file
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
     gau->u_header = NULL;
@@ -815,10 +808,18 @@ int StartGuessTest(const pInput input)
     }
     else if (strlen(input->password_path) > 0)
     {
-        ProcessGuessAttackFile(input->password_path, &(gau->p_header), 1);
+        if (!ProcessGuessAttackFile(input->password_path, &(gau->p_header), 1))
+        {
+            DisplayError("ProcessGuessAttackFile failed");
+            return 1;
+        }
         if (strlen(input->username_path) > 0)
         {
-            ProcessGuessAttackFile(input->username_path, &(gau->u_header), 0);
+            if (!ProcessGuessAttackFile(input->username_path, &(gau->u_header), 0))
+            {
+                DisplayError("ProcessGuessAttackFile failed");
+                return 1;
+            }
             input->guess_attack_type = GUESS_ULPL;
         }
         else

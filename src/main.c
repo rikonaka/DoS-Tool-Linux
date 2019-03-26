@@ -28,6 +28,8 @@ extern int StartUDPFloodTest(const pInput input);
 extern int StartACKReflectAttack(const pInput input);
 extern int StartACKReflectTest(const pInput input);
 
+extern void ProcessACKIPListFileTest(void);
+
 int main(int argc, char *argv[])
 {
     /*
@@ -116,6 +118,10 @@ int main(int argc, char *argv[])
                 DisplayError("StartACKReflectTest failed");
                 return 1;
             }
+            break;
+
+        case TEST_TYPE_ACK_IP_LIST:
+            ProcessACKIPListFileTest();
             break;
 
         default:

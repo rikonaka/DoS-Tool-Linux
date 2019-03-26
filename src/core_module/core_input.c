@@ -77,6 +77,10 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
             {
                 input->test_type = TEST_TYPE_ACK_REFLECT;
             }
+            else if (strstr(ptmp2, "test-ack-ip-list"))
+            {
+                input->test_type = TEST_TYPE_ACK_IP_LIST;
+            }
             else
             {
                 DisplayError("Illegal input");
@@ -321,7 +325,7 @@ int CheckInputCompliance(const pInput input)
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter CheckInputCompliance");
 
-    if (input->test_type != -1)
+    if (input->test_type != 0)
     {
         DisplayInfo("Test model: %d", input->test_type);
         return input->test_type;

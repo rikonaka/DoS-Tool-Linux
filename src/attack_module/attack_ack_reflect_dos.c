@@ -30,7 +30,7 @@ extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmt, ...);
 
 extern void FreeProcessACKIPListBuff(pStrHeader p);
-extern pStrHeader *ProcessACKIPListFile(pStrHeader *output);
+extern pStrHeader ProcessACKIPListFile(pStrHeader *output);
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 
@@ -462,11 +462,15 @@ int StartACKReflectTest(const pInput input)
     // this attack type must run as root
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodTest");
     pStrHeader header;
+    ProcessACKIPListFile(&header);
+    // DisplayWarning(">>> 2 <<<");
+    /*
     if (!ProcessACKIPListFile(&header))
     {
         DisplayError("ProcessACKIPListFile failed");
         return 1;
     }
+    */
     input->str_header = header;
     AttackThread(input);
     FreeProcessACKIPListBuff(header);

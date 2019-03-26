@@ -32,7 +32,7 @@ void FreeSplitURLBuff(pSplitURLOutput p)
     }
 }
 
-pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
+pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
 {
     // rewrite this function at 2019-1-10
     // 0         1           2  3
@@ -49,12 +49,12 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     if (!ptmp)
     {
         DisplayError("SplitURL malloc failed: %s(%d)", strerror(errno), errno);
-        return (pSplitURLOutput *)NULL;
+        return (pSplitURLOutput)NULL;
     }
     if (!strcpy(ptmp, url))
     {
         DisplayError("SplitURL strcpy failed: %s(%d)", strerror(errno), errno);
-        return (pSplitURLOutput *)NULL;
+        return (pSplitURLOutput)NULL;
     }
     //      12           3
     // http://192.168.1.1/index.html
@@ -76,7 +76,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!second_slash_position)
         {
             DisplayError("SplitURL found the URL is not complete");
-            return (pSplitURLOutput *)NULL;
+            return (pSplitURLOutput)NULL;
         }
         colon_position = strchr(second_slash_position + 1, ':');
     }
@@ -174,7 +174,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
             if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
             {
                 DisplayError("SplitURL sprintf failed");
-                return (pSplitURLOutput *)NULL;
+                return (pSplitURLOutput)NULL;
             }
         }
         else if (strstr(purl, "http"))
@@ -182,7 +182,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
             if (!sprintf(port_buff, "%d", HTTP_PORT_DEFAULT))
             {
                 DisplayError("SplitURL sprintf failed");
-                return (pSplitURLOutput *)NULL;
+                return (pSplitURLOutput)NULL;
             }
         }
     }
@@ -192,7 +192,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     if (!memset(protocol_buff, 0, sizeof(char)))
     {
         DisplayError("SplitURL memset failed");
-        return (pSplitURLOutput *)NULL;
+        return (pSplitURLOutput)NULL;
     }
 
     if (strstr(purl, "https"))
@@ -201,7 +201,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(protocol_buff, "https"))
         {
             DisplayError("SplitURL strcpy failed");
-            return (pSplitURLOutput *)NULL;
+            return (pSplitURLOutput)NULL;
         }
     }
     else if (strstr(purl, "http"))
@@ -209,7 +209,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(protocol_buff, "http"))
         {
             DisplayError("SplitURL strcpy failed");
-            return (pSplitURLOutput *)NULL;
+            return (pSplitURLOutput)NULL;
         }
     }
     else
@@ -217,7 +217,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(protocol_buff, "not_set"))
         {
             DisplayError("SplitURL strcpy failed");
-            return (pSplitURLOutput *)NULL;
+            return (pSplitURLOutput)NULL;
         }
     }
     // end copy
@@ -240,7 +240,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
         if (!strcpy(suffix_buff, "not_set"))
         {
             DisplayError("SplitURL strcpy failed");
-            return (pSplitURLOutput *)NULL;
+            return (pSplitURLOutput)NULL;
         }
     }
 
@@ -259,7 +259,7 @@ pSplitURLOutput *SplitURL(const char *url, pSplitURLOutput *output)
     {
         free(purl);
     }
-    return output;
+    return (*output);
 }
 
 void FreeRandomPasswordBuff(char *password)
@@ -354,7 +354,7 @@ void FreeProcessFileBuff(pStrHeader p)
     }
 }
 
-pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag)
+pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -373,7 +373,7 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
     if (!(*output))
     {
         DisplayError("ProcessGuessAttackFile malloc failed");
-        return (pStrHeader *)NULL;
+        return (pStrHeader)NULL;
     }
     pStrNode str_node;
     (*output)->length = 0;
@@ -387,7 +387,7 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
     if (!fp)
     {
         DisplayError("Error: Can not open the guess username or password file");
-        return (pStrHeader *)NULL;
+        return (pStrHeader)NULL;
     }
     while (!feof(fp))
     {
@@ -395,7 +395,7 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
         if (!memset(buff, 0, LENGTH + 1))
         {
             DisplayError("ProcessGuessAttackFile memset failed");
-            return (pStrHeader *)NULL;
+            return (pStrHeader)NULL;
         }
         ch = fgetc(fp);
         while (ch && ch != '\n' && ch != '\r' && !feof(fp))
@@ -403,7 +403,7 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
             if (!sprintf(buff, "%s%c", buff, ch))
             {
                 DisplayError("ProcessGuessAttackFile sprintf failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
@@ -416,7 +416,7 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
             if (!str_node)
             {
                 DisplayError("ProcessGuessAttackFile malloc failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
             str_node->next = (*output)->next;
             (*output)->next = str_node;
@@ -426,12 +426,12 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
             if (!memset(str_node->str, 0, str_length + 1))
             {
                 DisplayError("ProcessGuessAttackFile memset failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
             if (!strncpy(str_node->str, buff, str_length))
             {
                 DisplayError("ProcessGuessAttackFile strncpy failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
             ++((*output)->length);
             ++count;
@@ -440,9 +440,9 @@ pStrHeader *ProcessGuessAttackFile(const char *path, pStrHeader *output, int fla
     if (fclose(fp))
     {
         DisplayError("ProcessGuessAttackFile fclose failed");
-        return (pStrHeader *)NULL;
+        return (pStrHeader)NULL;
     }
-    return output;
+    return (*output);
 }
 
 static int GetRandomNumForIP(int seed, int *output)
@@ -595,7 +595,7 @@ void FreeProcessACKIPListBuff(pStrHeader p)
     }
 }
 
-pStrHeader *ProcessACKIPListFile(pStrHeader *output)
+pStrHeader ProcessACKIPListFile(pStrHeader *output)
 {
     // return NULL = failed
     // return something = success
@@ -604,7 +604,7 @@ pStrHeader *ProcessACKIPListFile(pStrHeader *output)
     if (!(*output))
     {
         DisplayError("ProcessACKIPListFile malloc failed");
-        return (pStrHeader *)NULL;
+        return (pStrHeader)NULL;
     }
     pStrNode str_node;
     (*output)->length = 0;
@@ -620,7 +620,7 @@ pStrHeader *ProcessACKIPListFile(pStrHeader *output)
     {
         DisplayError("Error: Can not open the ack ip list file");
         DisplayError("%s(%d)", strerror(errno), errno);
-        return (pStrHeader *)NULL;
+        return (pStrHeader)NULL;
     }
     while (!feof(fp))
     {
@@ -628,7 +628,7 @@ pStrHeader *ProcessACKIPListFile(pStrHeader *output)
         if (!memset(buff, 0, IP_BUFFER_SIZE))
         {
             DisplayError("ProcessACKIPListFile memset failed");
-            return (pStrHeader *)NULL;
+            return (pStrHeader)NULL;
         }
         ch = fgetc(fp);
         while (ch && ch != '\n' && ch != '\r' && !feof(fp))
@@ -636,7 +636,7 @@ pStrHeader *ProcessACKIPListFile(pStrHeader *output)
             if (!sprintf(buff, "%s%c", buff, ch))
             {
                 DisplayError("ProcessACKIPListFile sprintf failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
             //DisplayInfo("%c", ch);
             ch = fgetc(fp);
@@ -645,27 +645,41 @@ pStrHeader *ProcessACKIPListFile(pStrHeader *output)
         str_length = strlen(buff);
         if (str_length > 0 && buff[0] != '#')
         {
+            //DisplayInfo("str_length: %d", str_length);
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
                 DisplayError("ProcessACKIPLIstFile malloc failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
             str_node->next = (*output)->next;
             (*output)->next = str_node;
             //DisplayInfo("%ld", str_length);
             // make a space for /0
             str_node->str = (char *)malloc(str_length + 1);
+            // char *test = (char *)malloc(1600 * sizeof(char));
+            char *test = (char *)calloc(16, sizeof(char));
+            DisplayInfo("test size: %u", sizeof(test));
+            DisplayInfo("str_node str_length: %d", str_length);
+            DisplayInfo("str_node->str size: %u", sizeof(str_node->str));
+            //DisplayInfo("sizeof(char): %u", sizeof(char));
             if (!memset(str_node->str, 0, str_length + 1))
             {
                 DisplayError("ProcessACKIPListFile memset failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
-            if (!strncpy(str_node->str, buff, str_length))
+            if (!strncpy(str_node->str, buff, str_length + 1))
             {
                 DisplayError("ProcessACKIPListFile strncpy failed");
-                return (pStrHeader *)NULL;
+                return (pStrHeader)NULL;
             }
+            DisplayInfo("str_node->str size: %u", sizeof(str_node->str));
+            DisplayInfo("str_node->str len: %d", strlen(str_node->str));
+            char b[10] = "12345678";
+            DisplayInfo("b size: %u", sizeof(b));
+            DisplayInfo("b len: %d", strlen(b));
+
+            //DisplayInfo("test here: %s", str_node->str[sizeof(str_node->str) - 1]);
             // init the node lock as 0
             str_node->lock = 0;
             ++((*output)->length);
@@ -675,11 +689,29 @@ pStrHeader *ProcessACKIPListFile(pStrHeader *output)
     if (fclose(fp))
     {
         DisplayError("ProcessACKIPListFile fclose failed");
-        return (pStrHeader *)NULL;
+        return (pStrHeader)NULL;
     }
-    return output;
-    // for test
-    //return (pStrHeader *)NULL;
+    //DisplayWarning(">>> 1 <<<");
+    pStrNode node = (*output)->next;
+    while (node)
+    {
+        DisplayInfo("Node value: %s", node->str);
+        node = node->next;
+    }
+    return (*output);
+}
+
+void ProcessACKIPListFileTest(void)
+{
+    pStrHeader header;
+    // ProcessACKIPListFile(&header);
+    if (!ProcessACKIPListFile(&header))
+    {
+        DisplayError("ProcessACKIPListFile failed");
+    }
+    DisplayInfo("Length: %d", header->length);
+
+    FreeProcessACKIPListBuff(header);
 }
 
 /*

@@ -27,6 +27,12 @@ extern int DisplayError(const char *fmt, ...);
 
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 
+extern void FreeSplitURLBuff(pSplitURLOutput p);
+extern pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output);
+extern void FreeRandomIPBuff(char *p);
+extern char *GetRandomIP(char **output);
+extern int GetRandomPort(int *output);
+
 static int SendUDP(const pUDPStruct us, const int debug_level)
 {
 
@@ -135,11 +141,6 @@ static void FreeUDPStrutBuff(pUDPStruct input)
 static int AttackThread(const pInput input)
 {
     // here is udp flood thread
-    extern void FreeSplitURLBuff(pSplitURLOutput p);
-    extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern void FreeRandomIPBuff(char *p);
-    extern char *GetRandomIP(char **output);
-    extern int GetRandomPort(int *output);
 
     pUDPStruct udp_struct = (pUDPStruct)malloc(sizeof(UDPStruct));
     pSplitURLOutput split_result;

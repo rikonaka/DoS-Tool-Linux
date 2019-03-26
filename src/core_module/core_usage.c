@@ -56,6 +56,7 @@ void DisplayUsage(void)
                   "--test-syn              test the syn flood attack module\n"
                   "--test-udp              test the udp flood attack module\n"
                   "--test-ack              test the ack reflect attack module\n"
+                  "--test-ack-ip-list      test the split the akc ip list module\n"
                   "\n"
                   "";
 
