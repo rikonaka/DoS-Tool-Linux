@@ -22,11 +22,11 @@ typedef struct pseudo_header
 
 typedef struct syn_struct
 {
-    int loop;
     char *src_ip;
     char *dst_ip;
-    int src_port;
-    int dst_port;
+    size_t src_port;
+    size_t dst_port;
+    size_t each_ip_repeat;
 } SYNStruct, *pSYNStruct;
 
 #endif

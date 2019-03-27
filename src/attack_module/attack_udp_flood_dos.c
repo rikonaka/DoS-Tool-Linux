@@ -105,7 +105,7 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
 
     // envoi
     int i;
-    for (i = 0; i < us->loop; i++)
+    for (i = 0; i < us->each_ip_repeat; i++)
     {
         if (sendto(
                 socket_fd,
@@ -185,7 +185,7 @@ static int AttackThread(const pInput input)
     }
     udp_struct->dst_port = split_result->port;
     FreeSplitURLBuff(split_result);
-    udp_struct->loop = input->each_ip_repeat;
+    udp_struct->each_ip_repeat = input->each_ip_repeat;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
     for (;;)

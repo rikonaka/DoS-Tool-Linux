@@ -74,7 +74,7 @@ typedef struct split_url_output
 {
     char *protocol;
     char *host;
-    int port;
+    size_t port;
     char *suffix;
 } SplitURLOutput, *pSplitURLOutput;
 
@@ -101,7 +101,7 @@ typedef struct thread_control_node
 {
     struct thread_control_node *next;
     unsigned long tid; // typedef unsigned long pthread_t
-    int id;
+    size_t id;
 } ThreadControlNode, *pThreadControlNode;
 
 typedef struct thread_control_header
@@ -113,26 +113,26 @@ typedef struct thread_control_header
 typedef struct user_input
 {
     // has the defalut value
-    int attack_mode;
-    int random_password_length;
-    int random_sip_address;
-    int debug_level;
-    int max_process;
-    int max_thread;
-    int each_ip_repeat;
+    size_t attack_mode;
+    size_t random_password_length;
+    size_t random_sip_address;
+    size_t debug_level;
+    size_t max_process;
+    size_t max_thread;
+    size_t each_ip_repeat;
     // 0 is not test
     // -1 is guess
     // -2 is syn flood
-    int test_type;
+    size_t test_type;
     // field with program
-    int seed;
+    size_t seed;
     pThreadControlHeader tch;
-    int guess_attack_type;
+    size_t guess_attack_type;
     struct guess_attack_use *gau;
-    // int serial_num;
+    // size_t serial_num;
     // didn't have defalut value and not field with program
-    int get_response_length;
-    int watch_length;
+    size_t get_response_length;
+    size_t watch_length;
     // char value
     char address[MAX_URL_LENGTH];
     char username[MAX_USERNAME_LENGTH];
@@ -140,7 +140,7 @@ typedef struct user_input
     char password_path[MAX_PASSWORD_PATH_LENGTH];
     char model_type[MAX_MODEL_TYPE_LENGTH];
     // coming soon
-    pStrHeader str_header;
+    //pStrHeader str_header;
 } Input, *pInput;
 
 #endif

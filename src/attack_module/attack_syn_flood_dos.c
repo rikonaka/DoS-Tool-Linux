@@ -166,7 +166,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     //while (1)
     //{
     //Send the packet
-    for (i = 0; i < ss->loop; i++)
+    for (i = 0; i < ss->each_ip_repeat; i++)
     {
         //int l;
         if (sendto(
@@ -252,7 +252,7 @@ static int AttackThread(pInput input)
     }
     syn_struct->dst_port = split_result->port;
     FreeSplitURLBuff(split_result);
-    syn_struct->loop = input->each_ip_repeat;
+    syn_struct->each_ip_repeat= input->each_ip_repeat;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
     for (;;)
