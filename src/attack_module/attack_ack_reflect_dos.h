@@ -25,8 +25,8 @@ typedef struct syn_struct
 
 typedef struct ip_list_thread
 {
-    pStrNode *next;
-    pStrHeader *list;
+    struct ip_list_thread *next;
+    pStrHeader list;
 } IPList_Thread, *pIPList_Thread;
 
 #endif

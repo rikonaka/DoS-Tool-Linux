@@ -31,7 +31,7 @@ extern void FreeSplitURLBuff(pSplitURLOutput p);
 extern pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomIPBuff(char *p);
 extern char *GetRandomIP(char **output);
-extern int GetRandomPort(int *output);
+extern size_t GetRandomPort(size_t *output);
 
 static int SendUDP(const pUDPStruct us, const int debug_level)
 {

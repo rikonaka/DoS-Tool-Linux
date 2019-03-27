@@ -526,7 +526,7 @@ char *GetRandomIP(char **output)
     return (*output);
 }
 
-int GetRandomPort(int *output)
+size_t GetRandomPort(size_t *output)
 {
     // Return randome port from 1 to 9999
 

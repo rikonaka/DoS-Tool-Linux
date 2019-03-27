@@ -36,7 +36,7 @@ extern void FreeSplitURLBuff(pSplitURLOutput p);
 extern pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomIPBuff(char *p);
 extern char *GetRandomIP(char **output);
-extern int GetRandomPort(int *output);
+extern size_t GetRandomPort(size_t *output);
 
 //int attack(const struct AHTTP_INPUT *ainput)
 static int SendSYN(const pSYNStruct ss, const int debug_level)
