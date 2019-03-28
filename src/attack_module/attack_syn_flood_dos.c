@@ -213,7 +213,6 @@ static int AttackThread(pInput input)
     pSplitURLOutput split_result;
     int i;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "ATTACK!");
     if (!SplitURL(input->address, &split_result))
     {
         DisplayError("AttackThread SplitURL failed");
