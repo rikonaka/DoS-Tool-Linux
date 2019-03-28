@@ -313,26 +313,42 @@ static pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput inpu
 
     pStrNode tmp_node = str_header->next;
     pStrNode next_tmp_node;
-    for (i = 0; i < thread_num; i++)
+    // deal with the data except the last one
+    for (i = 0; i < thread_num - 1; i++)
     {
         str_new_header = (pStrHeader)malloc(sizeof(StrHeader));
         str_new_header->next = tmp_node;
+        str_new_header->length = 0;
+
+        // move the tmp_node to the right position
         for (j = 0; j < cut; j++)
         {
-            if (tmp_node)
-            {
-                tmp_node = tmp_node->next;
-            }
+            tmp_node = tmp_node->next;
+            ++(str_new_header->length);
         }
         // use the next_tmp_node as the bridge
         next_tmp_node = tmp_node->next;
         // cut the node
         tmp_node->next = NULL;
         tmp_node = next_tmp_node;
+
         ip_new_node->list = str_new_header;
         ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
         ip_new_node = ip_new_node->next;
     }
+
+    // deal with the last one's data
+    str_new_header = (pStrHeader)malloc(sizeof(StrHeader));
+    str_new_header->next = tmp_node;
+    str_new_header->length = 0;
+
+    while (tmp_node)
+    {
+        tmp_node = tmp_node->next;
+        ++(str_new_header->length);
+    }
+    ip_new_node->list = str_new_header;
+    ip_new_node->next = NULL;
 
     return (*output);
 }
