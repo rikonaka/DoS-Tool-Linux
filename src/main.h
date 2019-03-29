@@ -50,11 +50,11 @@
 #define MODEL_TYPE_DEFAULT "feixun_fwr_604h"
 #define HTTP_PORT_DEFAULT 80
 #define HTTPS_PORT_DEFAULT 443
-#define EACH_IP_REPEAT_TIME 1024 // should be very big
 #define SYN_FLOOD_PORT_DEFAULT 80
 #define UDP_FLOOD_PORT_DEFAULT 80
 #define ACK_REFLECT_PORT_DEFAULT 80
 #define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
+#define EACH_IP_REPEAT_TIME 1024 // should be a big value
 
 #define TEST_TYPE_NON 0
 #define TEST_TYPE_GUESS -1

