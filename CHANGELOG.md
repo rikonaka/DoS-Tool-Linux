@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ACK reflect dos attack module
+- DNS reflect dos attack module
+
+### Removed
+
+- multi process support (only multi thread support now)
+
+
+## [0.30] - 2019-3-26
+
+### Added
+
 - UDP flood attack module
 
 ### Changed
@@ -55,5 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Can work good at my company's network.
 
-[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.20...HEAD
+[Unreleased]: https://github.com/rikonaka/Dos-Tool/compare/v0.30...HEAD
+[0.30]: https://github.com/rikonaka/Dos-Tool/compare/v0.20...v0.30
 [0.20]: https://github.com/rikonaka/Dos-Tool/compare/v0.10...v0.20
