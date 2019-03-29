@@ -5,15 +5,18 @@
 
 #include "main.h"
 
+// core_log.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
 extern int DisplayInfo(const char *fmt, ...);
 extern int DisplayWarning(const char *fmtsring, ...);
 extern int DisplayError(const char *fmt, ...);
-
+// core_str.c
+extern void ProcessACKIPListFileTest(void);
+// core_input.c
 extern int ProcessInput(const int argc, char *argv[], pInput input);
 extern int CheckInputCompliance(const pInput input);
 extern int InitInput(pInput *p);
-
+// core_usage.c
 extern void DisplayUsage(void);
 
 extern int StartSYNFloodAttack(const pInput input);
@@ -28,7 +31,8 @@ extern int StartUDPFloodTest(const pInput input);
 extern int StartACKReflectAttack(const pInput input);
 extern int StartACKReflectTest(const pInput input);
 
-extern void ProcessACKIPListFileTest(void);
+extern int StartDNSReflectAttack(const pInput input);
+extern int StartDNSReflectTest(const pInput input);
 
 int main(int argc, char *argv[])
 {

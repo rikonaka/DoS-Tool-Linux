@@ -39,7 +39,6 @@ void DisplayUsage(void)
                   "                            1    show less debug message\n"
                   "                            2    show verbose debug message\n"
                   "                            3    show all debug message\n"
-                  "-p <number>             set the process number (default 1)\n"
                   "-t <number>             set the thread number (default 8)\n"
                   "-i <target>             indicate intent URL address (user shoud indicate the port in thr URL)\n"
                   "-m <type>               type of router\n"

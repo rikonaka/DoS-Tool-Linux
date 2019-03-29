@@ -14,6 +14,7 @@ SRCS = main.c\
 	attack_module/attack_syn_flood_dos.c\
     attack_module/attack_udp_flood_dos.c\
     attack_module/attack_ack_reflect_dos.c\
+    attack_module/attack_dns_reflect_dos.c\
 	attack_module/router/feixun.c\
 	attack_module/router/tplink.c
 

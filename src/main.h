@@ -54,7 +54,8 @@
 #define UDP_FLOOD_PORT_DEFAULT 80
 #define ACK_REFLECT_PORT_DEFAULT 80
 #define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
-#define EACH_IP_REPEAT_TIME 1024 // should be a big value
+#define DNS_IP_LIST_NAME "./core_module/dns_reflect_ip_list.txt"
+#define EACH_IP_REPEAT_TIME 1024 // should be a big value, if your try to debug, make it smaller like 10
 
 #define TEST_TYPE_NON 0
 #define TEST_TYPE_GUESS -1
@@ -117,7 +118,6 @@ typedef struct user_input
     size_t random_password_length;
     size_t random_sip_address;
     size_t debug_level;
-    size_t max_process;
     size_t max_thread;
     size_t each_ip_repeat;
     // 0 is not test
@@ -142,5 +142,11 @@ typedef struct user_input
     // coming soon
     //pStrHeader str_header;
 } Input, *pInput;
+
+typedef struct ip_list_thread
+{
+    struct ip_list_thread *next;
+    pStrHeader list;
+} IPList_Thread, *pIPList_Thread;
 
 #endif

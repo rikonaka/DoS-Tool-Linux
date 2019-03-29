@@ -217,20 +217,6 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 break;
 
-            case 'p':
-                // int
-                if (argv[++i])
-                {
-                    input->max_process = atoi(argv[i]);
-                }
-                else
-                {
-                    DisplayWarning("Can not found value of -p parameter, use default value now");
-                    input->max_process = PROCESS_NUM_DEFAULT;
-                    // return NULL;
-                }
-                break;
-
             case 'r':
                 // int
                 if (argv[++i])
@@ -392,7 +378,6 @@ pInput *InitInput(pInput *p)
 
     // field default value
     (*p)->attack_mode = ATTACK_MODE_DEFAULT;
-    (*p)->max_process = PROCESS_NUM_DEFAULT;
     (*p)->max_thread = THREAD_NUM_DEFAULT;
     (*p)->debug_level = DEBUG_LEVEL_DEFAULT;
     (*p)->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;

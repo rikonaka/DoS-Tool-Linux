@@ -23,10 +23,4 @@ typedef struct syn_struct
     pStrHeader str_header;
 } SYNStruct, *pSYNStruct;
 
-typedef struct ip_list_thread
-{
-    struct ip_list_thread *next;
-    pStrHeader list;
-} IPList_Thread, *pIPList_Thread;
-
 #endif

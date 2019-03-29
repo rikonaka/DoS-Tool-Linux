@@ -683,6 +683,126 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
     return (*output);
 }
 
+void FreeProcessDNSIPListBuff(pStrHeader p)
+{
+    // free it
+    pStrNode n = p->next;
+    pStrNode n_next = n->next;
+    while (n_next)
+    {
+        //DisplayInfo("Free <%s> space now", n->username);
+        if (n)
+        {
+            free(n);
+        }
+        --(p->length);
+        n = n_next;
+        n_next = n_next->next;
+    }
+
+    if (p->length != 1)
+    {
+        DisplayWarning("Free the space error");
+    }
+
+    if (n)
+    {
+        free(n);
+    }
+    if (p)
+    {
+        free(p);
+    }
+}
+
+pStrHeader ProcessDNSIPListFile(pStrHeader *output)
+{
+    // return NULL = failed
+    // return something = success
+
+    (*output) = (pStrHeader)malloc(sizeof(StrHeader));
+    if (!(*output))
+    {
+        DisplayError("ProcessDNSIPListFile malloc failed");
+        return (pStrHeader)NULL;
+    }
+
+    pStrNode str_node;
+    (*output)->length = 0;
+    (*output)->next = NULL;
+    char *buff = (char *)malloc(IP_BUFFER_SIZE);
+    char ch;
+    size_t str_length = 0;
+    size_t count = 0;
+
+    // the file path and file name is default here
+    FILE *fp = fopen(DNS_IP_LIST_NAME, "r");
+    if (!fp)
+    {
+        DisplayError("Error: Can not open the ack ip list file");
+        DisplayError("%s(%d)", strerror(errno), errno);
+        return (pStrHeader)NULL;
+    }
+
+    while (!feof(fp))
+    {
+        // if stack error, change here
+        if (!memset(buff, 0, IP_BUFFER_SIZE))
+        {
+            DisplayError("ProcessDNSIPListFile memset failed");
+            return (pStrHeader)NULL;
+        }
+
+        ch = fgetc(fp);
+        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
+        {
+            if (!sprintf(buff, "%s%c", buff, ch))
+            {
+                DisplayError("ProcessDNSIPListFile sprintf failed");
+                return (pStrHeader)NULL;
+            }
+            //DisplayInfo("%c", ch);
+            ch = fgetc(fp);
+        }
+
+        str_length = strlen(buff);
+        if (str_length > 0 && buff[0] != '#')
+        {
+            //DisplayInfo("str_length: %d", str_length);
+            str_node = (pStrNode)malloc(sizeof(StrNode));
+            if (!str_node)
+            {
+                DisplayError("ProcessDNSIPLIstFile malloc failed");
+                return (pStrHeader)NULL;
+            }
+            str_node->next = (*output)->next;
+            (*output)->next = str_node;
+            // make a space for /0
+            str_node->str = (char *)malloc(str_length + 1);
+            if (!memset(str_node->str, 0, str_length + 1))
+            {
+                DisplayError("ProcessDNSIPListFile memset failed");
+                return (pStrHeader)NULL;
+            }
+            if (!memcpy(str_node->str, buff, str_length + 1))
+            {
+                DisplayError("ProcessDNSIPListFile strncpy failed");
+                return (pStrHeader)NULL;
+            }
+            // init the node lock as 0
+            ++((*output)->length);
+            ++count;
+        }
+    }
+    if (fclose(fp))
+    {
+        DisplayError("ProcessDNSIPListFile fclose failed");
+        return (pStrHeader)NULL;
+    }
+    free(buff);
+    return (*output);
+}
+
 void ProcessACKIPListFileTest(void)
 {
     DisplayInfo("Enter ProcessACKIPLIstFileTest");
@@ -701,6 +821,99 @@ void ProcessACKIPListFileTest(void)
     FreeProcessACKIPListBuff(header);
 }
 
+pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header)
+{
+    // split the whole ip list for each thread
+    size_t thread_num = input->max_thread;
+    size_t list_length = str_header->length;
+    size_t i, j;
+    size_t cut = list_length / thread_num;
+    pStrHeader str_new_header;
+
+    (*output) = (pIPList_Thread)malloc(sizeof(IPList_Thread));
+    if (!(*output))
+    {
+        DisplayError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
+        return (pIPList_Thread)NULL;
+    }
+    pIPList_Thread ip_new_node = (*output);
+
+    // the list is too short to split for each thread
+    // so just use the whole list for all the threads
+    if (cut < 1)
+    {
+        DisplayWarning("The IP list did NOT need the split");
+
+        for (i = 0; i < thread_num; i++)
+        {
+            str_new_header = str_header;
+            ip_new_node->list = str_new_header;
+            ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
+            if (!ip_new_node)
+            {
+                DisplayError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
+                return (pIPList_Thread)NULL;
+            }
+            ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
+            ip_new_node = ip_new_node->next;
+        }
+
+        return (*output);
+    }
+
+    pStrNode tmp_node = str_header->next;
+    pStrNode next_tmp_node;
+    // deal with the data except the last one
+    for (i = 0; i < thread_num - 1; i++)
+    {
+        str_new_header = (pStrHeader)malloc(sizeof(StrHeader));
+        str_new_header->next = tmp_node;
+        str_new_header->length = 0;
+
+        // move the tmp_node to the right position
+        for (j = 0; j < cut; j++)
+        {
+            tmp_node = tmp_node->next;
+            ++(str_new_header->length);
+        }
+        // use the next_tmp_node as the bridge
+        next_tmp_node = tmp_node->next;
+        // cut the node
+        tmp_node->next = NULL;
+        tmp_node = next_tmp_node;
+
+        ip_new_node->list = str_new_header;
+        ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
+        ip_new_node = ip_new_node->next;
+    }
+
+    // deal with the last one's data
+    str_new_header = (pStrHeader)malloc(sizeof(StrHeader));
+    str_new_header->next = tmp_node;
+    str_new_header->length = 0;
+
+    while (tmp_node)
+    {
+        tmp_node = tmp_node->next;
+        ++(str_new_header->length);
+    }
+    ip_new_node->list = str_new_header;
+    ip_new_node->next = NULL;
+
+    return (*output);
+}
+
+void FreeIPListBuff(pIPList_Thread input)
+{
+    // free the buff
+    pIPList_Thread tmp = input;
+    if (tmp->next)
+    {
+        FreeIPListBuff(tmp->next);
+    }
+    free(tmp->list);
+    free(tmp);
+}
 /*
 int main(int argc, char *argv[])
 {

