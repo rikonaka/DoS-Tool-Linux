@@ -152,7 +152,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     udph->uh_sum = CalculateSum((unsigned short *)udph, sizeof(struct udphdr));
 
     // use the UDP to send the data
-    pDNSHeader dnsh = (pDNSHeader)data;
+    pDNSHeader dnsh = (pDNSHeader)&data;
     // set the DNS structure to standard queries
     dnsh->id = (unsigned short)htons(getpid());
     dnsh->qr = 0;     // this is a query
