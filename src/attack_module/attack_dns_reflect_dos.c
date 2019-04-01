@@ -83,18 +83,11 @@ static void ChangetoDNSNameFormat(char *dns, char *host)
 static int SendDNS(const pDNSStruct ds, const int debug_level)
 {
     // Perform a DNS query by sending a packet
+
     char *host = (char *)malloc(MAX_URL_LENGTH);
     memcpy(host, DNS_QUERY_NAME_DEFAULT, MAX_URL_LENGTH);
-    int query_type = DNS_QUERY_TYPE_DEFAULT;
-    char *datagram, *qname;
     int socket_fd;
-
-    pDNSHeader dnsh = NULL;
-    pQuestion qinfo = NULL;
-
-    DisplayDebug(2, debug_level, "Resolving %s", host);
-
-    socket_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); // UDP packet for DNS queries
+    socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (socket_fd < 0)
     {
         DisplayError("Create socket failed: %s(%d)", strerror(errno), errno);
@@ -113,14 +106,54 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
 
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(ds->dst_port);          // dns port
-    sin.sin_addr.s_addr = inet_addr(ds->dst_ip); // dns servers
+    // dst
+    sin.sin_port = htons((int)ds->dst_port);
+    sin.sin_addr.s_addr = inet_addr(ds->dst_ip);
 
-    int pksize = sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader);
+    char *datagram, *data;
+    int pksize = sizeof(struct ip) + sizeof(struct udphdr);
     datagram = (char *)malloc(pksize);
 
+    struct ip *iph;
+    iph = (struct ip *)datagram;
+
+    struct udphdr *udph;
+    udph = (struct udphdr *)(datagram + sizeof(struct ip));
+    data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
+    memset(datagram, 0, pksize);
+    // filed the data
+
+    int one = 1;
+    const int *val = &one;
+    if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
+    {
+        DisplayError("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
+        //exit(0);
+        return 1;
+    }
+
+    // entete ip
+    iph->ip_v = 4;
+    iph->ip_hl = 5;
+    iph->ip_tos = 0;
+    iph->ip_len = pksize;
+    iph->ip_ttl = 255;
+    iph->ip_off = 0;
+    iph->ip_id = sizeof(45);
+    iph->ip_p = IPPROTO_UDP;
+    iph->ip_sum = 0; // a remplir aprés
+    iph->ip_src.s_addr = inet_addr(ds->src_ip);
+    iph->ip_dst.s_addr = inet_addr(ds->dst_ip);
+
+    // entete udp
+    udph->uh_sport = htons(ds->src_port);
+    udph->uh_dport = htons(ds->dst_port);
+    udph->uh_ulen = htons(sizeof(struct udphdr));
+    udph->uh_sum = CalculateSum((unsigned short *)udph, sizeof(struct udphdr));
+
+    // use the UDP to send the data
+    pDNSHeader dnsh = (pDNSHeader)data;
     // set the DNS structure to standard queries
-    dnsh = (pDNSHeader)&datagram;
     dnsh->id = (unsigned short)htons(getpid());
     dnsh->qr = 0;     // this is a query
     dnsh->opcode = 0; // this is a standard query
@@ -137,37 +170,11 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     dnsh->auth_count = 0;
     dnsh->add_count = 0;
 
-    struct ip *iph;
-    iph = (struct ip *)datagram;
-    // entete ip
-    iph->ip_v = 4;
-    iph->ip_hl = 5;
-    iph->ip_tos = 0;
-    iph->ip_len = sizeof(pksize);
-    iph->ip_ttl = 255;
-    iph->ip_off = 0;
-    iph->ip_id = sizeof(45);
-    iph->ip_p = IPPROTO_UDP;
-    iph->ip_sum = 0; // a remplir aprés
-    iph->ip_src.s_addr = inet_addr(ds->src_ip);
-    iph->ip_dst.s_addr = inet_addr(ds->dst_ip);
-
-    struct udphdr *udph;
-    udph = (struct udphdr *)(datagram + sizeof(struct ip));
-    udph->uh_sport = htons(ds->src_port);
-    udph->uh_dport = htons(ds->dst_port);
-    udph->uh_ulen = htons(sizeof(struct udphdr) + sizeof(DNSHeader));
-    udph->uh_sum = CalculateSum((unsigned short *)udph, sizeof(struct udphdr) + sizeof(DNSHeader));
-
     // point to the query portion
-    qname = (char *)&datagram[sizeof(DNSHeader)];
-
+    char *qname;
+    qname = (char *)&dnsh[sizeof(DNSHeader)];
     ChangetoDNSNameFormat(qname, host);
-    qinfo = (pQuestion)&datagram[sizeof(DNSHeader) + (strlen((const char *)qname) + 1)]; //fill it
-
-    qinfo->qtype = htons(query_type); // type of the query , A , MX , CNAME , NS etc
-    qinfo->qclass = htons(1);         // its internet (lol)
-
+    // filed the data
     DisplayDebug(2, debug_level, "Sending Packet...");
     if (sendto(socket_fd, (char *)datagram, sizeof(DNSHeader) + (strlen((const char *)qname) + 1) + sizeof(Question), 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {

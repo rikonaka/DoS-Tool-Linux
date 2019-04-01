@@ -180,6 +180,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     // for test
     //sleep(1);
 
+    close(socket_fd);
     return 0;
 }
 

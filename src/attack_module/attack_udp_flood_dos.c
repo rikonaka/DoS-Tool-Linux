@@ -55,7 +55,6 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
     }
 
     struct sockaddr_in sin;
-
     sin.sin_family = AF_INET;
     // dst
     sin.sin_port = htons((int)us->dst_port);
@@ -90,7 +89,7 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
     iph->ip_v = 4;
     iph->ip_hl = 5;
     iph->ip_tos = 0;
-    iph->ip_len = sizeof(pksize);
+    iph->ip_len = pksize;
     iph->ip_ttl = 255;
     iph->ip_off = 0;
     iph->ip_id = sizeof(45);

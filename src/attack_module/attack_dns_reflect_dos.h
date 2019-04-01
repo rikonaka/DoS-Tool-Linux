@@ -11,6 +11,7 @@
 #define T_MX 15   // mail server
 
 #define DNS_QUERY_TYPE_DEFAULT T_A
+#define DNS_SIZE 4096
 
 // constant sized fields of the resource record structure
 typedef struct r_data

@@ -189,6 +189,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
         }
         */
     }
+    close(socket_fd);
 
     return 0;
 }
