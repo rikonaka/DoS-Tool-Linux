@@ -8,7 +8,7 @@
 
 Current version: 0.30 | [Changelog](CHANGELOG.md)
 
-### Support the legitimate rights and interests of programmers:
+## Support the legitimate rights and interests of programmers
 
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
