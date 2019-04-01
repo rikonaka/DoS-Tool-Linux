@@ -61,17 +61,20 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
     sin.sin_port = htons((int)us->dst_port);
     sin.sin_addr.s_addr = inet_addr(us->dst_ip);
 
-    struct ip *iph;
-    struct udphdr *udp;
     char *datagram, *data;
-
     int pksize = sizeof(struct ip) + sizeof(struct udphdr) + PADDING_SIZE;
     datagram = (char *)malloc(pksize);
+
+    struct ip *iph;
     iph = (struct ip *)datagram;
-    udp = (struct udphdr *)(datagram + sizeof(struct ip));
+
+    struct udphdr *udph;
+    udph = (struct udphdr *)(datagram + sizeof(struct ip));
+
     data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
 
     memset(datagram, 0, pksize);
+    // filed the data
     memcpy((char *)data, "x", PADDING_SIZE);
 
     int one = 1;
@@ -83,7 +86,7 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
         return 1;
     }
 
-    //entete ip
+    // entete ip
     iph->ip_v = 4;
     iph->ip_hl = 5;
     iph->ip_tos = 0;
@@ -96,12 +99,11 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
     iph->ip_src.s_addr = inet_addr(us->src_ip);
     iph->ip_dst.s_addr = inet_addr(us->dst_ip);
 
-    //entete udp
-
-    udp->uh_sport = htons(us->src_port);
-    udp->uh_dport = htons(us->dst_port);
-    udp->uh_ulen = htons(sizeof(struct udphdr) + PADDING_SIZE);
-    udp->uh_sum = CalculateSum((unsigned short *)udp, sizeof(struct udphdr) + PADDING_SIZE);
+    // entete udp
+    udph->uh_sport = htons(us->src_port);
+    udph->uh_dport = htons(us->dst_port);
+    udph->uh_ulen = htons(sizeof(struct udphdr) + PADDING_SIZE);
+    udph->uh_sum = CalculateSum((unsigned short *)udph, sizeof(struct udphdr) + PADDING_SIZE);
 
     // envoi
     int i;

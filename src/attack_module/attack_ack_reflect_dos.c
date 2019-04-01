@@ -126,7 +126,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     tcph->check = 0;
 
     tcph->urg_ptr = 0;
-    // Now the IP checksum
+    // now the IP checksum
 
     psh.source_address = inet_addr(ss->src_ip);
     psh.dest_address = sin.sin_addr.s_addr;

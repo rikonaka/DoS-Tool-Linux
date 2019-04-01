@@ -128,6 +128,14 @@ int main(int argc, char *argv[])
             ProcessACKIPListFileTest();
             break;
 
+        case TEST_TYPE_DNS_REFLECT:
+            if (StartDNSReflectTest(input))
+            {
+                DisplayError("StartDNSReflectTest failed");
+                return 1;
+            }
+            break;
+
         default:
             break;
         }
@@ -165,6 +173,14 @@ int main(int argc, char *argv[])
             if (StartACKReflectAttack(input))
             {
                 DisplayError("StartACKReflectAttack failed");
+                return 1;
+            }
+            break;
+
+        case DNS_REFLECT_ATTACK:
+            if (StartDNSReflectAttack(input))
+            {
+                DisplayError("StartDNSReflectAttack failed");
                 return 1;
             }
             break;

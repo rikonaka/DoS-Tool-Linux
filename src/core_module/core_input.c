@@ -81,6 +81,10 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
             {
                 input->test_type = TEST_TYPE_ACK_REFLECT;
             }
+            else if (strstr(ptmp2, "test-dns"))
+            {
+                input->test_type = TEST_TYPE_DNS_REFLECT;
+            }
             else
             {
                 DisplayError("Illegal input");
@@ -112,6 +116,10 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
 
                     case '3':
                         input->attack_mode = ACK_REFLECT_ATTACK;
+                        break;
+
+                    case '4':
+                        input->attack_mode = DNS_REFLECT_ATTACK;
                         break;
 
                     default:

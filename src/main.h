@@ -4,10 +4,21 @@
 // 0 - guess the web passwd (advanced, not point now)
 // 1 - syn flood attack
 // 2 - udp flood attack
+// 3 - ack reflect attack
+// 4 - dns reflect attack
 #define GUESS 0
 #define SYN_FLOOD_ATTACK 1
 #define UDP_FLOOD_ATTACK 2
 #define ACK_REFLECT_ATTACK 3
+#define DNS_REFLECT_ATTACK 4
+
+#define TEST_TYPE_NON 0
+#define TEST_TYPE_GUESS -1
+#define TEST_TYPE_SYN_FLOOD -2
+#define TEST_TYPE_UDP_FLOOD -3
+#define TEST_TYPE_ACK_REFLECT -4
+#define TEST_TYPE_ACK_IP_LIST -5
+#define TEST_TYPE_DNS_REFLECT -6
 
 // username from one string and password from linked list
 #define GUESS_U1PL 0
@@ -55,14 +66,8 @@
 #define ACK_REFLECT_PORT_DEFAULT 80
 #define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
 #define DNS_IP_LIST_NAME "./core_module/dns_reflect_ip_list.txt"
-#define EACH_IP_REPEAT_TIME 1024 // should be a big value, if your try to debug, make it smaller like 10
-
-#define TEST_TYPE_NON 0
-#define TEST_TYPE_GUESS -1
-#define TEST_TYPE_SYN_FLOOD -2
-#define TEST_TYPE_UDP_FLOOD -3
-#define TEST_TYPE_ACK_REFLECT -4
-#define TEST_TYPE_ACK_IP_LIST -5
+#define EACH_IP_REPEAT_TIME 10 // should be a big value, if your try to debug, make it smaller like 10
+#define DNS_QUERY_NAME_DEFAULT "bing.com"
 
 #define DEFAULT_ADDRESS "192.168.99.99"
 #define DEFAULT_PORT 9999

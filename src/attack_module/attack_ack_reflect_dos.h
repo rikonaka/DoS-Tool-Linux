@@ -3,7 +3,7 @@
 
 typedef struct pseudo_header
 {
-    // Needed for checksum calculation
+    // needed for checksum calculation
     unsigned int source_address;
     unsigned int dest_address;
     unsigned char placeholder;

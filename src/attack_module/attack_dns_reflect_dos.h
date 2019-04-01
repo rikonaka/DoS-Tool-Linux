@@ -1,7 +1,18 @@
 #ifndef _ATTACK_DNS_REFLECT_DOS_H
 #define _ATTACK_DNS_REFLECT_DOS_H
 
-//Constant sized fields of the resource record structure
+// yypes of DNS resource records :)
+// query type is here
+#define T_A 1     // ipv4 address
+#define T_NS 2    // nameserver
+#define T_CNAME 5 // canonical name
+#define T_SOA 6   // start of authority zone
+#define T_PTR 12  // domain name pointer
+#define T_MX 15   // mail server
+
+#define DNS_QUERY_TYPE_DEFAULT T_A
+
+// constant sized fields of the resource record structure
 typedef struct r_data
 {
     unsigned short type;
@@ -10,7 +21,7 @@ typedef struct r_data
     unsigned short data_len;
 } RData, *pRData;
 
-//Pointers to resource record contents
+// pointers to resource record contents
 typedef struct res_record
 {
     unsigned char *name;
@@ -18,21 +29,21 @@ typedef struct res_record
     unsigned char *rdata;
 } ResRecord, *pResRecord;
 
-//Structure of a Query
+// structure of a Query
 typedef struct query
 {
     unsigned char *name;
     struct question *ques;
 } Query, *pQuery;
 
-//Constant sized fields of query structure
+// constant sized fields of query structure
 typedef struct question
 {
     unsigned short qtype;
     unsigned short qclass;
 } Question, *pQuestion;
 
-//DNS header structure
+// DNS header structure
 typedef struct dns_header
 {
     unsigned short id; // identification number
