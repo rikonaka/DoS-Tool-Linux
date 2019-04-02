@@ -25,7 +25,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
         ptmp = (char *)strstr(argv[i], "-");
         if (!ptmp)
         {
-            printf("Illegal input\n");
+            DisplayError("Illegal input");
             return (pInput)NULL;
         }
 

