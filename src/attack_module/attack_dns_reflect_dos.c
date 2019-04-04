@@ -52,35 +52,13 @@ static void FreeDNSStructBuff(pDNSStruct input)
         {
             free(input->dst_ip);
         }
+        if (input->src_ip)
+        {
+            free(input->src_ip);
+        }
         free(input);
     }
 }
-
-/*
-static void ChangetoDNSNameFormat(char *dns, char *host)
-{
-    // This will convert www.google.com to 3www6google3com
-    // got it :)
-
-    int lock = 0, i;
-    strcat((char *)host, ".");
-
-    for (i = 0; i < strlen((char *)host); i++)
-    {
-        if (host[i] == '.')
-        {
-            *dns++ = i - lock;
-            for (; lock < i; lock++)
-            {
-                *dns++ = host[lock];
-            }
-            lock++; //or lock=i+1;
-        }
-    }
-
-    *dns++ = '\0';
-}
-*/
 
 static int SendDNS(const pDNSStruct ds, const int debug_level)
 {
@@ -107,8 +85,8 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
     // dst
-    sin.sin_port = htons((int)ds->dst_port);
-    sin.sin_addr.s_addr = inet_addr(ds->dst_ip);
+    sin.sin_port = htons((int)ds->src_port);
+    sin.sin_addr.s_addr = inet_addr(ds->src_ip);
 
     char *datagram;
     //char *data;
@@ -160,7 +138,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     dnsh->tc = 0;     // this message is not truncated
     dnsh->rd = 1;     // recursion desired
     dnsh->ra = 0;     // recursion not available! hey we dont have it (lol)
-    dnsh->zero = 0;
+    dnsh->z = 0;
     //dnsh->ad = 0;
     //dnsh->cd = 0;
     dnsh->rcode = 0;
@@ -173,10 +151,11 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     // point to the query portion
     // filed the data
     pQuery query = (pQuery)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader));
-    query->name = (char *)calloc(1, strlen(DNS_QUERY_NAME_DEFAULT) + 1);
+    //query->name = (char *)malloc(strlen(DNS_QUERY_NAME_DEFAULT) + 1);
+    memset(query->name, 0, sizeof(query->name));
     memcpy(query->name, DNS_QUERY_NAME_DEFAULT, strlen(DNS_QUERY_NAME_DEFAULT));
 
-    pQuestion question = (pQuestion)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader) + sizeof(query));
+    pQuestion question = (pQuestion)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader) + sizeof(Query));
     question->qtype = htons(DNS_QUERY_TYPE_DEFAULT); //type of the query , A , MX , CNAME , NS etc
     question->qclass = htons(1);                     //its internet (lol)
 

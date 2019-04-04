@@ -33,14 +33,16 @@ typedef struct res_record
 // structure of a Query
 typedef struct query
 {
-    char *name;
+    //           0123456789
+    // test name github.com
+    char name[12];
     struct question *question;
 } Query, *pQuery;
 
 typedef struct question
 {
-    unsigned short int qtype : 2;
-    unsigned short int qclass : 2;
+    unsigned short int qtype;
+    unsigned short int qclass;
 } Question, *pQuestion;
 
 // DNS header structure
@@ -57,7 +59,7 @@ typedef struct dns_header
     unsigned short int tc : 1;
     unsigned short int rd : 1;
     unsigned short int ra : 1;
-    unsigned short int zero : 3;
+    unsigned short int z : 3;
     unsigned short int rcode : 4;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
     unsigned short int rd : 1;
@@ -66,7 +68,7 @@ typedef struct dns_header
     unsigned short int opcode : 4;
     unsigned short int qr : 1;
     unsigned short int rcode : 4;
-    unsigned short int zero : 3;
+    unsigned short int z : 3;
     unsigned short int ra : 1;
 #endif
 
