@@ -30,12 +30,18 @@ typedef struct res_record
     unsigned char *rdata;
 } ResRecord, *pResRecord;
 
+typedef struct dns_name
+{
+    unsigned short int len;
+    char name_part;
+} DNSName, *pDNSName;
+
 // structure of a Query
 typedef struct query
 {
-    //           0123456789
-    // test name github.com
-    char name[12];
+    //           012345678901
+    // test name 6github3com0
+    char name;
     struct question *question;
 } Query, *pQuery;
 

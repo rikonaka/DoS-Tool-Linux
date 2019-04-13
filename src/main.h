@@ -66,7 +66,7 @@
 #define ACK_REFLECT_PORT_DEFAULT 80
 #define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
 #define DNS_IP_LIST_NAME "./core_module/dns_reflect_ip_list.txt"
-#define EACH_IP_REPEAT_TIME 1 // should be a big value, if your try to debug, make it smaller like 10
+#define EACH_IP_REPEAT_TIME 1                 // should be a big value, if your try to debug, make it smaller like 10
 #define DNS_QUERY_NAME_DEFAULT "github.com" // if you want to change this name, please also edit the dns query->name size
 
 #define DEFAULT_ADDRESS "192.168.99.99"

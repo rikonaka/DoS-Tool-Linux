@@ -60,6 +60,43 @@ static void FreeDNSStructBuff(pDNSStruct input)
     }
 }
 
+static int ChangetoDNSNameFormat(char *input)
+{
+    int lock = 0, i;
+    char *host = (char *)malloc(strlen(DNS_QUERY_NAME_DEFAULT) + 2);
+    if (!host)
+    {
+        DisplayError("ChangetoDNSNameFormat malloc failed");
+        return 1;
+    }
+    if (!strcpy(host, DNS_QUERY_NAME_DEFAULT))
+    {
+        DisplayError("ChangetoDNSNameFormat strcpy failed");
+        return 1;
+    }
+    if (!strcat(host, "."))
+    {
+        DisplayError("ChangetoDNSNameFormat strcat failed");
+        return 1;
+    }
+    int host_len = strlen(host);
+
+    for (i = 0; i < host_len; i++)
+    {
+        if (host[i] == '.')
+        {
+            *input++ = i - lock;
+            for (; lock < i; lock++)
+            {
+                *input++ = host[lock];
+            }
+            lock++; //or lock=i+1;
+        }
+    }
+    *input++ = '\0';
+    return 0;
+}
+
 static int SendDNS(const pDNSStruct ds, const int debug_level)
 {
     // Perform a DNS query by sending a packet
@@ -138,9 +175,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     dnsh->tc = 0;     // this message is not truncated
     dnsh->rd = 1;     // recursion desired
     dnsh->ra = 0;     // recursion not available! hey we dont have it (lol)
-    dnsh->z = 0;
-    //dnsh->ad = 0;
-    //dnsh->cd = 0;
+    dnsh->z = 0;      // make sure this is the zero in 3 bits
     dnsh->rcode = 0;
 
     dnsh->qcount = htons(1); //we have only 1 question
@@ -151,9 +186,12 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     // point to the query portion
     // filed the data
     pQuery query = (pQuery)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader));
-    //query->name = (char *)malloc(strlen(DNS_QUERY_NAME_DEFAULT) + 1);
-    memset(query->name, 0, sizeof(query->name));
-    memcpy(query->name, DNS_QUERY_NAME_DEFAULT, strlen(DNS_QUERY_NAME_DEFAULT));
+    if (ChangetoDNSNameFormat(&(query->name)))
+    {
+        DisplayError("DNS name translate failed");
+        return 1;
+    }
+    // memcpy(query->name, DNS_QUERY_NAME_DEFAULT, strlen(DNS_QUERY_NAME_DEFAULT));
 
     pQuestion question = (pQuestion)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader) + sizeof(Query));
     question->qtype = htons(DNS_QUERY_TYPE_DEFAULT); //type of the query , A , MX , CNAME , NS etc
