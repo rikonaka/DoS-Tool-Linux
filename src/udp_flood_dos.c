@@ -16,8 +16,8 @@
 #include <netinet/udp.h> // struct udp
 #include <arpa/inet.h>
 
-#include "../main.h"
-#include "attack_udp_flood_dos.h"
+#include "main.h"
+#include "udp_flood_dos.h"
 
 // from ../core/core_log.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);

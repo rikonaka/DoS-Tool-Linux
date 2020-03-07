@@ -21,8 +21,8 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "attack_syn_flood_dos.h"
-#include "../main.h"
+#include "syn_flood_dos.h"
+#include "main.h"
 
 // from ../core/core_log.c
 extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);

@@ -9,10 +9,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include "../main.h"
-#include "attack_guess.h"
-#include "router/feixun.h"
-#include "router/tplink.h"
+#include "main.h"
+#include "guess.h"
+#include "utils/router/feixun.h"
+#include "utils/router/tplink.h"
 
 // waste too many time in the guess password module
 // and now this module will not work any more until dos module compelete
