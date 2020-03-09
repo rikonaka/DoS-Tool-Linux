@@ -7,10 +7,10 @@
 
 #include "../main.h"
 
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DisplayInfo(const char *fmt, ...);
-extern int DisplayWarning(const char *fmt, ...);
-extern int DisplayError(const char *fmt, ...);
+extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DebugInfo(const char *fmt, ...);
+extern int DebugWarning(const char *fmt, ...);
+extern int DebugError(const char *fmt, ...);
 
 void FreeSplitURLBuff(pSplitURLOutput p)
 {
@@ -48,12 +48,12 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
     char *ptmp = purl;
     if (!ptmp)
     {
-        DisplayError("SplitURL malloc failed: %s(%d)", strerror(errno), errno);
+        DebugError("SplitURL malloc failed: %s(%d)", strerror(errno), errno);
         return (pSplitURLOutput)NULL;
     }
     if (!strcpy(ptmp, url))
     {
-        DisplayError("SplitURL strcpy failed: %s(%d)", strerror(errno), errno);
+        DebugError("SplitURL strcpy failed: %s(%d)", strerror(errno), errno);
         return (pSplitURLOutput)NULL;
     }
     //      12           3
@@ -75,7 +75,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
         // like this: 192.168.1.1/index.html is not allowed
         if (!second_slash_position)
         {
-            DisplayError("SplitURL found the URL is not complete");
+            DebugError("SplitURL found the URL is not complete");
             return (pSplitURLOutput)NULL;
         }
         colon_position = strchr(second_slash_position + 1, ':');
@@ -173,7 +173,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
         {
             if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
             {
-                DisplayError("SplitURL sprintf failed");
+                DebugError("SplitURL sprintf failed");
                 return (pSplitURLOutput)NULL;
             }
         }
@@ -181,7 +181,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
         {
             if (!sprintf(port_buff, "%d", HTTP_PORT_DEFAULT))
             {
-                DisplayError("SplitURL sprintf failed");
+                DebugError("SplitURL sprintf failed");
                 return (pSplitURLOutput)NULL;
             }
         }
@@ -191,7 +191,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
     // filling the protocol here
     if (!memset(protocol_buff, 0, sizeof(char)))
     {
-        DisplayError("SplitURL memset failed");
+        DebugError("SplitURL memset failed");
         return (pSplitURLOutput)NULL;
     }
 
@@ -200,7 +200,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
 
         if (!strcpy(protocol_buff, "https"))
         {
-            DisplayError("SplitURL strcpy failed");
+            DebugError("SplitURL strcpy failed");
             return (pSplitURLOutput)NULL;
         }
     }
@@ -208,7 +208,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
     {
         if (!strcpy(protocol_buff, "http"))
         {
-            DisplayError("SplitURL strcpy failed");
+            DebugError("SplitURL strcpy failed");
             return (pSplitURLOutput)NULL;
         }
     }
@@ -216,7 +216,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
     {
         if (!strcpy(protocol_buff, "not_set"))
         {
-            DisplayError("SplitURL strcpy failed");
+            DebugError("SplitURL strcpy failed");
             return (pSplitURLOutput)NULL;
         }
     }
@@ -239,7 +239,7 @@ pSplitURLOutput SplitURL(const char *url, pSplitURLOutput *output)
     {
         if (!strcpy(suffix_buff, "not_set"))
         {
-            DisplayError("SplitURL strcpy failed");
+            DebugError("SplitURL strcpy failed");
             return (pSplitURLOutput)NULL;
         }
     }
@@ -277,12 +277,12 @@ char *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
     char *r_password = (char *)malloc(MAX_PASSWORD_LENGTH);
     if (!r_password)
     {
-        DisplayError("GetRandomPassword malloc failed");
+        DebugError("GetRandomPassword malloc failed");
         return (char *)NULL;
     }
     if (!memset(r_password, 0, MAX_PASSWORD_LENGTH))
     {
-        DisplayError("GetRandomPassword memset failed");
+        DebugError("GetRandomPassword memset failed");
         return (char *)NULL;
     }
     int r_num;
@@ -301,7 +301,7 @@ char *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
         {
             if (!sprintf(r_password, "%s%c", r_password, r_num))
             {
-                DisplayError("GetRandomPassword sprintf failed");
+                DebugError("GetRandomPassword sprintf failed");
                 return (char *)NULL;
             }
         }
@@ -341,7 +341,7 @@ void FreeProcessFileBuff(pStrHeader p)
 
     if (p->length != 1)
     {
-        DisplayWarning("Free the space error");
+        DebugWarning("Free the space error");
     }
 
     if (n)
@@ -372,7 +372,7 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
-        DisplayError("ProcessGuessAttackFile malloc failed");
+        DebugError("ProcessGuessAttackFile malloc failed");
         return (pStrHeader)NULL;
     }
     pStrNode str_node;
@@ -386,7 +386,7 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
     FILE *fp = fopen(path, "r");
     if (!fp)
     {
-        DisplayError("Error: Can not open the guess username or password file");
+        DebugError("Error: Can not open the guess username or password file");
         return (pStrHeader)NULL;
     }
     while (!feof(fp))
@@ -394,7 +394,7 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
         // if stack error, change here
         if (!memset(buff, 0, LENGTH + 1))
         {
-            DisplayError("ProcessGuessAttackFile memset failed");
+            DebugError("ProcessGuessAttackFile memset failed");
             return (pStrHeader)NULL;
         }
         ch = fgetc(fp);
@@ -402,7 +402,7 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
         {
             if (!sprintf(buff, "%s%c", buff, ch))
             {
-                DisplayError("ProcessGuessAttackFile sprintf failed");
+                DebugError("ProcessGuessAttackFile sprintf failed");
                 return (pStrHeader)NULL;
             }
             //DisplayInfo("%c", ch);
@@ -415,7 +415,7 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
-                DisplayError("ProcessGuessAttackFile malloc failed");
+                DebugError("ProcessGuessAttackFile malloc failed");
                 return (pStrHeader)NULL;
             }
             str_node->next = (*output)->next;
@@ -425,12 +425,12 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
             str_node->str = (char *)malloc(str_length + 1);
             if (!memset(str_node->str, 0, str_length + 1))
             {
-                DisplayError("ProcessGuessAttackFile memset failed");
+                DebugError("ProcessGuessAttackFile memset failed");
                 return (pStrHeader)NULL;
             }
             if (!strncpy(str_node->str, buff, str_length))
             {
-                DisplayError("ProcessGuessAttackFile strncpy failed");
+                DebugError("ProcessGuessAttackFile strncpy failed");
                 return (pStrHeader)NULL;
             }
             ++((*output)->length);
@@ -439,7 +439,7 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
     }
     if (fclose(fp))
     {
-        DisplayError("ProcessGuessAttackFile fclose failed");
+        DebugError("ProcessGuessAttackFile fclose failed");
         return (pStrHeader)NULL;
     }
     return (*output);
@@ -482,23 +482,23 @@ char *GetRandomIP(char **output)
     (*output) = (char *)malloc(IP_BUFFER_SIZE);
     if (!(*output))
     {
-        DisplayError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
+        DebugError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     if (!memset((*output), 0, IP_BUFFER_SIZE))
     {
-        DisplayError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
+        DebugError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     char *random_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!random_ip)
     {
-        DisplayError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
+        DebugError("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     if (!memset(random_ip, 0, IP_BUFFER_SIZE))
     {
-        DisplayError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
+        DebugError("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
 
@@ -510,7 +510,7 @@ char *GetRandomIP(char **output)
         GetRandomNumForIP(i, &random_num);
         if (!sprintf(random_ip, "%s.%d", random_ip, random_num))
         {
-            DisplayError("GetRandomIP sprintf failed: %s(%d)", strerror(errno), errno);
+            DebugError("GetRandomIP sprintf failed: %s(%d)", strerror(errno), errno);
             return (char *)NULL;
         }
     }
@@ -519,7 +519,7 @@ char *GetRandomIP(char **output)
     char *delete = random_ip + 1;
     if (!strncpy((*output), delete, strlen(delete)))
     {
-        DisplayError("GetRandomIP strncpy failed: %s(%d)", strerror(errno), errno);
+        DebugError("GetRandomIP strncpy failed: %s(%d)", strerror(errno), errno);
         return (char *)NULL;
     }
     free(random_ip);
@@ -548,7 +548,7 @@ int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc
     // locate the str linked list element
     if (loc < 0 || loc > p->length)
     {
-        DisplayError("LocateStrNodeElement loc illegal");
+        DebugError("LocateStrNodeElement loc illegal");
         return 1;
     }
     size_t count = 0;
@@ -582,7 +582,7 @@ void FreeProcessACKIPListBuff(pStrHeader p)
 
     if (p->length != 1)
     {
-        DisplayWarning("Free the space error");
+        DebugWarning("Free the space error");
     }
 
     if (n)
@@ -603,7 +603,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
-        DisplayError("ProcessACKIPListFile malloc failed");
+        DebugError("ProcessACKIPListFile malloc failed");
         return (pStrHeader)NULL;
     }
 
@@ -619,8 +619,8 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
     FILE *fp = fopen(ACK_IP_LIST_NAME, "r");
     if (!fp)
     {
-        DisplayError("Error: Can not open the ack ip list file");
-        DisplayError("%s(%d)", strerror(errno), errno);
+        DebugError("Error: Can not open the ack ip list file");
+        DebugError("%s(%d)", strerror(errno), errno);
         return (pStrHeader)NULL;
     }
 
@@ -629,7 +629,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
         // if stack error, change here
         if (!memset(buff, 0, IP_BUFFER_SIZE))
         {
-            DisplayError("ProcessACKIPListFile memset failed");
+            DebugError("ProcessACKIPListFile memset failed");
             return (pStrHeader)NULL;
         }
 
@@ -638,7 +638,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
         {
             if (!sprintf(buff, "%s%c", buff, ch))
             {
-                DisplayError("ProcessACKIPListFile sprintf failed");
+                DebugError("ProcessACKIPListFile sprintf failed");
                 return (pStrHeader)NULL;
             }
             //DisplayInfo("%c", ch);
@@ -652,7 +652,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
-                DisplayError("ProcessACKIPLIstFile malloc failed");
+                DebugError("ProcessACKIPLIstFile malloc failed");
                 return (pStrHeader)NULL;
             }
             str_node->next = (*output)->next;
@@ -661,12 +661,12 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
             str_node->str = (char *)malloc(str_length + 1);
             if (!memset(str_node->str, 0, str_length + 1))
             {
-                DisplayError("ProcessACKIPListFile memset failed");
+                DebugError("ProcessACKIPListFile memset failed");
                 return (pStrHeader)NULL;
             }
             if (!memcpy(str_node->str, buff, str_length + 1))
             {
-                DisplayError("ProcessACKIPListFile strncpy failed");
+                DebugError("ProcessACKIPListFile strncpy failed");
                 return (pStrHeader)NULL;
             }
             // init the node lock as 0
@@ -676,7 +676,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
     }
     if (fclose(fp))
     {
-        DisplayError("ProcessACKIPListFile fclose failed");
+        DebugError("ProcessACKIPListFile fclose failed");
         return (pStrHeader)NULL;
     }
     free(buff);
@@ -702,7 +702,7 @@ void FreeProcessDNSIPListBuff(pStrHeader p)
 
     if (p->length != 1)
     {
-        DisplayWarning("Free the space error");
+        DebugWarning("Free the space error");
     }
 
     if (n)
@@ -723,7 +723,7 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
-        DisplayError("ProcessDNSIPListFile malloc failed");
+        DebugError("ProcessDNSIPListFile malloc failed");
         return (pStrHeader)NULL;
     }
 
@@ -739,8 +739,8 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
     FILE *fp = fopen(DNS_IP_LIST_NAME, "r");
     if (!fp)
     {
-        DisplayError("Error: Can not open the ack ip list file");
-        DisplayError("%s(%d)", strerror(errno), errno);
+        DebugError("Error: Can not open the ack ip list file");
+        DebugError("%s(%d)", strerror(errno), errno);
         return (pStrHeader)NULL;
     }
 
@@ -749,7 +749,7 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
         // if stack error, change here
         if (!memset(buff, 0, IP_BUFFER_SIZE))
         {
-            DisplayError("ProcessDNSIPListFile memset failed");
+            DebugError("ProcessDNSIPListFile memset failed");
             return (pStrHeader)NULL;
         }
 
@@ -758,7 +758,7 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
         {
             if (!sprintf(buff, "%s%c", buff, ch))
             {
-                DisplayError("ProcessDNSIPListFile sprintf failed");
+                DebugError("ProcessDNSIPListFile sprintf failed");
                 return (pStrHeader)NULL;
             }
             //DisplayInfo("%c", ch);
@@ -772,7 +772,7 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
-                DisplayError("ProcessDNSIPLIstFile malloc failed");
+                DebugError("ProcessDNSIPLIstFile malloc failed");
                 return (pStrHeader)NULL;
             }
             str_node->next = (*output)->next;
@@ -781,12 +781,12 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
             str_node->str = (char *)malloc(str_length + 1);
             if (!memset(str_node->str, 0, str_length + 1))
             {
-                DisplayError("ProcessDNSIPListFile memset failed");
+                DebugError("ProcessDNSIPListFile memset failed");
                 return (pStrHeader)NULL;
             }
             if (!memcpy(str_node->str, buff, str_length + 1))
             {
-                DisplayError("ProcessDNSIPListFile strncpy failed");
+                DebugError("ProcessDNSIPListFile strncpy failed");
                 return (pStrHeader)NULL;
             }
             // init the node lock as 0
@@ -796,7 +796,7 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
     }
     if (fclose(fp))
     {
-        DisplayError("ProcessDNSIPListFile fclose failed");
+        DebugError("ProcessDNSIPListFile fclose failed");
         return (pStrHeader)NULL;
     }
     free(buff);
@@ -805,16 +805,16 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
 
 void ProcessACKIPListFileTest(void)
 {
-    DisplayInfo("Enter ProcessACKIPLIstFileTest");
+    DebugInfo("Enter ProcessACKIPLIstFileTest");
     pStrHeader header;
     ProcessACKIPListFile(&header);
     //DisplayInfo(">>> 2 <<<");
-    DisplayInfo("Length: %ld", header->length);
+    DebugInfo("Length: %ld", header->length);
     //printf("%ld", header->length);
     pStrNode node = header->next;
     while (node)
     {
-        DisplayInfo("Value: %s", node->str);
+        DebugInfo("Value: %s", node->str);
         node = node->next;
     }
 
@@ -833,7 +833,7 @@ pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, cons
     (*output) = (pIPList_Thread)malloc(sizeof(IPList_Thread));
     if (!(*output))
     {
-        DisplayError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
+        DebugError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
         return (pIPList_Thread)NULL;
     }
     pIPList_Thread ip_new_node = (*output);
@@ -842,7 +842,7 @@ pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, cons
     // so just use the whole list for all the threads
     if (cut < 1)
     {
-        DisplayWarning("The IP list did NOT need the split");
+        DebugWarning("The IP list did NOT need the split");
 
         for (i = 0; i < thread_num; i++)
         {
@@ -851,7 +851,7 @@ pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, cons
             ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
             if (!ip_new_node)
             {
-                DisplayError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
+                DebugError("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
                 return (pIPList_Thread)NULL;
             }
             ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));

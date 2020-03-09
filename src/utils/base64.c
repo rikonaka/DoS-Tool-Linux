@@ -8,7 +8,7 @@
 size_t CalcDecodeLength(const char *b64input)
 {
     /*
-     * calculates the length of a decoded string
+     * calculates the length of a decoded string.
      */
     size_t len = strlen(b64input);
     size_t padding = 0;
@@ -30,7 +30,7 @@ size_t CalcDecodeLength(const char *b64input)
 size_t Base64Decode(unsigned char **buffer, char *b64message)
 {
     /*
-     * decode the base64 encode string 
+     * decode the base64 string.
      * 
      * b64message -> buffer
      * return the decode string length
@@ -64,14 +64,13 @@ size_t Base64Decode(unsigned char **buffer, char *b64message)
     }
 
     BIO_free_all(bio);
-
     return length;
 }
 
-char *Base64Encode(char **b64message, const unsigned char *buffer, size_t length)
+char *Base64Encode(char **b64message, unsigned char *buffer, size_t length)
 {
     /*
-     * encode a binary safe base64 string 
+     * encode a binary safe base64 string.
      * 
      * buffer -> b64message
      * return 0: success
@@ -100,11 +99,10 @@ char *Base64Encode(char **b64message, const unsigned char *buffer, size_t length
     BIO_free_all(bio);
 
     *b64message = (*buffer_ptr).data;
-
     return (*b64message);
 }
 
-void FreeBase64(char *b64message)
+void FreeBase64Buffer(char *b64message)
 {
     if (*b64message)
     {
@@ -113,22 +111,34 @@ void FreeBase64(char *b64message)
 }
 
 /*
-int main(void)
+ * test result:
+ * good
+ */
+int main(int argc, char *argv[])
 {
 
-    // encode code
+    /* encode code */
     char *encode_result;
     char *text = "1234567890";
-
-    Base64Encode(&encode_result, text, strlen(text));
-    printf("result: %s\n", encode_result);
-
-    // decode code
     char *decode_result;
-    size_t test;
-    test = Base64Decode((unsigned char **)&decode_result, encode_result);
-    printf("Decode output: %s - %ld\n", decode_result, test);
+    int max_time = 99;
+    char *next_text = (char *)malloc(sizeof(char) * max_time * strlen(text));
+    memset(next_text, 0, strlen(next_text));
+
+    for (int i = 0; i < max_time; i++)
+    {
+        next_text = strncat(next_text, text, strlen(text));
+        // Base64Encode(&encode_result, text, strlen(text));
+        Base64Encode(&encode_result, (unsigned char *)next_text, strlen(next_text));
+        printf("Encode result: %s\n", encode_result);
+
+        /* decode code */
+        size_t test = 0;
+        test = Base64Decode((unsigned char **)&decode_result, encode_result);
+        printf("Decode result: %s [%lud]\n", decode_result, test);
+        FreeBase64Buffer(encode_result);
+        FreeBase64Buffer(decode_result);
+    }
 
     return 0;
 }
-*/

@@ -6,10 +6,10 @@
 #include "main.h"
 
 // core_log.c
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DisplayInfo(const char *fmt, ...);
-extern int DisplayWarning(const char *fmtsring, ...);
-extern int DisplayError(const char *fmt, ...);
+extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DebugInfo(const char *fmt, ...);
+extern int DebugWarning(const char *fmtsring, ...);
+extern int DebugError(const char *fmt, ...);
 // core_str.c
 extern void ProcessACKIPListFileTest(void);
 // core_input.c
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
     if (argc == 1)
     {
-        DisplayError("Need more parameter");
+        DebugError("Need more parameter");
         DisplayUsage();
         return 1;
     }
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     pInput input;
     if (!InitInput(&input))
     {
-        DisplayError("Init the input failed");
+        DebugError("Init the input failed");
         return 1;
     }
 
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     if (!ProcessInput(argc, argv, input))
     {
 
-        DisplayError("Please check you input");
+        DebugError("Please check you input");
         DisplayUsage();
         return 1;
     }
@@ -70,20 +70,20 @@ int main(int argc, char *argv[])
     char *version;
     if (!GetCurrentVersion(&version))
     {
-        DisplayError("GetCurrentVersion failed");
+        DebugError("GetCurrentVersion failed");
         return 1;
     }
-    DisplayInfo("dos-tool version: %s", version);
+    DebugInfo("dos-tool version: %s", version);
     FreeGetCurrentVersionBuff(version);
 
-    DisplayInfo("Running...");
-    DisplayDebug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
+    DebugInfo("Running...");
+    Debug(DEBUG_LEVEL_1, input->debug_level, "Debug mode started...");
 
     check_input = CheckInputCompliance(input);
     if (check_input > 0)
     {
         // process user input ready, start attack now
-        DisplayError("Check compliance failed, please check your input");
+        DebugError("Check compliance failed, please check your input");
         DisplayUsage();
         return 1;
     }
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
         case TEST_TYPE_GUESS:
             if (StartGuessTest(input))
             {
-                DisplayError("StartGuessTest failed");
+                DebugError("StartGuessTest failed");
                 return 1;
             }
             break;
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
         case TEST_TYPE_SYN_FLOOD:
             if (StartSYNFloodTest(input))
             {
-                DisplayError("StartSYNFloodTest failed");
+                DebugError("StartSYNFloodTest failed");
                 return 1;
             }
             break;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
         case TEST_TYPE_UDP_FLOOD:
             if (StartUDPFloodTest(input))
             {
-                DisplayError("StartUDPFloodTest failed");
+                DebugError("StartUDPFloodTest failed");
                 return 1;
             }
             break;
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
         case TEST_TYPE_ACK_REFLECT:
             if (StartACKReflectTest(input))
             {
-                DisplayError("StartACKReflectTest failed");
+                DebugError("StartACKReflectTest failed");
                 return 1;
             }
             break;
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
         case TEST_TYPE_DNS_REFLECT:
             if (StartDNSReflectTest(input))
             {
-                DisplayError("StartDNSReflectTest failed");
+                DebugError("StartDNSReflectTest failed");
                 return 1;
             }
             break;
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
         case GUESS:
             if (StartGuessAttack(input))
             {
-                DisplayError("StartGuessAttack failed");
+                DebugError("StartGuessAttack failed");
                 return 1;
             }
             break;
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
         case SYN_FLOOD_ATTACK:
             if (StartSYNFloodAttack(input))
             {
-                DisplayError("StartSYNFloodAttack failed");
+                DebugError("StartSYNFloodAttack failed");
                 return 1;
             }
             break;
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
         case UDP_FLOOD_ATTACK:
             if (StartUDPFloodAttack(input))
             {
-                DisplayError("StartUDPFloodAttack failed");
+                DebugError("StartUDPFloodAttack failed");
                 return 1;
             }
             break;
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         case ACK_REFLECT_ATTACK:
             if (StartACKReflectAttack(input))
             {
-                DisplayError("StartACKReflectAttack failed");
+                DebugError("StartACKReflectAttack failed");
                 return 1;
             }
             break;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
         case DNS_REFLECT_ATTACK:
             if (StartDNSReflectAttack(input))
             {
-                DisplayError("StartDNSReflectAttack failed");
+                DebugError("StartDNSReflectAttack failed");
                 return 1;
             }
             break;

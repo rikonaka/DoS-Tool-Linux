@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include "../main.h"
 
-extern int DisplayDebug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DisplayInfo(const char *fmt, ...);
-extern int DisplayWarning(const char *fmt, ...);
-extern int DisplayError(const char *fmt, ...);
+extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int DebugInfo(const char *fmt, ...);
+extern int DebugWarning(const char *fmt, ...);
+extern int DebugError(const char *fmt, ...);
 
 // char *version = "v0.10";
 // const char *version = "0.20";
@@ -26,7 +26,7 @@ char *GetCurrentVersion(char **output)
     *output = (char *)malloc(sizeof(char));
     if (!strncpy((*output), version, strlen(version)))
     {
-        DisplayError("GetCurrentVersion strncpy failed");
+        DebugError("GetCurrentVersion strncpy failed");
         return (char *)NULL;
     }
     return (*output);
