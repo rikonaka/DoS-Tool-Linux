@@ -19,7 +19,8 @@ SRCS = src/main.c\
 	src/router/tplink.c
 
 OBJS = $(SRCS:.c=.o)
-EXEC = dos-tool
+EXEC = dos-tool-linux
+INSTALLDIR = /usr/local/bin
 
 start: $(OBJS)
 	$(CC) -o $(EXEC) $(OBJS) -g -Wall -lpthread -lcrypto -lssl
@@ -32,3 +33,13 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(EXEC)
 	@echo "\033[0;32mClean up finish\033[0m"
+
+install:$(EXEC)
+    @if [-d $(INSTALLDIR)]; \
+        then \
+        cp ./src/$(EXEC) $(INSTALLDIR) &&\
+        chmod a+x $(INSTALLDIR)/&& \
+        chmod og-w $(INSTALLDIR)/$(EXEC);\
+    else \
+        echo "Sorry, $(INSTDIR) does not exist";\
+    fi

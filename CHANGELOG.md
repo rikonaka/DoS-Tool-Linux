@@ -9,12 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- ACK reflect dos attack module
-- DNS reflect dos attack module
+- ACK reflect dos attack module.
+- DNS reflect dos attack module.
+
+### Changed
+
+- log.c => debug.c.
+- Many function in debug.c like DisplayInfo() => DebugInfo().
+- Re-write the base64.c main function add test.
+- Re-write the https.c main function add test.
 
 ### Removed
 
-- multi process support (only multi thread support now)
+- multi process support (only multi thread support now).
 
 
 ## [0.30] - 2019-3-26

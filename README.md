@@ -2,7 +2,7 @@
 
 ## Intro
 
-[Dos-Tool](https://github.com/rikonaka/DoS-Tool) is used to guess the WiFi manage password or use DoS make it can NOT work, the DoS method also could attack other website not just router.
+[Dos-Tool-Linux](https://github.com/rikonaka/DoS-Tool-Linux) is used to guess the WiFi manage password or use DoS make it can NOT work, the DoS method also could attack other website not just router.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -16,7 +16,7 @@ Current version: 0.30 | [Changelog](CHANGELOG.md)
 
 ## Features
 
-DoS-Tool is written in pure C, in order to keep the resource usage as low as possible.
+DoS-Tool-Linux is written in pure C, in order to keep the resource usage as low as possible.
 
 ## Installation
 
@@ -36,32 +36,31 @@ sudo apt install make gcc openssl libssl-dev
 sudo yum install make gcc openssl openssl-devel
 ```
 
-Then
+```
+git clone https://github.com/rikonaka/DoS-Tool-Linux.git
+cd Dos-Tool-Linux/
+make && make install
+```
 
-```
-cd Dos-Tool/src
-```
-
-```c
-make
-```
+The program default install dir is `/usr/local/bin`.
 
 ## Run
 
 ```
-./dos-tool [option]
+dos-tool-linux [option]
 ```
 
 ## Uninstallation
 
 ```c
 make clean
+rm -f /usr/local/bin/dos-tool-linux
 ```
 
 ## Usage
 
 ```bash
-Usage: dostool [option]
+Usage: dos-tool-linux [option]
 
 Example:
 ./dostool -a 0 -i http:\\192.168.1.1:80/login.asp -u admin -P /path/password.txt (use username admin and password file to guess)
