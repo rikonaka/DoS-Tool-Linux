@@ -1,16 +1,11 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
-// 0 - guess the web passwd (advanced, not point now)
-// 1 - syn flood attack
-// 2 - udp flood attack
-// 3 - ack reflect attack
-// 4 - dns reflect attack
-#define GUESS 0
-#define SYN_FLOOD_ATTACK 1
-#define UDP_FLOOD_ATTACK 2
-#define ACK_REFLECT_ATTACK 3
-#define DNS_REFLECT_ATTACK 4
+#define GUESS 0              // guess the web passwd (advanced)
+#define SYN_FLOOD_ATTACK 1   // syn flood attack
+#define UDP_FLOOD_ATTACK 2   // udp flood attack
+#define ACK_REFLECT_ATTACK 3 // ack reflect attack
+#define DNS_REFLECT_ATTACK 4 // dns reflect attack
 
 #define TEST_TYPE_NON 0
 #define TEST_TYPE_GUESS -1
@@ -20,24 +15,19 @@
 #define TEST_TYPE_ACK_IP_LIST -5
 #define TEST_TYPE_DNS_REFLECT -6
 
-// username from one string and password from linked list
-#define GUESS_U1PL 0
-// username from one string buf password from random generate
-#define GUESS_U1PR 1
-// list and list
-#define GUESS_ULPL 2
-// get the return value length
-#define GUESS_GET_RESPONSE_LENGTH 3
-// use the response length judge the password is right or not
-#define GUESS_LENGTH 4
+#define GUESS_U1PL 0                // username from one string and password from linked list
+#define GUESS_U1PR 1                // username from one string buf password from random generate
+#define GUESS_ULPL 2                // list and list
+#define GUESS_GET_RESPONSE_LENGTH 3 // get the return value length
+#define GUESS_LENGTH 4              // use the response length judge the password is right or not
 
 #define DISABLE_SIP 0
 #define ENABLE_SIP 1
 
-#define DEBUG_OFF 0
-#define DEBUG_LEVEL_1 1 // show the importance value
-#define DEBUG_LEVEL_2 2 // show the not importance value
-#define DEBUG_LEVEL_3 3 // show function start, end
+#define DEBUG_OFF 0 // put here but not use
+#define INFO 1      // show the importance value
+#define DEBUG 2     // show the not importance value
+#define VERBOSE 3   // show function start, end
 
 #define MAX_USERNAME_LENGTH 16
 #define MAX_PASSWORD_LENGTH 16
@@ -64,9 +54,12 @@
 #define SYN_FLOOD_PORT_DEFAULT 80
 #define UDP_FLOOD_PORT_DEFAULT 80
 #define ACK_REFLECT_PORT_DEFAULT 80
+
+/* need re-think here */
 #define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
 #define DNS_IP_LIST_NAME "./core_module/dns_reflect_ip_list.txt"
-#define EACH_IP_REPEAT_TIME 1                 // should be a big value, if your try to debug, make it smaller like 10
+
+#define EACH_IP_REPEAT_TIME 1               // should be a big value, if your try to debug, make it smaller like 10
 #define DNS_QUERY_NAME_DEFAULT "github.com" // if you want to change this name, please also edit the dns query->name size
 
 #define DEFAULT_ADDRESS "192.168.99.99"
@@ -82,7 +75,7 @@ typedef struct split_url_output
     char *host;
     size_t port;
     char *suffix;
-} SplitURLOutput, *pSplitURLOutput;
+} SplitUrlOutput, *pSplitUrlOutput;
 
 typedef struct str_node
 {
@@ -153,5 +146,34 @@ typedef struct ip_list_thread
     struct ip_list_thread *next;
     pStrHeader list;
 } IPList_Thread, *pIPList_Thread;
+
+/* from log.c */
+extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int InfoMessage(const char *fmt, ...);
+extern int DebugMessage(const char *fmtsring, ...);
+extern int ErrorMessage(const char *fmt, ...);
+/* from str.c */
+extern void ProcessACKIPListFileTest(void);
+/* from input.c */
+extern pInput ProcessInput(const int argc, char *argv[], pInput input);
+extern int CheckInputCompliance(const pInput input);
+extern pInput *InitInput(pInput *p);
+// core_usage.c
+extern void DisplayUsage(void);
+
+extern int StartSYNFloodAttack(const pInput input);
+extern int StartSYNFloodTest(const pInput input);
+
+extern int StartGuessAttack(const pInput input);
+extern int StartGuessTest(const pInput input);
+
+extern int StartUDPFloodAttack(const pInput input);
+extern int StartUDPFloodTest(const pInput input);
+
+extern int StartACKReflectAttack(const pInput input);
+extern int StartACKReflectTest(const pInput input);
+
+extern int StartDNSReflectAttack(const pInput input);
+extern int StartDNSReflectTest(const pInput input);
 
 #endif

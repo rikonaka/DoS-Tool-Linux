@@ -6,12 +6,12 @@
 
 #include "../main.h"
 
-extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DebugInfo(const char *fmt, ...);
-extern int DebugWarning(const char *fmt, ...);
-extern int DebugError(const char *fmt, ...);
+extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int InfoMessage(const char *fmt, ...);
+extern int DebugMessage(const char *fmt, ...);
+extern int ErrorMessage(const char *fmt, ...);
 
-int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...)
+int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...)
 {
     /*
      * DisplayDebug(1, 2, "string");
@@ -36,7 +36,7 @@ int Debug(const int message_debug_level, const int user_debug_level, const char 
 
     if (buff_size < 0)
     {
-        DebugError("DisplayDebug get buffer_size failed");
+        ErrorMessage("DisplayDebug get buffer_size failed");
         return 1;
     }
 
@@ -45,7 +45,7 @@ int Debug(const int message_debug_level, const int user_debug_level, const char 
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        DebugError("DisplayDebug malloc failed");
+        ErrorMessage("DisplayDebug malloc failed");
         return 1;
     }
 
@@ -53,7 +53,7 @@ int Debug(const int message_debug_level, const int user_debug_level, const char 
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        DebugError("DisplayDebug vsnprintf failed");
+        ErrorMessage("DisplayDebug vsnprintf failed");
         if (buff)
         {
             free(buff);
@@ -74,7 +74,7 @@ int Debug(const int message_debug_level, const int user_debug_level, const char 
     return 0;
 }
 
-int DebugInfo(const char *fmt, ...)
+int InfoMessage(const char *fmt, ...)
 {
     /*
      * show the info message
@@ -90,7 +90,7 @@ int DebugInfo(const char *fmt, ...)
 
     if (buff_size < 0)
     {
-        DebugError("DisplayInfo get buffer_size failed");
+        ErrorMessage("DisplayInfo get buffer_size failed");
         return 1;
     }
 
@@ -99,7 +99,7 @@ int DebugInfo(const char *fmt, ...)
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        DebugError("DisplayInfo malloc failed");
+        ErrorMessage("DisplayInfo malloc failed");
         return 1;
     }
 
@@ -107,7 +107,7 @@ int DebugInfo(const char *fmt, ...)
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        DebugError("DisplayInfo vsnprintf failed");
+        ErrorMessage("DisplayInfo vsnprintf failed");
         if (buff)
         {
             free(buff);
@@ -131,7 +131,7 @@ int DebugInfo(const char *fmt, ...)
     return 0;
 }
 
-int DebugWarning(const char *fmt, ...)
+int DebugMessage(const char *fmt, ...)
 {
     /*
      * show the warning message
@@ -147,7 +147,7 @@ int DebugWarning(const char *fmt, ...)
 
     if (buff_size < 0)
     {
-        DebugError("DisplayWarning get buffer_size failed");
+        ErrorMessage("DisplayWarning get buffer_size failed");
         return 1;
     }
 
@@ -156,7 +156,7 @@ int DebugWarning(const char *fmt, ...)
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        DebugError("DisplayWarning malloc failed");
+        ErrorMessage("DisplayWarning malloc failed");
         return 1;
     }
 
@@ -164,7 +164,7 @@ int DebugWarning(const char *fmt, ...)
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        DebugError("DisplayWarning vsnprintf failed");
+        ErrorMessage("DisplayWarning vsnprintf failed");
         if (buff)
         {
             free(buff);
@@ -184,7 +184,7 @@ int DebugWarning(const char *fmt, ...)
     return 0;
 }
 
-int DebugError(const char *fmt, ...)
+int ErrorMessage(const char *fmt, ...)
 {
     // show the error message
 
@@ -198,7 +198,7 @@ int DebugError(const char *fmt, ...)
 
     if (buff_size < 0)
     {
-        DebugError("DisplayError get buffer_size failed");
+        ErrorMessage("DisplayError get buffer_size failed");
         return 1;
     }
 
@@ -207,7 +207,7 @@ int DebugError(const char *fmt, ...)
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        DebugError("DisplayError malloc failed");
+        ErrorMessage("DisplayError malloc failed");
         return 1;
     }
 
@@ -215,7 +215,7 @@ int DebugError(const char *fmt, ...)
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        DebugError("DisplayError vsnprintf failed");
+        ErrorMessage("DisplayError vsnprintf failed");
         if (buff)
         {
             free(buff);
@@ -240,7 +240,7 @@ int DebugError(const char *fmt, ...)
 void SignalExit(int signo)
 {
     // for show message
-    DebugWarning("Quit the program now");
+    DebugMessage("Quit the program now");
     exit(0);
 }
 

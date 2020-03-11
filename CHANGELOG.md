@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ACK reflect dos attack module.
 - DNS reflect dos attack module.
+- Test module.
 
 ### Changed
 
 - log.c => debug.c.
-- Many function in debug.c like DisplayInfo() => DebugInfo().
+- Many function in debug.c like DisplayInfo() => InfoMessage(), DisplayError => ErrorMessage().
 - Re-write the base64.c main function add test.
 - Re-write the https.c main function add test.
 

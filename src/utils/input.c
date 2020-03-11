@@ -4,10 +4,10 @@
 
 #include "../main.h"
 
-extern int Debug(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int DebugInfo(const char *fmt, ...);
-extern int DebugWarning(const char *fmtsring, ...);
-extern int DebugError(const char *fmt, ...);
+extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern int InfoMessage(const char *fmt, ...);
+extern int DebugMessage(const char *fmtsring, ...);
+extern int ErrorMessage(const char *fmt, ...);
 
 extern void DisplayUsage(void);
 
@@ -25,7 +25,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
         ptmp = (char *)strstr(argv[i], "-");
         if (!ptmp)
         {
-            DebugError("Illegal input");
+            ErrorMessage("Illegal input");
             return (pInput)NULL;
         }
 
@@ -45,7 +45,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugError("Can not found value of --set-watch-length parameter");
+                    ErrorMessage("Can not found value of --set-watch-length parameter");
                     return (pInput)NULL;
                 }
             }
@@ -57,7 +57,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugError("Can not found value of --ip-repeat-time parameter");
+                    ErrorMessage("Can not found value of --ip-repeat-time parameter");
                     return (pInput)NULL;
                 }
             }
@@ -87,7 +87,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
             }
             else
             {
-                DebugError("Illegal input");
+                ErrorMessage("Illegal input");
                 return (pInput)NULL;
             }
         }
@@ -123,14 +123,14 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                         break;
 
                     default:
-                        DebugWarning("Value of the -a parameter is not allowed, use default value now");
+                        DebugMessage("Value of the -a parameter is not allowed, use default value now");
                         input->attack_mode = ATTACK_MODE_DEFAULT;
                         break;
                     }
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -a parameter, use default value now");
+                    DebugMessage("Can not found value of -a parameter, use default value now");
                     input->attack_mode = ATTACK_MODE_DEFAULT;
                     // return NULL;
                 }
@@ -147,26 +147,26 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                         break;
 
                     case '1':
-                        input->debug_level = DEBUG_LEVEL_1;
+                        input->debug_level = INFO;
                         break;
 
                     case '2':
-                        input->debug_level = DEBUG_LEVEL_2;
+                        input->debug_level = DEBUG;
                         break;
 
                     case '3':
-                        input->debug_level = DEBUG_LEVEL_3;
+                        input->debug_level = VERBOSE;
                         break;
 
                     default:
-                        DebugWarning("Value of -d parameter is not allowed, use default value now");
+                        DebugMessage("Value of -d parameter is not allowed, use default value now");
                         input->debug_level = DEBUG_LEVEL_DEFAULT;
                         break;
                     }
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -d parameter, use default value now");
+                    DebugMessage("Can not found value of -d parameter, use default value now");
                     input->debug_level = DEBUG_LEVEL_DEFAULT;
                     // return NULL;
                 }
@@ -180,7 +180,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -u parameter, use the default value now");
+                    DebugMessage("Can not found value of -u parameter, use the default value now");
                     strncpy(input->username, USERNAME_DEFAULT, MAX_USERNAME_LENGTH);
                 }
                 break;
@@ -193,7 +193,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugError("Can not found value of -U parameter");
+                    ErrorMessage("Can not found value of -U parameter");
                     return (pInput)NULL;
                 }
                 break;
@@ -206,7 +206,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugError("Can not found value of -P parameter");
+                    ErrorMessage("Can not found value of -P parameter");
                     return (pInput)NULL;
                 }
                 break;
@@ -219,7 +219,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -t parameter, use default value now");
+                    DebugMessage("Can not found value of -t parameter, use default value now");
                     input->max_thread = THREAD_NUM_DEFAULT;
                     // return NULL;
                 }
@@ -233,7 +233,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -r parameter, use default value now");
+                    DebugMessage("Can not found value of -r parameter, use default value now");
                     input->random_password_length = RANDOM_PASSWORD_LENGTH_DEFAULT;
                     // return NULL;
                 }
@@ -247,7 +247,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugError("Can not found value of -i parameter");
+                    ErrorMessage("Can not found value of -i parameter");
                     return (pInput)NULL;
                 }
                 break;
@@ -265,14 +265,14 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                         input->random_sip_address = ENABLE;
                         break;
                     default:
-                        DebugWarning("Value of -R parameter is not allowed, use default value now");
+                        DebugMessage("Value of -R parameter is not allowed, use default value now");
                         input->random_sip_address = ENABLE;
                         break;
                     }
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -i parameter, use default value now");
+                    DebugMessage("Can not found value of -i parameter, use default value now");
                     input->random_sip_address = RANDOM_SIP_DEFAULT;
                 }
                 break;
@@ -285,7 +285,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 }
                 else
                 {
-                    DebugWarning("Can not found value of -m parameter use default value now");
+                    DebugMessage("Can not found value of -m parameter use default value now");
                     strncpy(input->model_type, (char *)MODEL_TYPE_DEFAULT, MAX_MODEL_TYPE_LENGTH);
                 }
                 break;
@@ -296,7 +296,7 @@ pInput ProcessInput(const int argc, char *argv[], pInput input)
                 exit(0);
 
             default:
-                DebugError("Please check you input");
+                ErrorMessage("Please check you input");
                 DisplayUsage();
                 return (pInput)NULL;
             }
@@ -317,11 +317,11 @@ int CheckInputCompliance(const pInput input)
      * -1 - error
      */
 
-    Debug(DEBUG_LEVEL_3, input->debug_level, "Enter CheckInputCompliance");
+    ShowMessage(VERBOSE, input->debug_level, "Enter CheckInputCompliance");
 
     if (input->test_type != 0)
     {
-        DebugInfo("Test model: %d", input->test_type);
+        InfoMessage("Test model: %d", input->test_type);
         return input->test_type;
     }
 
@@ -330,7 +330,7 @@ int CheckInputCompliance(const pInput input)
     {
         if (strstr(input->address, "http"))
         {
-            DebugError("Please check your address, this should not appear http or https");
+            ErrorMessage("Please check your address, this should not appear http or https");
             return 1;
         }
     }
@@ -340,12 +340,12 @@ int CheckInputCompliance(const pInput input)
     {
         if (strlen(input->password_path) == 0)
         {
-            DebugError("Place check your -U paratemer, -U must use with -P");
+            ErrorMessage("Place check your -U paratemer, -U must use with -P");
             return 1;
         }
     }
 
-    Debug(DEBUG_LEVEL_3, input->debug_level, "Exit CheckInputCompliance");
+    ShowMessage(VERBOSE, input->debug_level, "Exit CheckInputCompliance");
     return 0;
 }
 
@@ -355,32 +355,32 @@ pInput *InitInput(pInput *p)
     (*p) = (pInput)malloc(sizeof(Input));
     if (!(*p))
     {
-        DebugError("Init input malloc failed");
+        ErrorMessage("Init input malloc failed");
         return (pInput *)NULL;
     }
     if (!memset((*p)->address, 0, sizeof((*p)->address)))
     {
-        DebugError("Init input memset failed");
+        ErrorMessage("Init input memset failed");
         return (pInput *)NULL;
     }
     if (!memset((*p)->username, 0, sizeof((*p)->username)))
     {
-        DebugError("Init input memset failed");
+        ErrorMessage("Init input memset failed");
         return (pInput *)NULL;
     }
     if (!memset((*p)->username_path, 0, sizeof((*p)->username_path)))
     {
-        DebugError("Init input memset failed");
+        ErrorMessage("Init input memset failed");
         return (pInput *)NULL;
     }
     if (!memset((*p)->password_path, 0, sizeof((*p)->password_path)))
     {
-        DebugError("Init input memset failed");
+        ErrorMessage("Init input memset failed");
         return (pInput *)NULL;
     }
     if (!memset((*p)->model_type, 0, sizeof((*p)->model_type)))
     {
-        DebugError("Init input memset failed");
+        ErrorMessage("Init input memset failed");
         return (pInput *)NULL;
     }
 
@@ -395,12 +395,12 @@ pInput *InitInput(pInput *p)
     (*p)->test_type = TEST_TYPE_NON;
     if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
     {
-        DebugError("Init input strncpy failed");
+        ErrorMessage("Init input strncpy failed");
         return (pInput *)NULL;
     }
     if (!strncpy((*p)->model_type, (char *)MODEL_TYPE_DEFAULT, strlen((char *)MODEL_TYPE_DEFAULT)))
     {
-        DebugError("Init input strncpy failed");
+        ErrorMessage("Init input strncpy failed");
         return (pInput *)NULL;
     }
 
