@@ -8,12 +8,12 @@
 #define DNS_REFLECT_ATTACK 4 // dns reflect attack
 
 #define TEST_TYPE_NON 0
-#define TEST_TYPE_GUESS -1
-#define TEST_TYPE_SYN_FLOOD -2
-#define TEST_TYPE_UDP_FLOOD -3
-#define TEST_TYPE_ACK_REFLECT -4
-#define TEST_TYPE_ACK_IP_LIST -5
-#define TEST_TYPE_DNS_REFLECT -6
+#define TEST_TYPE_GUESS 1
+#define TEST_TYPE_SYN_FLOOD 2
+#define TEST_TYPE_UDP_FLOOD 3
+#define TEST_TYPE_ACK_REFLECT 4
+#define TEST_TYPE_ACK_IP_LIST 5
+#define TEST_TYPE_DNS_REFLECT 6
 
 #define GUESS_U1PL 0                // username from one string and password from linked list
 #define GUESS_U1PR 1                // username from one string buf password from random generate
@@ -141,6 +141,19 @@ typedef struct user_input
     //pStrHeader str_header;
 } Input, *pInput;
 
+typedef struct guess_attack_parameter
+{
+    size_t random_password_length;
+    size_t debug_level;
+    size_t thread_num;
+
+    char target_address[MAX_URL_LENGTH];
+    char username[MAX_USERNAME_LENGTH];
+    char username_file_path[MAX_USERNAME_PATH_LENGTH];
+    char password_file_path[MAX_PASSWORD_PATH_LENGTH];
+    char router_model_type[MAX_MODEL_TYPE_LENGTH];
+} GuessAttackParameter, *pGuessAttackParameter;
+
 typedef struct ip_list_thread
 {
     struct ip_list_thread *next;
@@ -148,16 +161,16 @@ typedef struct ip_list_thread
 } IPList_Thread, *pIPList_Thread;
 
 /* from log.c */
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmtsring, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmtsring, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 /* from str.c */
 extern void ProcessACKIPListFileTest(void);
 /* from input.c */
 extern pInput ProcessInput(const int argc, char *argv[], pInput input);
 extern int CheckInputCompliance(const pInput input);
-extern pInput *InitInput(pInput *p);
+extern size_t InitInput(pInput *p);
 // core_usage.c
 extern void DisplayUsage(void);
 

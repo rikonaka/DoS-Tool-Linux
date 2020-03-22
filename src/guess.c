@@ -18,16 +18,16 @@
 // and now this module will not work any more until dos module compelete
 
 // from ../core/debug.c
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmtsring, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmtsring, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 
 // from ../core/str.c
-extern char *GetRandomPassword(char **rebuf, unsigned int seed, const int length);
-extern pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output);
-extern pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
-extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
+extern size_t *GetRandomPassword(char **rebuf, unsigned int seed, const int length);
+extern size_t SplitUrl(const char *url, pSplitUrlOutput *output);
+extern size_t ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag);
+extern size_t LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 extern void FreeSplitUrlBuff(pSplitUrlOutput p);
 extern void FreeProcessFileBuff(pStrHeader p);
 

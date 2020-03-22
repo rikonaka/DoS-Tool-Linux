@@ -48,15 +48,6 @@ void DisplayUsage(void)
                   "                            0    turn off the random source ip address which can protect you true IP in the local net\n"
                   "                            1    enable random source ip address (default)\n"
                   "\n"
-                  "--get-response-length   get the response length for test\n"
-                  "--set-watch-length      indicate a length, if response's length not equal this, return\n"
-                  "--ip-repeat-time        if you use the -R, indicate the each random ip repeat send times(default 10240)\n"
-                  "--test-guess            test the guess module\n"
-                  "--test-syn              test the syn flood attack module\n"
-                  "--test-udp              test the udp flood attack module\n"
-                  "--test-ack              test the ack reflect attack module\n"
-                  "--test-ack-ip-list      test the split the akc ip list module\n"
-                  "\n"
                   "";
 
     printf("%s", usage);

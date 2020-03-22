@@ -4,17 +4,19 @@
 
 #include "../main.h"
 
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmtsring, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmtsring, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 
 extern void DisplayUsage(void);
+
+const char *illegal_input_str = "illegal input";
 
 pInput ProcessInput(const int argc, char *argv[], pInput input)
 {
     /*
-        understood the user input meaning
+     * understood the user input meaning
      */
     int i;
     char *ptmp;
@@ -349,39 +351,39 @@ int CheckInputCompliance(const pInput input)
     return 0;
 }
 
-pInput *InitInput(pInput *p)
+size_t InitInput(pInput *p)
 {
     // make sure the buff is clean
     (*p) = (pInput)malloc(sizeof(Input));
     if (!(*p))
     {
-        ErrorMessage("Init input malloc failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input malloc failed");
+        return (size_t)-1;
     }
     if (!memset((*p)->address, 0, sizeof((*p)->address)))
     {
-        ErrorMessage("Init input memset failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input memset failed");
+        return (size_t)-1;
     }
     if (!memset((*p)->username, 0, sizeof((*p)->username)))
     {
-        ErrorMessage("Init input memset failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input memset failed");
+        return (size_t)-1;
     }
     if (!memset((*p)->username_path, 0, sizeof((*p)->username_path)))
     {
-        ErrorMessage("Init input memset failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input memset failed");
+        return (size_t)-1;
     }
     if (!memset((*p)->password_path, 0, sizeof((*p)->password_path)))
     {
-        ErrorMessage("Init input memset failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input memset failed");
+        return (size_t)-1;
     }
     if (!memset((*p)->model_type, 0, sizeof((*p)->model_type)))
     {
-        ErrorMessage("Init input memset failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input memset failed");
+        return (size_t)-1;
     }
 
     // field default value
@@ -395,14 +397,104 @@ pInput *InitInput(pInput *p)
     (*p)->test_type = TEST_TYPE_NON;
     if (!strncpy((*p)->username, (char *)USERNAME_DEFAULT, strlen((char *)USERNAME_DEFAULT)))
     {
-        ErrorMessage("Init input strncpy failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input strncpy failed");
+        return (size_t)-1;
     }
     if (!strncpy((*p)->model_type, (char *)MODEL_TYPE_DEFAULT, strlen((char *)MODEL_TYPE_DEFAULT)))
     {
-        ErrorMessage("Init input strncpy failed");
-        return (pInput *)NULL;
+        ErrorMessage("init input strncpy failed");
+        return (size_t)-1;
     }
 
-    return p;
+    return 0;
+}
+
+size_t JudgeInputType(const int argc, char *argv[])
+{
+    /*
+     * get the the user's attack type
+     */
+
+    int i;
+    char *ptmp_1;
+    char *ptmp_2;
+    size_t attack_mode;
+
+    for (i = 1; i < argc; i++)
+    {
+        ptmp_1 = (char *)strstr(argv[i], "-");
+        if (!ptmp_1)
+        {
+            ErrorMessage(illegal_input_str));
+            return (size_t)-1;
+        }
+
+        ptmp_2 = (char *)strstr(++ptmp_1, "-");
+        if (ptmp_2)
+        {
+            // found double -- here
+            // --option
+            if (strstr(ptmp_2, "nothing"))
+            {
+            }
+            else
+            {
+                ErrorMessage(illegal_input_str);
+                return (size_t)-1;
+            }
+        }
+        else
+        {
+            // -option
+            switch (*ptmp_1)
+            {
+            case 'a':
+                // int
+                if (argv[++i])
+                {
+                    switch (*argv[i])
+                    {
+                    case '0':
+                        attack_mode = GUESS;
+                        break;
+
+                    case '1':
+                        attack_mode = SYN_FLOOD_ATTACK;
+                        break;
+
+                    case '2':
+                        attack_mode = UDP_FLOOD_ATTACK;
+                        break;
+
+                    case '3':
+                        attack_mode = ACK_REFLECT_ATTACK;
+                        break;
+
+                    case '4':
+                        attack_mode = DNS_REFLECT_ATTACK;
+                        break;
+
+                    default:
+                        DebugMessage("value of the -a parameter is not allowed, use default value now");
+                        attack_mode = ATTACK_MODE_DEFAULT;
+                        break;
+                    }
+                }
+                else
+                {
+                    DebugMessage("can not found value of -a parameter, use default value now");
+                    attack_mode = ATTACK_MODE_DEFAULT;
+                    // return NULL;
+                }
+                break;
+
+            default:
+                ErrorMessage("please check you input");
+                DisplayUsage();
+                return (size_t)-1;
+            }
+        }
+    }
+
+    return attack_mode;
 }

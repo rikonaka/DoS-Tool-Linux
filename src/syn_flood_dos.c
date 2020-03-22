@@ -25,17 +25,17 @@
 #include "main.h"
 
 // from ../core/core_log.c
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmtsring, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmtsring, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
 
 extern void FreeSplitUrlBuff(pSplitUrlOutput p);
-extern pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output);
+extern size_t SplitUrl(const char *url, pSplitUrlOutput *output);
 extern void FreeRandomIPBuff(char *p);
-extern char *GetRandomIP(char **output);
+extern size_t GetRandomIP(char **output);
 extern size_t GetRandomPort(size_t *output);
 extern void SignalExit(int signo);
 

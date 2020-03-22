@@ -7,10 +7,10 @@
 
 #include "../main.h"
 
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmt, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmt, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 
 void FreeSplitUrlBuff(pSplitUrlOutput p)
 {
@@ -32,15 +32,21 @@ void FreeSplitUrlBuff(pSplitUrlOutput p)
     }
 }
 
-pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output)
+size_t SplitUrl(const char *url, pSplitUrlOutput *output)
 {
-    // rewrite this function at 2019-1-10
-    // 0         1           2  3
-    // http(s)://192.168.1.1:80/index.php
-    // 0 - protocol type
-    // 1 - host ip address
-    // 2 - port
-    // 3 - suffix
+    /*
+     * rewrite this function at 2019-1-10
+     * 0         1           2  3
+     * http(s)://192.168.1.1:80/index.php
+     * 0 - protocol type
+     * 1 - host ip address
+     * 2 - port
+     * 3 - suffix
+     * 
+     * if success, this function will return result's size.
+     * if failed, this function will return negative value(-1).
+     */
+
     int i = 0;
     //size_t url_len = strlen(url);
     (*output) = (pSplitUrlOutput)malloc(sizeof(SplitUrlOutput));
@@ -48,14 +54,15 @@ pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output)
     char *ptmp = purl;
     if (!ptmp)
     {
-        ErrorMessage("SplitUrl malloc failed: %s(%d)", strerror(errno), errno);
-        return (pSplitUrlOutput)NULL;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
     if (!strcpy(ptmp, url))
     {
-        ErrorMessage("SplitUrl strcpy failed: %s(%d)", strerror(errno), errno);
-        return (pSplitUrlOutput)NULL;
+        ErrorMessage("strcpy failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
+
     //      12           3
     // http://192.168.1.1/index.html
     char *first_slash_position = strchr(purl, '/');
@@ -75,8 +82,8 @@ pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output)
         // like this: 192.168.1.1/index.html is not allowed
         if (!second_slash_position)
         {
-            ErrorMessage("SplitUrl found the URL is not complete");
-            return (pSplitUrlOutput)NULL;
+            ErrorMessage("the url is not complete!");
+            return (size_t)-1;
         }
         colon_position = strchr(second_slash_position + 1, ':');
     }
@@ -173,52 +180,34 @@ pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output)
         {
             if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
             {
-                ErrorMessage("SplitUrl sprintf failed");
-                return (pSplitUrlOutput)NULL;
+                ErrorMessage("sprintf failed: %s(%d)", strerror(errno), errno);
+                return (size_t)-1;
             }
         }
         else if (strstr(purl, "http"))
         {
             if (!sprintf(port_buff, "%d", HTTP_PORT_DEFAULT))
             {
-                ErrorMessage("SplitUrl sprintf failed");
-                return (pSplitUrlOutput)NULL;
+                ErrorMessage("sprintf failed: %s(%d)", strerror(errno), errno);
+                return (size_t)-1;
             }
         }
     }
     // copy end
 
     // filling the protocol here
-    if (!memset(protocol_buff, 0, sizeof(char)))
-    {
-        ErrorMessage("SplitUrl memset failed");
-        return (pSplitUrlOutput)NULL;
-    }
-
+    memset(protocol_buff, 0, sizeof(protocol_buff));
     if (strstr(purl, "https"))
     {
-
-        if (!strcpy(protocol_buff, "https"))
-        {
-            ErrorMessage("SplitUrl strcpy failed");
-            return (pSplitUrlOutput)NULL;
-        }
+        strcpy(protocol_buff, "https");
     }
     else if (strstr(purl, "http"))
     {
-        if (!strcpy(protocol_buff, "http"))
-        {
-            ErrorMessage("SplitUrl strcpy failed");
-            return (pSplitUrlOutput)NULL;
-        }
+        strcpy(protocol_buff, "http");
     }
     else
     {
-        if (!strcpy(protocol_buff, "not_set"))
-        {
-            ErrorMessage("SplitUrl strcpy failed");
-            return (pSplitUrlOutput)NULL;
-        }
+        strcpy(protocol_buff, "not_set");
     }
     // end copy
 
@@ -237,11 +226,7 @@ pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output)
     }
     else
     {
-        if (!strcpy(suffix_buff, "not_set"))
-        {
-            ErrorMessage("SplitUrl strcpy failed");
-            return (pSplitUrlOutput)NULL;
-        }
+       strcpy(suffix_buff, "not_set");
     }
 
     // end copy
@@ -259,10 +244,10 @@ pSplitUrlOutput SplitUrl(const char *url, pSplitUrlOutput *output)
     {
         free(purl);
     }
-    return (*output);
+    return sizeof(*output);
 }
 
-char *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
+size_t *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
 {
     // generate the random password and return
 
@@ -287,7 +272,7 @@ char *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
         }
     }
     *rebuf = r_password;
-    return (*rebuf);
+    return sizeof(*rebuf);
 }
 
 /*
@@ -334,7 +319,7 @@ void FreeProcessFileBuff(pStrHeader p)
     }
 }
 
-pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag)
+size_t ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag)
 {
     // use the structure store the username list
     // flag == 0 -> username list
@@ -352,8 +337,8 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
-        ErrorMessage("ProcessGuessAttackFile malloc failed");
-        return (pStrHeader)NULL;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
     pStrNode str_node;
     (*output)->length = 0;
@@ -367,8 +352,8 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
     FILE *fp = fopen(path, "r");
     if (!fp)
     {
-        ErrorMessage("Error: Can not open the guess username or password file");
-        return (pStrHeader)NULL;
+        ErrorMessage("can not open the guess username or password file: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
     while (!feof(fp))
     {
@@ -389,8 +374,8 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
-                ErrorMessage("ProcessGuessAttackFile malloc failed");
-                return (pStrHeader)NULL;
+                ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+                return (size_t)-1;
             }
 
             str_node->next = (*output)->next;
@@ -405,10 +390,10 @@ pStrHeader ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag
         }
     }
     fclose(fp);
-    return (*output);
+    return sizeof(*output);
 }
 
-static int GetRandomNumForIP(int seed, int *output)
+static size_t GetRandomNumForIP(int seed, int *output)
 {
     /*
      * Return the random number between 1-255
@@ -432,7 +417,7 @@ void FreeRandomIPBuff(char *p)
     }
 }
 
-char *GetRandomIP(char **output)
+size_t GetRandomIP(char **output)
 {
     /*
      * Return the random ip address
@@ -446,12 +431,12 @@ char *GetRandomIP(char **output)
     if (!(*output))
     {
         ErrorMessage("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
-        return (char *)NULL;
+        return (size_t)-1;
     }
     if (!memset((*output), 0, IP_BUFFER_SIZE))
     {
         ErrorMessage("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
-        return (char *)NULL;
+        return (size_t)-1;
     }
     char random_ip[IP_BUFFER_SIZE + 1] = {'\0'};
     char random_ip_s[IP_BUFFER_SIZE + 1] = {'\0'};
@@ -469,7 +454,7 @@ char *GetRandomIP(char **output)
     // delete the first character '.'
     char *delete = random_ip + 1;
     strncpy((*output), delete, strlen(delete));
-    return (*output);
+    return sizeof(*output);
 }
 
 size_t GetRandomPort(size_t *output)
@@ -489,13 +474,13 @@ size_t GetRandomPort(size_t *output)
     return (*output);
 }
 
-int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc)
+size_t LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc)
 {
     // locate the str linked list element
     if (loc < 0 || loc > p->length)
     {
-        ErrorMessage("LocateStrNodeElement loc illegal");
-        return 1;
+        ErrorMessage("loc illegal");
+        return (size_t)-1;
     }
     size_t count = 0;
     pStrNode t = p->next;
@@ -506,7 +491,7 @@ int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc
     }
 
     *element = t;
-    return 0;
+    return count;
 }
 
 void FreeProcessACKIPListBuff(pStrHeader p)
@@ -541,16 +526,18 @@ void FreeProcessACKIPListBuff(pStrHeader p)
     }
 }
 
-pStrHeader ProcessACKIPListFile(pStrHeader *output)
+size_t ProcessACKIPListFile(pStrHeader *output)
 {
-    // return NULL = failed
-    // return something = success
+    /*
+     * return -1 = failed
+     * return 0 = success
+     */
 
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
     {
         ErrorMessage("ProcessACKIPListFile malloc failed");
-        return (pStrHeader)NULL;
+        return (size_t)-1;
     }
 
     pStrNode str_node;
@@ -566,19 +553,14 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
     FILE *fp = fopen(ACK_IP_LIST_NAME, "r");
     if (!fp)
     {
-        ErrorMessage("Error: Can not open the ack ip list file");
-        ErrorMessage("%s(%d)", strerror(errno), errno);
-        return (pStrHeader)NULL;
+        ErrorMessage("can not open the ack ip list file: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     while (!feof(fp))
     {
         // if stack error, change here
-        if (!memset(buff, 0, IP_BUFFER_SIZE))
-        {
-            ErrorMessage("ProcessACKIPListFile memset failed");
-            return (pStrHeader)NULL;
-        }
+        memset(buff, 0, IP_BUFFER_SIZE);
 
         ch = fgetc(fp);
         while (ch && ch != '\n' && ch != '\r' && !feof(fp))
@@ -596,8 +578,8 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
-                ErrorMessage("ProcessACKIPLIstFile malloc failed");
-                return (pStrHeader)NULL;
+                ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+                return (size_t)-1;
             }
             str_node->next = (*output)->next;
             (*output)->next = str_node;
@@ -611,7 +593,7 @@ pStrHeader ProcessACKIPListFile(pStrHeader *output)
         }
     }
     fclose(fp);
-    return (*output);
+    return sizeof(*output);
 }
 
 void FreeProcessDNSIPListBuff(pStrHeader p)
@@ -646,7 +628,7 @@ void FreeProcessDNSIPListBuff(pStrHeader p)
     }
 }
 
-pStrHeader ProcessDNSIPListFile(pStrHeader *output)
+size_t ProcessDNSIPListFile(pStrHeader *output)
 {
     // return NULL = failed
     // return something = success
@@ -655,7 +637,7 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
     if (!(*output))
     {
         ErrorMessage("ProcessDNSIPListFile malloc failed");
-        return (pStrHeader)NULL;
+        return (size_t)-1;
     }
 
     pStrNode str_node;
@@ -671,9 +653,8 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
     FILE *fp = fopen(DNS_IP_LIST_NAME, "r");
     if (!fp)
     {
-        ErrorMessage("Error: Can not open the ack ip list file");
-        ErrorMessage("%s(%d)", strerror(errno), errno);
-        return (pStrHeader)NULL;
+        ErrorMessage("can not open the ack ip list file: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     while (!feof(fp))
@@ -697,8 +678,8 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
             str_node = (pStrNode)malloc(sizeof(StrNode));
             if (!str_node)
             {
-                ErrorMessage("ProcessDNSIPLIstFile malloc failed");
-                return (pStrHeader)NULL;
+                ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+                return (size_t)-1;
             }
             str_node->next = (*output)->next;
             (*output)->next = str_node;
@@ -711,12 +692,8 @@ pStrHeader ProcessDNSIPListFile(pStrHeader *output)
             ++count;
         }
     }
-    if (fclose(fp))
-    {
-        ErrorMessage("ProcessDNSIPListFile fclose failed");
-        return (pStrHeader)NULL;
-    }
-    return (*output);
+    fclose(fp);
+    return sizeof(*output);
 }
 
 void ProcessACKIPListFileTest(void)
@@ -737,7 +714,7 @@ void ProcessACKIPListFileTest(void)
     FreeProcessACKIPListBuff(header);
 }
 
-pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header)
+size_t SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header)
 {
     // split the whole ip list for each thread
     size_t thread_num = input->max_thread;
@@ -749,8 +726,8 @@ pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, cons
     (*output) = (pIPList_Thread)malloc(sizeof(IPList_Thread));
     if (!(*output))
     {
-        ErrorMessage("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
-        return (pIPList_Thread)NULL;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
     pIPList_Thread ip_new_node = (*output);
 
@@ -767,14 +744,14 @@ pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, cons
             ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
             if (!ip_new_node)
             {
-                ErrorMessage("SplitIPForThread malloc failed: %s(%d)", strerror(errno), errno);
-                return (pIPList_Thread)NULL;
+                ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+                return (size_t)-1;
             }
             ip_new_node->next = (pIPList_Thread)malloc(sizeof(IPList_Thread));
             ip_new_node = ip_new_node->next;
         }
 
-        return (*output);
+        return sizeof(*output);
     }
 
     pStrNode tmp_node = str_header->next;
@@ -816,7 +793,7 @@ pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, cons
     ip_new_node->list = str_new_header;
     ip_new_node->next = NULL;
 
-    return (*output);
+    return sizeof(*output);
 }
 
 void FreeIPListBuff(pIPList_Thread input)

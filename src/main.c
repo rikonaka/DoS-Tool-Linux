@@ -5,27 +5,63 @@
 
 #include "main.h"
 
+// char *version = "v0.10";
+// const char *version = "0.20";
+// const char *version = "0.30"; // 2019-3-25
+const char *version = "0.40"; // 2020-3-23, new arch now
+
 int main(int argc, char *argv[])
 {
     /*
      * main function
      */
 
-    extern void FreeGetCurrentVersionBuff(char *p);
-    extern char *GetCurrentVersion(char **output);
-    int check_input;
-
     if (argc == 1)
     {
-        ErrorMessage("Need more parameter");
+        ErrorMessage("Please specify at least one parameter!");
         DisplayUsage();
-        return 1;
+        return -1;
+    }
+
+    size_t attack_mode = JudgeInputType(argc, argv);
+    /*
+     * GUESS 0              // guess the web passwd (advanced)
+     * SYN_FLOOD_ATTACK 1   // syn flood attack
+     * UDP_FLOOD_ATTACK 2   // udp flood attack
+     * ACK_REFLECT_ATTACK 3 // ack reflect attack
+     * DNS_REFLECT_ATTACK 4 // dns reflect attack
+     */
+    switch (attack_mode)
+    {
+        case 0:
+            /* guess */
+            pGuessAttackParameter input_parameter;
+            break;
+
+        case 1:
+            /* syn */
+            break;
+
+        case 2:
+            /* udp */
+            break;
+
+        case 3:
+            /* ack */
+            break;
+
+        case 4:
+            /* dns */
+            break;
+    
+        default:
+            break;
     }
 
     pInput input;
-    if (!InitInput(&input))
+    if (InitInput(&input) == -1)
     {
-        ErrorMessage("Init the input failed");
+        ErrorMessage("init the input failed");
         return 1;
     }
 

@@ -23,6 +23,9 @@ char *TEST_RESPONSE = "HTTP/1.1 200 OK\r\n"
                       "</body>\r\n"
                       "</html>\r\n";
 
+#define LOCAL_PORT 9988
+#define LOCAL_ADDRESS "127.0.0.1"
+
 /* from base64.h */
 extern size_t Base64Decode(unsigned char **buffer, char *b64message);
 extern char *Base64Encode(char **b64message, unsigned char *buffer, size_t length);
@@ -31,5 +34,8 @@ extern void FreeBase64Buffer(char *b64message);
 /* from https.c */
 extern size_t HttpMethod(const char *url, const char *request, char **response, int debug_level);
 extern size_t HttpsMethod(const char *url, const char *request, char **response, int debug_level);
+
+extern int ServerTcpCreateSocket(int port);
+extern size_t WaitClient(int listen_socket);
 
 #endif

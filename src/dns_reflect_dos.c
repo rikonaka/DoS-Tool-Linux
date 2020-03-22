@@ -19,21 +19,21 @@
 #include "main.h"
 #include "dns_reflect_dos.h"
 
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmtsring, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmtsring, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 
 extern void FreeProcessDNSIPListBuff(pStrHeader p);
-extern pStrHeader ProcessDNSIPListFile(pStrHeader *output);
+extern size_t ProcessDNSIPListFile(pStrHeader *output);
 extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
-extern int LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
+extern size_t LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
 
 extern void FreeSplitUrlBuff(pSplitUrlOutput p);
 extern int SplitUrl(const char *url, pSplitUrlOutput *output);
 extern void SignalExit(int signo);
 
-extern pIPList_Thread SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header);
+extern size_t SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header);
 extern void FreeIPListBuff(pIPList_Thread input);
 
 //List of DNS Servers registered on the system

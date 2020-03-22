@@ -6,12 +6,12 @@
 
 #include "../main.h"
 
-extern int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern int InfoMessage(const char *fmt, ...);
-extern int DebugMessage(const char *fmt, ...);
-extern int ErrorMessage(const char *fmt, ...);
+extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
+extern size_t InfoMessage(const char *fmt, ...);
+extern size_t DebugMessage(const char *fmt, ...);
+extern size_t ErrorMessage(const char *fmt, ...);
 
-int ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...)
+size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...)
 {
     /*
      * DisplayDebug(1, 2, "string");
@@ -23,7 +23,7 @@ int ShowMessage(const int message_debug_level, const int user_debug_level, const
     if (!user_debug_level || user_debug_level < message_debug_level)
     {
         /* return in here, less code run */
-        return 0;
+        return (size_t)0;
     }
 
     int buff_size = 0;
@@ -36,8 +36,8 @@ int ShowMessage(const int message_debug_level, const int user_debug_level, const
 
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayDebug get buffer_size failed");
-        return 1;
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     // for '\0'
@@ -45,20 +45,20 @@ int ShowMessage(const int message_debug_level, const int user_debug_level, const
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        ErrorMessage("DisplayDebug malloc failed");
-        return 1;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayDebug vsnprintf failed");
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
         }
-        return 1;
+        return (size_t)-1;
     }
 
     time_t t;
@@ -71,10 +71,10 @@ int ShowMessage(const int message_debug_level, const int user_debug_level, const
     {
         free(buff);
     }
-    return 0;
+    return (size_t)0;
 }
 
-int InfoMessage(const char *fmt, ...)
+size_t InfoMessage(const char *fmt, ...)
 {
     /*
      * show the info message
@@ -90,8 +90,8 @@ int InfoMessage(const char *fmt, ...)
 
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayInfo get buffer_size failed");
-        return 1;
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     // for '\0'
@@ -99,20 +99,20 @@ int InfoMessage(const char *fmt, ...)
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        ErrorMessage("DisplayInfo malloc failed");
-        return 1;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayInfo vsnprintf failed");
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
         }
-        return 1;
+        return (size_t)-1;
     }
 
     time_t t;
@@ -128,10 +128,10 @@ int InfoMessage(const char *fmt, ...)
     {
         free(buff);
     }
-    return 0;
+    return (size_t)0;
 }
 
-int DebugMessage(const char *fmt, ...)
+size_t DebugMessage(const char *fmt, ...)
 {
     /*
      * show the warning message
@@ -147,8 +147,8 @@ int DebugMessage(const char *fmt, ...)
 
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayWarning get buffer_size failed");
-        return 1;
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     // for '\0'
@@ -156,20 +156,20 @@ int DebugMessage(const char *fmt, ...)
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        ErrorMessage("DisplayWarning malloc failed");
-        return 1;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayWarning vsnprintf failed");
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
         }
-        return 1;
+        return (size_t)-1;
     }
 
     time_t t;
@@ -181,10 +181,10 @@ int DebugMessage(const char *fmt, ...)
 
     va_end(arg);
     free(buff);
-    return 0;
+    return (size_t)0;
 }
 
-int ErrorMessage(const char *fmt, ...)
+size_t ErrorMessage(const char *fmt, ...)
 {
     // show the error message
 
@@ -198,8 +198,8 @@ int ErrorMessage(const char *fmt, ...)
 
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayError get buffer_size failed");
-        return 1;
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     // for '\0'
@@ -207,20 +207,20 @@ int ErrorMessage(const char *fmt, ...)
     buff = (char *)malloc(buff_size);
     if (!buff)
     {
-        ErrorMessage("DisplayError malloc failed");
-        return 1;
+        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        return (size_t)-1;
     }
 
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     if (buff_size < 0)
     {
-        ErrorMessage("DisplayError vsnprintf failed");
+        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
         }
-        return 1;
+        return (size_t)-1;
     }
 
     time_t t;
@@ -234,13 +234,13 @@ int ErrorMessage(const char *fmt, ...)
     {
         free(buff);
     }
-    return 0;
+    return (size_t)0;
 }
 
 void SignalExit(int signo)
 {
     // for show message
-    DebugMessage("Quit the program now");
+    DebugMessage("quit the program now");
     exit(0);
 }
 
