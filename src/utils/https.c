@@ -14,19 +14,10 @@
 #include <openssl/err.h>
 
 #include "../main.h"
+#include "../debug.h"
 
 #define HTTP 0
 #define HTTPS 1
-
-/* from debug.c */
-extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern size_t InfoMessage(const char *fmt, ...);
-extern size_t DebugMessage(const char *fmtsring, ...);
-extern size_t ErrorMessage(const char *fmt, ...);
-
-/* from str.c */
-extern pSplitUrlOutput *SplitUrl(const char *url, pSplitUrlOutput *output);
-extern void FreeSplitUrlBuff(char *host, char *suffix);
 
 /* for the TCPSend and TCPRecv use */
 //SSL *GLOBAL_SSL;
@@ -52,12 +43,12 @@ int ServerTcpCreateSocket(int port)
         ErrorMessage("server create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
-            DebugMessage("this program should run as root user!");
+            WarningMessage("this program should run as root user!");
         }
         else if (errno == 24)
         {
-            DebugMessage("you shoud check max file number use 'ulimit -n' in linux.");
-            DebugMessage("and change the max file number use 'ulimit -n <setting number>'.");
+            WarningMessage("you shoud check max file number use 'ulimit -n' in linux.");
+            WarningMessage("and change the max file number use 'ulimit -n <setting number>'.");
         }
         return -1;
     }
@@ -93,8 +84,8 @@ size_t WaitClient(int listen_socket)
      */
 
     struct sockaddr_in cliaddr;
-    int addrlen = sizeof(cliaddr);
-    InfoMessage('waitting connection...');
+    int addrlen = (int)sizeof(cliaddr);
+    InfoMessage("waitting connection...");
     int client_socket = accept(listen_socket, (struct sockaddr *)&cliaddr, &addrlen);
     if (client_socket == -1)
     {
@@ -127,17 +118,18 @@ static int ClientTcpCreateSocket(const char *host, int port)
     //server_addr.sin_addr = *((struct in_addr *)he->h_addr_list);
 
     connect_socket = socket(AF_INET, SOCK_STREAM, 0);
+
     if (connect_socket == -1)
     {
         ErrorMessage("client create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
-            DebugMessage("this program should run as root user!");
+            WarningMessage("this program should run as root user!");
         }
         else if (errno == 24)
         {
-            DebugMessage("you shoud check max file number use 'ulimit -n' in linux.");
-            DebugMessage("and change the max file number use 'ulimit -n <setting number>'.");
+            WarningMessage("you shoud check max file number use 'ulimit -n' in linux.");
+            WarningMessage("and change the max file number use 'ulimit -n <setting number>'.");
         }
         return -1;
     }
@@ -191,7 +183,7 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
             if (ret == -1)
             {
                 ErrorMessage("tcp send data failed: %s(%d)", strerror(errno), errno);
-                return (size_t)-1;
+                return -1;
             }
             sent_total_size += ret;
         }
@@ -204,7 +196,7 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
             if (ret <= 0)
             {
                 ErrorMessage("tcp send via ssl send data failed: %d", SSL_get_error(ssl, ret));
-                return (size_t)-1;
+                return -1;
             }
             sent_total_size += ret;
         }
@@ -212,7 +204,7 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
     else
     {
         ErrorMessage("tcp send had a wrong label!");
-        return (size_t)-1;
+        return -1;
     }
 
     // function will return the sizeof send data bytes
@@ -238,7 +230,7 @@ static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             if (ret == -1)
             {
                 ErrorMessage("tcp recv data failed");
-                return (ssize_t)-1;
+                return -1;
             }
             else if (ret == 0)
             {
@@ -250,7 +242,7 @@ static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             if (!buff)
             {
                 ErrorMessage("tcp recv realloc failed: %s(%d)", strerror(errno), errno);
-                return (ssize_t)-1;
+                return -1;
             }
             recv_total_size += ret;
         }
@@ -263,14 +255,14 @@ static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             if (ret <= 0)
             {
                 ErrorMessage("tcp recv data failed: %d", SSL_get_error(ssl, ret));
-                return (ssize_t)-1;
+                return -1;
             }
 
             buff = realloc(buff, RECEIVE_DATA_SIZE);
             if (!buff)
             {
                 ErrorMessage("tcp recv via https realloc failed: %s(%d)", strerror(errno), errno);
-                return (ssize_t)-1;
+                return -1;
             }
             recv_total_size += ret;
         }
@@ -287,64 +279,61 @@ static void TcpConnectClose(int socket)
     close(socket);
 }
 
-size_t HttpMethod(const char *url, const char *request, char **response, int debug_level)
+int HttpMethod(const char *address, const int port, const char *request, char **response)
 {
-    /*
-     * use the HTTPMethod post method post 'request_data',
-     * then, return the response_data size.
-     */
 
-    ShowMessage(VERBOSE, debug_level, "enter HttpMethod function in https.c");
+    #ifdef DEBUG
+    InfoMessage("enter HttpMethod function in https.c");
+    #endif
 
     int socket;
-    pSplitUrlOutput sp;
 
-    /* here use 5 * MAX_POST_DATA_LENGTH make sure the sprintf have the enough space */
-    if ((strlen(url) == 0) || (strlen(request) == 0))
+    if ((strlen(address) == 0) || (strlen(request) == 0))
     {
         ErrorMessage("url or request can not be null!");
-        return (size_t)-1;
-    }
-    if (SplitUrl(url, &sp) == -1)
-    {
-        ErrorMessage("split url failed!");
-        return (size_t)-1;
+        return -1;
     }
 
-    ShowMessage(DEBUG, debug_level, "host_addr: %s suffix:%s port:%d", sp->host, sp->suffix, sp->port);
-    /* 1 connect */
-    socket = ClientTcpCreateSocket(sp->host, sp->port);
+    socket = ClientTcpCreateSocket(address, port);
     if (socket == -1)
     {
         ErrorMessage("tcp connection create failed: %s(%d)", strerror(errno), errno);
-        return (size_t)-1;
+        return -1;
     }
 
-    /* 2 send */
-    ShowMessage(VERBOSE, debug_level, "Sending data...");
+    #ifdef DEBUG
+    InfoMessage("Sending data...");
+    #endif
+
     if (TcpSend(socket, request, HTTP, NULL) == -1)
     {
         ErrorMessage("tcp send data failed: %s(%d)", strerror(errno), errno);
-        //return (size_t)-1;
+        return -1;
     }
 
-    /* 3 recv */
-    ShowMessage(VERBOSE, debug_level, "Recvevicing data...");
+    #ifdef DEBUG
+    InfoMessage("Recvevicing data...");
+    #endif
+
     if (TcpRecv(socket, response, HTTP, NULL) == -1)
     {
         ErrorMessage("tcp recvive data failed: %s(%d)", strerror(errno), errno);
-        //return (size_t)-1;
+        return -1;
     }
-    ShowMessage(DEBUG, debug_level, "http recv data: %s", response);
+    #ifdef DEBUG
+    InfoMessage("http recv data: %s", response);
+    #endif
 
-    /* 4 close */
     TcpConnectClose(socket);
-    ShowMessage(VERBOSE, debug_level, "exit HttpMethod function in https.c");
 
-    return strlen(*response);
+    #ifdef DEBUG
+    InfoMessage("exit HttpMethod function in https.c");
+    #endif
+
+    return 0;
 }
 
-static size_t InitCtx(SSL_CTX **output)
+static int InitCtx(SSL_CTX **output)
 {
     const SSL_METHOD *method;
 
@@ -356,12 +345,12 @@ static size_t InitCtx(SSL_CTX **output)
     {
         ErrorMessage("InitCTX failed: %s(%d)", strerror(errno), errno);
         ERR_print_errors_fp(stderr);
-        return (size_t)-1;
+        return -1;
     }
-    return sizeof(*output);
+    return 0;
 }
 
-static size_t ShowCerts(SSL *ssl, int debug_level)
+static int ShowCerts(SSL *ssl)
 {
     X509 *cert;
     char *line;
@@ -369,24 +358,26 @@ static size_t ShowCerts(SSL *ssl, int debug_level)
     cert = SSL_get_peer_certificate(ssl);
     if (cert)
     {
-        ShowMessage(DEBUG, debug_level, "server certificates:");
+        #ifdef DEBUG
+        InfoMessage("server certificates:");
         line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-        ShowMessage(DEBUG, debug_level, "subject: %s", line);
+        InfoMessage("subject: %s", line);
         free(line);
         line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-        ShowMessage(DEBUG, debug_level, "issuer: %s", line);
+        InfoMessage("issuer: %s", line);
         free(line);
         X509_free(cert);
+        #endif
     }
     else
     {
         ErrorMessage("no certificates found!");
-        return (size_t)-1;
+        return -1;
     }
-    return (size_t)0;
+    return 0;
 }
 
-size_t HttpsMethod(const char *url, const char *request, char **response, int debug_level)
+int HttpsMethod(const char *address, const int port, const char *request, char **response)
 {
     /*
      * use the https method post 'request'.
@@ -394,38 +385,33 @@ size_t HttpsMethod(const char *url, const char *request, char **response, int de
      * if failed, return -1.
      */
 
-    ShowMessage(VERBOSE, debug_level, "Enter HttpsMethod");
+    #ifdef DEBUG
+    InfoMessage("Enter HttpsMethod");
+    #endif
 
     int socket;
-    pSplitUrlOutput sp;
     SSL_CTX *ctx;
     SSL *ssl;
 
-    if ((strlen(url) == 0 )|| (strlen(request) == 0))
+    if ((strlen(address) == 0 )|| (strlen(request) == 0))
     {
         ErrorMessage("url or request can not be null!");
-        return (size_t)-1;
-    }
-    if (SplitUrl(url, &sp) == -1)
-    {
-        ErrorMessage("Process url failed!");
-        return (size_t)-1;
+        return -1;
     }
 
     // 1 ssl init
     if (InitCtx(&ctx) == -1)
     {
         ErrorMessage("InitCTX failed");
-        return (size_t)-1;
+        return -1;
     }
 
-    ShowMessage(DEBUG, debug_level, "host_addr: %s suffix:%s port:%d", sp->host, sp->suffix, sp->port);
     // 2 connect
-    socket = ClientTcpCreateSocket(sp->host, sp->port);
+    socket = ClientTcpCreateSocket(address, port);
     if (socket == -1)
     {
         ErrorMessage("tcp Connection create failed: %s(%d)", strerror(errno), errno);
-        return (size_t)-1;
+        return -1;
     }
 
     // 3 add ssl
@@ -435,40 +421,54 @@ size_t HttpsMethod(const char *url, const char *request, char **response, int de
     {
         ErrorMessage("HTTPSMethod SSL_connect failed: %s(%d)", strerror(errno), errno);
         //ERR_print_errors_fp(stderr);
-        return (size_t)-1;
+        return -1;
     }
     // use the global value
     //GLOBAL_SSL = ssl;
 
-    ShowMessage(INFO, debug_level, "Connect with %s encryption", SSL_get_cipher(ssl));
-    if (ShowCerts(ssl, debug_level))
+    #ifdef DEBUG
+    InfoMessage("Connect with %s encryption", SSL_get_cipher(ssl));
+    if (ShowCerts(ssl))
     {
         // failed
         ErrorMessage("ShowCert failed!");
-        return (size_t)-1;
+        return -1;
     }
+    #endif
 
     // 4 send
-    ShowMessage(VERBOSE, debug_level, "Sending data...");
-    if (!TcpSend(socket, request, HTTPS, ssl))
+    #ifdef DEBUG
+    InfoMessage("Sending data...");
+    #endif
+
+    if (TcpSend(socket, request, HTTPS, ssl) == -1)
     {
         ErrorMessage("Tcp send failed: %s(%d)", strerror(errno), errno);
-        return (size_t)NULL;
+        return -1;
     }
 
     // 5 recv
-    ShowMessage(VERBOSE, debug_level, "Recvevicing data...");
-    if (!TcpRecv(socket, response, HTTPS, ssl))
+    #ifdef DEBUG
+    InfoMessage("Recvevicing data...");
+    #endif
+
+    if (TcpRecv(socket, response, HTTPS, ssl) == -1)
     {
         ErrorMessage("Tcp receive failed: %s(%d)", strerror(errno), errno);
-        return (size_t)NULL;
+        return -1;
     }
-    ShowMessage(DEBUG, debug_level, "Data: %s", response);
+
+    #ifdef DEBUG
+    InfoMessage("Data: %s", response);
+    #endif
 
     // 6 close
     TcpConnectClose(socket);
     SSL_CTX_free(ctx);
 
-    ShowMessage(VERBOSE, debug_level, "Exit HttpPostMethod");
-    return strlen(*response);
+    #ifdef DEBUG
+    InfoMessage("Exit HttpPostMethod");
+    #endif
+
+    return 0;
 }

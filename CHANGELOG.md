@@ -15,21 +15,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- log.c => debug.c.
+- log.c => logger.c.
 - Many function in debug.c like DisplayInfo() => InfoMessage(), DisplayError => ErrorMessage().
-- Re-write the base64.c main function add test.
-- Re-write the https.c main function add test.
+- Rewrite the base64.c main function add test.
+- Rewrite the https.c main function add test.
+- str.c => tools.c.
+- base64.c => crypto.c
+- guess.c => brute_force_attack.c
 
 ### Removed
 
 - multi process support (only multi thread support now).
+- others.c
 
 
 ## [0.30] - 2019-3-26
 
 ### Added
 
-- UDP flood attack module
+- UDP flood attack module.
+- Auto test function in test.c and test.h file.
 
 ### Changed
 

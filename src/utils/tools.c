@@ -4,256 +4,292 @@
 #include <time.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "../main.h"
+#include "../debug.h"
 
-extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern size_t InfoMessage(const char *fmt, ...);
-extern size_t DebugMessage(const char *fmt, ...);
-extern size_t ErrorMessage(const char *fmt, ...);
-
-void FreeSplitUrlBuff(pSplitUrlOutput p)
+char *StripCopy(char *dst, const char *src)
 {
-    if (p->protocol)
+    /* delete the space which in the start and end of string*/
+    int i = 0;
+    int j = 0;
+
+    while ((src[i] == ' ') && (src[i] != '\0'))
     {
-        free(p->protocol);
+        ++i;
     }
-    if (p->host)
+
+    while (src[i] != '\0')
     {
-        free(p->host);
+        dst[j] = src[i];
+        ++j;
+        ++i;
     }
-    if (p->suffix)
+
+    --j;
+    while ((dst[j] == ' ') && (dst[j] != '\0'))
     {
-        free(p->suffix);
+        dst[j] = '\0';
+        --j;
     }
-    if (p)
-    {
-        free(p);
-    }
+
+    return dst;
 }
 
-size_t SplitUrl(const char *url, pSplitUrlOutput *output)
+
+int BruteForceMode(pParameter parameter)
 {
-    /*
-     * rewrite this function at 2019-1-10
-     * 0         1           2  3
-     * http(s)://192.168.1.1:80/index.php
-     * 0 - protocol type
-     * 1 - host ip address
-     * 2 - port
-     * 3 - suffix
-     * 
-     * if success, this function will return result's size.
-     * if failed, this function will return negative value(-1).
-     */
-
-    int i = 0;
-    //size_t url_len = strlen(url);
-    (*output) = (pSplitUrlOutput)malloc(sizeof(SplitUrlOutput));
-    char *purl = (char *)malloc(sizeof(char));
-    char *ptmp = purl;
-    if (!ptmp)
+    // judge the guess attack mode
+    if (parameter->username)
     {
-        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
-        return (size_t)-1;
-    }
-    if (!strcpy(ptmp, url))
-    {
-        ErrorMessage("strcpy failed: %s(%d)", strerror(errno), errno);
-        return (size_t)-1;
-    }
-
-    //      12           3
-    // http://192.168.1.1/index.html
-    char *first_slash_position = strchr(purl, '/');
-    char *second_slash_position;
-    char *third_slash_position;
-    // if url like http://192.168.1.1:8080/index.html
-    char *colon_position;
-    char *protocol_buff = (char *)malloc(sizeof(char));
-    char *host_buff = (char *)malloc(sizeof(char));
-    char *suffix_buff = (char *)malloc(sizeof(char));
-    char *port_buff = (char *)malloc(sizeof(char));
-
-    if (first_slash_position)
-    {
-        second_slash_position = strchr((first_slash_position + 1), '/');
-        // there is not allow only one slash in the url
-        // like this: 192.168.1.1/index.html is not allowed
-        if (!second_slash_position)
+        if (parameter->password_file_path)
         {
-            ErrorMessage("the url is not complete!");
-            return (size_t)-1;
+            // one username, password from file
+            // parameter->guess_attack_mode
+            return BRUTE_FORCE_US_PF;
         }
-        colon_position = strchr(second_slash_position + 1, ':');
-    }
-    else
-    {
-        colon_position = strchr(purl, ':');
-        second_slash_position = NULL;
-    }
-
-    if (second_slash_position)
-    {
-        third_slash_position = strchr((second_slash_position + 1), '/');
-    }
-    else
-    {
-        third_slash_position = NULL;
-    }
-
-    /* not useful
-    if (!memset(host_buff, 0, sizeof(char)))
-    {
-        DisplayError("SplitUrl memset failed");
-        return (pSplitUrlOutput *)NULL;
-    }
-    if (!memset(suffix_buff, 0, sizeof(char)))
-    {
-        DisplayError("SplitUrl memset failed");
-        return (pSplitUrlOutput *)NULL;
-    }
-    if (!memset(port_buff, 0, sizeof(char)))
-    {
-        DisplayError("SplitUrl memset failed");
-        return (pSplitUrlOutput *)NULL;
-    }
-    */
-
-    // copy the host to host_buff
-    // i first use in this place
-    if (second_slash_position)
-    {
-        ptmp = (second_slash_position + 1);
-        i = 0;
-        while (*ptmp && ptmp != colon_position && ptmp != third_slash_position)
+        else if (parameter->password)
         {
-            host_buff[i] = *ptmp;
-            ++i;
-            ++ptmp;
-        }
-        host_buff[i] = '\0';
-    }
-    else
-    {
-        if (colon_position)
-        {
-            i = 0;
-            while (*ptmp && ptmp != colon_position)
-            {
-                host_buff[i] = *ptmp;
-                ++i;
-                ++ptmp;
-            }
+            return BRUTE_FORCE_US_PS;
         }
         else
         {
-            i = 0;
-            while (*ptmp)
-            {
-                host_buff[i] = *ptmp;
-                ++i;
-                ++ptmp;
-            }
+            return BRUTE_FORCE_US_PR;
         }
-        host_buff[i] = '\0';
-    }
-    // copy end
 
-    // copy the port if existed
-    if (colon_position)
+    }
+    else if (parameter->username_file_path)
     {
-        ptmp = (colon_position + 1);
-        i = 0;
-        while (*ptmp && ptmp != third_slash_position)
+        if (parameter->password)
         {
-            port_buff[i] = *ptmp;
-            ++i;
-            ++ptmp;
+            return BRUTE_FORCE_UF_PS;
         }
-        port_buff[i] = '\0';
+        else if (parameter->password_file_path)
+        {
+            return BRUTE_FORCE_UF_PF;
+        }
+        else
+        {
+            /* this mode is unacceptable */
+            return -1;
+        }
     }
     else
     {
-        // if the port is not indicate in the URL
-        if (strstr(purl, "https"))
-        {
-            if (!sprintf(port_buff, "%d", HTTPS_PORT_DEFAULT))
-            {
-                ErrorMessage("sprintf failed: %s(%d)", strerror(errno), errno);
-                return (size_t)-1;
-            }
-        }
-        else if (strstr(purl, "http"))
-        {
-            if (!sprintf(port_buff, "%d", HTTP_PORT_DEFAULT))
-            {
-                ErrorMessage("sprintf failed: %s(%d)", strerror(errno), errno);
-                return (size_t)-1;
-            }
-        }
+        /* also unacceptable */
+        return -1;
     }
-    // copy end
-
-    // filling the protocol here
-    memset(protocol_buff, 0, sizeof(protocol_buff));
-    if (strstr(purl, "https"))
-    {
-        strcpy(protocol_buff, "https");
-    }
-    else if (strstr(purl, "http"))
-    {
-        strcpy(protocol_buff, "http");
-    }
-    else
-    {
-        strcpy(protocol_buff, "not_set");
-    }
-    // end copy
-
-    // copy the suffix to suffix_buff
-    if (third_slash_position)
-    {
-        ptmp = (third_slash_position + 1);
-        i = 0;
-        while (*ptmp)
-        {
-            suffix_buff[i] = *ptmp;
-            ++i;
-            ++ptmp;
-        }
-        suffix_buff[i] = '\0';
-    }
-    else
-    {
-       strcpy(suffix_buff, "not_set");
-    }
-
-    // end copy
-
-    (*output)->protocol = protocol_buff;
-    (*output)->host = host_buff;
-    (*output)->suffix = suffix_buff;
-    (*output)->port = atoi(port_buff);
-
-    if (port_buff)
-    {
-        free(port_buff);
-    }
-    if (purl)
-    {
-        free(purl);
-    }
-    return sizeof(*output);
+    
+    return -1;
 }
 
-size_t *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
+int AnalysisAddress(const char *addr)
+{
+
+    if (strstr(addr, "https"))
+    {
+        /* https */
+        return ADDRESS_TYPE_HTTPS;
+    }
+    else if (strstr(addr, "http"))
+    {
+        /* http */
+        return ADDRESS_TYPE_HTTP;
+    }
+    else
+    {
+        /* ip address */
+        return ADDRESS_TYPE_IP;
+    }
+    
+    return -1;
+}
+
+static void _DesBruteForceStrNode(pStrNode node)
+{
+    if (node->next)
+    {
+        _DesBruteForceStrNode(node->next);
+    }
+    free(node->str);
+    node->str = NULL;
+    free(node);
+    node = NULL;
+}
+
+void DesBruteForceStrList(pStrHeader list_header)
+{
+    if (list_header->mode == NORMAL_STR_LIST_MODE)
+    {
+        pStrNode node = list_header->next;
+        _DesBruteForceStrNode(node);
+        free(list_header);
+    }
+    else if (list_header->mode == SPECIAL_STR_LIST_MODE)
+    {
+        free(list_header->next->str);
+        free(list_header->next);
+        free(list_header);
+    }
+    else
+    {
+        ErrorMessage("DesBruteForceSpecialSt should used with special struct");
+    }
+}
+
+static int _GenBruteForceStrList(const char *file_path, pStrHeader *list_header, const int flag, const int len)
+{
+    /* use the structure store the username list */
+    /*
+     * header => node -> node
+     */
+    pStrHeader local_list_header = (pStrHeader)malloc(sizeof(StrHeader));
+    if (!local_list_header)
+    {
+        MallocErrorMessage();
+        return -1;
+    }
+    (*list_header) = local_list_header;
+
+    int str_len;
+    if (flag == 1)
+    {
+        str_len = MAX_USERNAME_LENGTH;
+    }
+    else if (flag == 2)
+    {
+        str_len = MAX_PASSWORD_LENGTH;
+    }
+    else
+    {
+        return -1;
+    }
+    
+
+    pStrNode local_node;
+    local_list_header->length = 0;
+    local_list_header->next = NULL;
+    local_list_header->mode = NORMAL_STR_LIST_MODE;
+    char *str_buff = (char *)malloc(str_len * sizeof(char));
+    char ch;
+
+    FILE *fp = fopen(file_path, "r");
+    if (!fp)
+    {
+        ErrorMessage("can not open the brute force attack file: %s[%d]", strerror(errno), errno);
+        return -1;
+    }
+
+    while (!feof(fp) && local_list_header->length <= len)
+    {
+        // if stack error, change here
+        memset(str_buff, 0, strlen(str_buff));
+        ch = fgetc(fp);
+        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
+        {
+            sprintf(str_buff, "%s%c", str_buff, ch);
+            //DisplayInfo("%c", ch);
+            ch = fgetc(fp);
+        }
+
+        if (strlen(str_buff) > 0)
+        {
+            local_node = (pStrNode)malloc(sizeof(StrNode));
+
+            #ifdef DEBUG
+            if (!local_node)
+            {
+                MallocErrorMessage();
+                return -1;
+            }
+            #endif
+
+            local_node->label = 0;
+            local_node->next = local_list_header->next;
+            local_list_header->next = local_node;
+
+            local_node->str = (char *)malloc(strlen(str_buff) + 1);
+            memset(local_node->str, 0, strlen(str_buff) + 1);
+            StripCopy(local_node->str, str_buff);
+
+            ++(local_list_header->length);
+        }
+    }
+    fclose(fp);
+    local_list_header->cursor = local_list_header->next;
+    return 0;
+}
+
+int GenBruteForceUsernameList(const char *file_path, pStrHeader *username_list_header, const int len)
+{
+    return _GenBruteForceStrList(file_path, username_list_header, 1, len);
+}
+
+int GenBruteForcePasswordList(const char *file_path, pStrHeader *password_list_header, const int len)
+{
+    return _GenBruteForceStrList(file_path, password_list_header, 2, len);
+}
+
+static int _GenBruteForceSpecialStrList(const char *str, pStrHeader *list_header, int flag)
+{
+   pStrHeader local_list_header = (pStrHeader)malloc(sizeof(StrHeader));
+    if (!local_list_header)
+    {
+        MallocErrorMessage();
+        return -1;
+    }
+    (*list_header) = local_list_header;
+
+    int str_len;
+    if (flag == 1)
+    {
+        str_len = MAX_USERNAME_LENGTH;
+    }
+    else if (flag == 2)
+    {
+        str_len = MAX_PASSWORD_LENGTH;
+    }
+    else
+    {
+        return -1;
+    }
+    
+    local_list_header->length = UINT_MAX;
+    local_list_header->next = NULL;
+    local_list_header->mode = SPECIAL_STR_LIST_MODE;
+
+    pStrNode local_node = (pStrNode)malloc(sizeof(StrNode));
+    local_node->label = 0;
+    local_list_header->next = local_node;
+    local_node->str = (char *)malloc(str_len * sizeof(char));
+    local_node->next = local_node;    // unlimit loop for specify username
+    local_list_header->cursor = local_list_header->next;
+
+    return 0;
+
+}
+
+int GenBruteForceSpecialUsernameList(const char *str, pStrHeader *username_list_header)
+{
+    return _GenBruteForceSpecialStrList(str, username_list_header, 1);
+}
+
+
+int GenBruteForceSpecialPasswordList(const char *str, pStrHeader *password_list_header)
+{
+    return _GenBruteForceSpecialStrList(str, password_list_header, 2);
+}
+
+/*
+size_t *GetRandomPassword(char **output, unsigned int seed, const int length)
 {
     // generate the random password and return
 
-    char r_password[MAX_PASSWORD_LENGTH + 1] = {'\0'};
-    char r_password_s[MAX_PASSWORD_LENGTH + 1] = {'\0'};
-    int r_num;
+    char **output = (char *)malloc(MAX_PASSWORD_LENGTH * sizeof(char));
+    memset(*output, '\0', strlen(*output));
+    char *password = *output;
+    int random_number;
     int i;
 
     // srand is here
@@ -264,140 +300,18 @@ size_t *GetRandomPassword(char **rebuf, unsigned int seed, const int length)
         // [a, b] random interger
         // [33, 126] except space[32]
         // 92 = 126 - 33 - 1
-        r_num = 33 + (int)(rand() % 92);
-        if (isprint(r_num))
+        random_number = 33 + (int)(rand() % 92);
+        if (isprint(random_number))
         {
-            sprintf(r_password_s, "%s%c", r_password, r_num);
-            strncpy(r_password, r_password_s, strlen(r_password_s));
+            snprintf(password, 1, "%s%c", password, random_number);
         }
     }
-    *rebuf = r_password;
-    return sizeof(*rebuf);
+    return strlen(password);
 }
-
-/*
-static int TestStringList(const pStrHeader output)
+`
+static size_t RandomIpNumber(int seed, int *random_num)
 {
-    pStrNode p = output->next;
-    DisplayInfo("Linked list length: %d", output->length);
-    while (p)
-    {
-        DisplayInfo("%s", p->username);
-        p = p->next;
-    }
-}
-*/
-
-void FreeProcessFileBuff(pStrHeader p)
-{
-    pStrNode n = p->next;
-    pStrNode n_next = n->next;
-    while (n_next)
-    {
-        //DisplayInfo("Free <%s> space now", n->username);
-        if (n)
-        {
-            free(n);
-        }
-        --(p->length);
-        n = n_next;
-        n_next = n_next->next;
-    }
-
-    if (p->length != 1)
-    {
-        DebugMessage("Free the space error");
-    }
-
-    if (n)
-    {
-        free(n);
-    }
-    if (p)
-    {
-        free(p);
-    }
-}
-
-size_t ProcessGuessAttackFile(const char *path, pStrHeader *output, int flag)
-{
-    // use the structure store the username list
-    // flag == 0 -> username list
-    // flag == 1 -> password list
-    size_t LENGTH;
-    if (flag)
-    {
-        LENGTH = MAX_PASSWORD_LENGTH;
-    }
-    else
-    {
-        LENGTH = MAX_USERNAME_LENGTH;
-    }
-
-    (*output) = (pStrHeader)malloc(sizeof(StrHeader));
-    if (!(*output))
-    {
-        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
-        return (size_t)-1;
-    }
-    pStrNode str_node;
-    (*output)->length = 0;
-    (*output)->next = NULL;
-    char buff[LENGTH + 1];
-    char buff_s[LENGTH + 1];
-    char ch;
-    size_t str_length = 0;
-    size_t count = 0;
-
-    FILE *fp = fopen(path, "r");
-    if (!fp)
-    {
-        ErrorMessage("can not open the guess username or password file: %s(%d)", strerror(errno), errno);
-        return (size_t)-1;
-    }
-    while (!feof(fp))
-    {
-        // if stack error, change here
-        memset(buff, 0, LENGTH + 1);
-        ch = fgetc(fp);
-        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
-        {
-            sprintf(buff_s, "%s%c", buff, ch);
-            strncpy(buff, buff_s, strlen(buff_s));
-            //DisplayInfo("%c", ch);
-            ch = fgetc(fp);
-        }
-
-        str_length = strlen(buff);
-        if (str_length > 0)
-        {
-            str_node = (pStrNode)malloc(sizeof(StrNode));
-            if (!str_node)
-            {
-                ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
-                return (size_t)-1;
-            }
-
-            str_node->next = (*output)->next;
-            (*output)->next = str_node;
-            //DisplayInfo("%ld", str_length);
-            // make a space for /0
-            str_node->str = (char *)malloc(str_length + 1);
-            memset(str_node->str, 0, str_length + 1);
-            strncpy(str_node->str, buff, str_length);
-            ++((*output)->length);
-            ++count;
-        }
-    }
-    fclose(fp);
-    return sizeof(*output);
-}
-
-static size_t GetRandomNumForIP(int seed, int *output)
-{
-    /*
-     * Return the random number between 1-255
-     */
+    // return the random number between 1-255
 
     // srand is here
     srand((int)time(0) + seed);
@@ -405,63 +319,51 @@ static size_t GetRandomNumForIP(int seed, int *output)
     // [a, b] random interger
     // [1, 254] except space[32]
     // 252 = 254 - 1 - 1
-    *output = 1 + (int)(rand() % 252);
-    return (*output);
+    *random_num = 1 + (int)(rand() % 252);
+    return (*random_num);
 }
 
-void FreeRandomIPBuff(char *p)
+size_t FakeAddress(char **output)
 {
-    if (p)
-    {
-        free(p);
-    }
-}
-
-size_t GetRandomIP(char **output)
-{
-    /*
-     * Return the random ip address
-     */
+    // return the random ip address
 
     int i;
     int random_num = 0;
     // 012345678901234
     // 255.255.255.255
-    (*output) = (char *)malloc(IP_BUFFER_SIZE);
+    (*output) = (char *)malloc(MAX_HOSTNAME_LENGTH * sizeof(char));
     if (!(*output))
     {
         ErrorMessage("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
         return (size_t)-1;
     }
-    if (!memset((*output), 0, IP_BUFFER_SIZE))
+    if (!memset((*output), 0, strlen(*output)))
     {
         ErrorMessage("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (size_t)-1;
     }
-    char random_ip[IP_BUFFER_SIZE + 1] = {'\0'};
-    char random_ip_s[IP_BUFFER_SIZE + 1] = {'\0'};
+    char *ip = (char *)malloc(MAX_HOSTNAME_LENGTH * sizeof(char));
 
     // 1   2   3 4
     // 192.168.1.1
     for (i = 0; i < 4; i++)
     {
         // ip has four num like 192 168 1 1
-        GetRandomNumForIP(i, &random_num);
-        sprintf(random_ip_s, "%s.%d", random_ip, random_num);
-        strncpy(random_ip, random_ip_s, strlen(random_ip_s));
+        RandomIpNumber(i, &random_num);
+        sprintf(ip, "%s.%d", ip, random_num);
     }
 
     // delete the first character '.'
-    char *delete = random_ip + 1;
+    char *delete = ip + 1;
     strncpy((*output), delete, strlen(delete));
     return sizeof(*output);
 }
 
-size_t GetRandomPort(size_t *output)
+size_t FakePort(int *output)
 {
-    // Return randome port from 1 to 9999
+    // return randome port from 1 to 9999
 
-    int random_number = -1;
+    int random_number = 0;
 
     // srand is here
     srand((int)time(0));
@@ -469,7 +371,8 @@ size_t GetRandomPort(size_t *output)
     // [a, b] random interger
     // [1, 9999] except space[32]
     // 9997 = 9999 - 1 - 1
-    random_number = 1 + (int)(rand() % 9997);
+    // 65533 = 65536 - 1 - 1
+    random_number = 1 + (int)(rand() % 65533);
     *output = random_number;
     return (*output);
 }
@@ -513,7 +416,7 @@ void FreeProcessACKIPListBuff(pStrHeader p)
 
     if (p->length != 1)
     {
-        DebugMessage("Free the space error");
+        WarningMessage("Free the space error");
     }
 
     if (n)
@@ -528,10 +431,6 @@ void FreeProcessACKIPListBuff(pStrHeader p)
 
 size_t ProcessACKIPListFile(pStrHeader *output)
 {
-    /*
-     * return -1 = failed
-     * return 0 = success
-     */
 
     (*output) = (pStrHeader)malloc(sizeof(StrHeader));
     if (!(*output))
@@ -615,7 +514,7 @@ void FreeProcessDNSIPListBuff(pStrHeader p)
 
     if (p->length != 1)
     {
-        DebugMessage("Free the space error");
+        WarningMessage("Free the space error");
     }
 
     if (n)
@@ -714,10 +613,10 @@ void ProcessACKIPListFileTest(void)
     FreeProcessACKIPListBuff(header);
 }
 
-size_t SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header)
+size_t SplitIPForThread(pIPList_Thread *output, const pParameter input, const pStrHeader str_header)
 {
     // split the whole ip list for each thread
-    size_t thread_num = input->max_thread;
+    size_t thread_num = input->thread_num;
     size_t list_length = str_header->length;
     size_t i, j;
     size_t cut = list_length / thread_num;
@@ -735,7 +634,7 @@ size_t SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHe
     // so just use the whole list for all the threads
     if (cut < 1)
     {
-        DebugMessage("The IP list did NOT need the split");
+        WarningMessage("The IP list did NOT need the split");
 
         for (i = 0; i < thread_num; i++)
         {
@@ -807,7 +706,7 @@ void FreeIPListBuff(pIPList_Thread input)
     free(tmp->list);
     free(tmp);
 }
-/*
+
 int main(int argc, char *argv[])
 {
     // for test
@@ -819,7 +718,7 @@ int main(int argc, char *argv[])
     // test the SplitUrl work
     if (strcmp(argv[1], "--spliturl-test") == 0)
     {
-        pSplitUrlOutput output;
+        pSplitUrlRet output;
         SplitUrl(argv[2], &output);
         if (output->protocol)
         {

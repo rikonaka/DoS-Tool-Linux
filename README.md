@@ -27,11 +27,12 @@ DoS-Tool-Linux is written in pure C, in order to keep the resource usage as low 
 - Debian & Ubuntu
 
 ```bash
-sudo apt install make gcc openssl libssl-dev
+sudo apt install make gcc openssl libssl-dev libsodium23 libsodium-dev
 ```
 
 - RHEL & Fedora
 
+**the distro test not finished**
 ```bash
 sudo yum install make gcc openssl openssl-devel
 ```

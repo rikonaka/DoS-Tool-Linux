@@ -1,5 +1,5 @@
-#ifndef _ATTACK_ACK_REFLECT_DOS_H
-#define _ATTACK_ACK_REFLECT_DOS_H
+#ifndef _ATTACK_ACK_REFLECT_H
+#define _ATTACK_ACK_REFLECT_H
 
 typedef struct pseudo_header
 {

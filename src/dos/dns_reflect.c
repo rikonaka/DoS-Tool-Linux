@@ -16,25 +16,10 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "main.h"
-#include "dns_reflect_dos.h"
+#include "../main.h"
+#include "../debug.h"
 
-extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern size_t InfoMessage(const char *fmt, ...);
-extern size_t DebugMessage(const char *fmtsring, ...);
-extern size_t ErrorMessage(const char *fmt, ...);
-
-extern void FreeProcessDNSIPListBuff(pStrHeader p);
-extern size_t ProcessDNSIPListFile(pStrHeader *output);
-extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
-extern size_t LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
-
-extern void FreeSplitUrlBuff(pSplitUrlOutput p);
-extern int SplitUrl(const char *url, pSplitUrlOutput *output);
-extern void SignalExit(int signo);
-
-extern size_t SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header);
-extern void FreeIPListBuff(pIPList_Thread input);
+#include "dns_reflect.h"
 
 //List of DNS Servers registered on the system
 //char dns_servers[10][100];
@@ -101,6 +86,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
 {
     // Perform a DNS query by sending a packet
 
+    /*
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (socket_fd < 0)
@@ -205,6 +191,7 @@ static int SendDNS(const pDNSStruct ds, const int debug_level)
 
     free(datagram);
     close(socket_fd);
+    */
     return 0;
 }
 
@@ -212,9 +199,10 @@ static int AttackThread(pDNSStruct dns_struct)
 {
     // now we start the syn flood attack
 
+    /*
     int i;
     pStrNode str_node = dns_struct->str_header->next;
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
 
     ShowMessage(VERBOSE, dns_struct->debug_level, "AttackThread start sending data...");
 
@@ -279,25 +267,27 @@ static int AttackThread(pDNSStruct dns_struct)
 
         str_node = str_node->next;
     }
+    */
     return 0;
 }
 
-int StartDNSReflectAttack(const pInput input)
+int StartDNSReflectAttack(const pParameter input)
 {
     // this file's core function
 
+    /*
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
     int j, ret;
 
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFlood");
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartSYNFlood");
     signal(SIGINT, SignalExit);
 
     pDNSStruct dns_struct = (pDNSStruct)malloc(sizeof(DNSStruct));
     pStrHeader str_header;
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
 
-    dns_struct->debug_level = input->debug_level;
+    dns_struct->debug_level = input->debug_mode;
     dns_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessDNSIPListFile(&str_header))
@@ -380,11 +370,11 @@ int StartDNSReflectAttack(const pInput input)
             // create thread
             ret = pthread_create(&tid[j], &attr, (void *)AttackThread, dns_struct);
             //printf("j is: %d\n", j);
-            ShowMessage(DEBUG, input->debug_level, "tid: %ld", tid[j]);
+            ShowMessage(DEBUG, input->debug_mode, "tid: %ld", tid[j]);
             // here we make a map
             if (ret != 0)
             {
-                ShowMessage(DEBUG, input->debug_level, "ret: %d", ret);
+                ShowMessage(DEBUG, input->debug_mode, "ret: %d", ret);
                 ErrorMessage("Create pthread failed");
                 return 1;
             }
@@ -408,19 +398,21 @@ int StartDNSReflectAttack(const pInput input)
     //unsigned char hostname[100];
     //Now get the ip of this hostname , A record
     //ngethostbyname(hostname, T_A);
+    */
     return 0;
 }
 
-int StartDNSReflectTest(const pInput input)
+int StartDNSReflectTest(const pParameter input)
 {
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFlood");
+    /*
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartSYNFlood");
     signal(SIGINT, SignalExit);
 
     pDNSStruct dns_struct = (pDNSStruct)malloc(sizeof(DNSStruct));
     pStrHeader str_header;
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
 
-    dns_struct->debug_level = input->debug_level;
+    dns_struct->debug_level = input->debug_mode;
     dns_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessDNSIPListFile(&str_header))
@@ -486,5 +478,6 @@ int StartDNSReflectTest(const pInput input)
 
     FreeDNSStructBuff(dns_struct);
     FreeIPListBuff(list);
+    */
     return 0;
 }

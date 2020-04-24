@@ -1,5 +1,5 @@
-#ifndef _ATTACK_SYN_FLOOD_DOS_H
-#define _ATTACK_SYN_FLOOD_DOS_H
+#ifndef _SYN_FLOOD_H
+#define _SYN_FLOOD_H
 //#include <sys/socket.h>
 // For exit(0);
 //#include <netinet/tcp.h>

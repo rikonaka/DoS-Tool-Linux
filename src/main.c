@@ -2,13 +2,28 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "main.h"
 
 // char *version = "v0.10";
 // const char *version = "0.20";
 // const char *version = "0.30"; // 2019-3-25
-const char *version = "0.40"; // 2020-3-23, new arch now
+const char *version = "1.00"; // 2020-3-23, new arch now
+
+/* global value*/
+pParameter parameter;
+
+void ElegantExit()
+{
+    if (parameter->_brute_force_st)
+    {
+        
+    }
+    DesParameterSt(parameter);
+    InfoMessage("exit program now");
+    exit(0);
+}
 
 int main(int argc, char *argv[])
 {
@@ -16,14 +31,16 @@ int main(int argc, char *argv[])
      * main function
      */
 
-    if (argc == 1)
+    if (argc < 2)
     {
-        ErrorMessage("Please specify at least one parameter!");
-        DisplayUsage();
+        ErrorMessage("please specify at least one parameter!");
+        ShowUsage();
         return -1;
     }
 
-    size_t attack_mode = JudgeInputType(argc, argv);
+    signal(SIGINT, ElegantExit);
+    signal(SIGSEGV, ElegantExit);
+    signal(SIGTERM, ElegantExit);
     /*
      * GUESS 0              // guess the web passwd (advanced)
      * SYN_FLOOD_ATTACK 1   // syn flood attack
@@ -31,175 +48,61 @@ int main(int argc, char *argv[])
      * ACK_REFLECT_ATTACK 3 // ack reflect attack
      * DNS_REFLECT_ATTACK 4 // dns reflect attack
      */
-    switch (attack_mode)
-    {
-        case 0:
-            /* guess */
-            pGuessAttackParameter input_parameter;
-            break;
-
-        case 1:
-            /* syn */
-            break;
-
-        case 2:
-            /* udp */
-            break;
-
-        case 3:
-            /* ack */
-            break;
-
-        case 4:
-            /* dns */
-            break;
     
-        default:
-            break;
-    }
-
-    pInput input;
-    if (InitInput(&input) == -1)
-    {
-        ErrorMessage("init the input failed");
-        return 1;
-    }
+    InfoMessage("dos-tool-linux version: %s", version);
+    InfoMessage("running...");
 
     // processing the user input data
-    if (!ProcessInput(argc, argv, input))
+    if (GenParameterSt(argc, argv, &parameter) == -1)
     {
 
         ErrorMessage("Please check you input");
-        DisplayUsage();
-        return 1;
+        //ShowUsage();
+        return -1;
+    }
+    ShowMessage(DEBUG, parameter->debug_mode, "debug mode started...");
+
+    if ((!parameter->target_address) || (strlen(parameter->target_address) == 0))
+    {
+        ErrorMessage("please input the target address use -i");
+        return -1;
     }
 
-    char *version;
-    if (!GetCurrentVersion(&version))
+    switch (parameter->attack_mode)
     {
-        ErrorMessage("GetCurrentVersion failed");
-        return 1;
-    }
-    InfoMessage("dos-tool version: %s", version);
-    FreeGetCurrentVersionBuff(version);
-
-    InfoMessage("Running...");
-    ShowMessage(INFO, input->debug_level, "Debug mode started...");
-
-    check_input = CheckInputCompliance(input);
-    if (check_input > 0)
-    {
-        // process user input ready, start attack now
-        ErrorMessage("Check compliance failed, please check your input");
-        DisplayUsage();
-        return 1;
-    }
-    else if (check_input < 0)
-    {
-        // test the module here
-        switch (check_input)
-        {
-        case TEST_TYPE_GUESS:
-            if (StartGuessTest(input))
+        case BRUTE_FORCE_ATTACK:
+            parameter->_brute_force_st = (pBruteForceSt)malloc(sizeof(BruteForceSt));
+            parameter->_brute_force_st->brute_force_attack_mode = BruteForceMode(parameter);
+            parameter->address_type = AnalysisAddress(parameter->target_address);
+            if (parameter->address_type == -1)
             {
-                ErrorMessage("StartGuessTest failed");
-                return 1;
+                ErrorMessage("analysis address failed");
+                return -1;
             }
-            break;
-
-        case TEST_TYPE_SYN_FLOOD:
-            if (StartSYNFloodTest(input))
-            {
-                ErrorMessage("StartSYNFloodTest failed");
-                return 1;
-            }
-            break;
-
-        case TEST_TYPE_UDP_FLOOD:
-            if (StartUDPFloodTest(input))
-            {
-                ErrorMessage("StartUDPFloodTest failed");
-                return 1;
-            }
-            break;
-
-        case TEST_TYPE_ACK_REFLECT:
-            if (StartACKReflectTest(input))
-            {
-                ErrorMessage("StartACKReflectTest failed");
-                return 1;
-            }
-            break;
-
-        case TEST_TYPE_ACK_IP_LIST:
-            ProcessACKIPListFileTest();
-            break;
-
-        case TEST_TYPE_DNS_REFLECT:
-            if (StartDNSReflectTest(input))
-            {
-                ErrorMessage("StartDNSReflectTest failed");
-                return 1;
-            }
-            break;
-
-        default:
-            break;
-        }
-    }
-    else if (check_input == 0)
-    {
-        // really attack funtion is here
-        switch (input->attack_mode)
-        {
-        case GUESS:
-            if (StartGuessAttack(input))
-            {
-                ErrorMessage("StartGuessAttack failed");
-                return 1;
-            }
+            /* start attack thread */
+            StartBruteForceAttack(parameter);
             break;
 
         case SYN_FLOOD_ATTACK:
-            if (StartSYNFloodAttack(input))
-            {
-                ErrorMessage("StartSYNFloodAttack failed");
-                return 1;
-            }
+            /* start syn flood thread */
             break;
 
         case UDP_FLOOD_ATTACK:
-            if (StartUDPFloodAttack(input))
-            {
-                ErrorMessage("StartUDPFloodAttack failed");
-                return 1;
-            }
             break;
 
         case ACK_REFLECT_ATTACK:
-            if (StartACKReflectAttack(input))
-            {
-                ErrorMessage("StartACKReflectAttack failed");
-                return 1;
-            }
             break;
 
         case DNS_REFLECT_ATTACK:
-            if (StartDNSReflectAttack(input))
-            {
-                ErrorMessage("StartDNSReflectAttack failed");
-                return 1;
-            }
             break;
-
+        
         default:
             break;
-        }
     }
 
-    if (input)
+    if (parameter)
     {
-        free(input);
+        free(parameter);
     }
     return 0;
 }

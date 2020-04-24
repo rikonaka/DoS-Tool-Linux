@@ -1,5 +1,5 @@
-#ifndef _ATTACK_DNS_REFLECT_DOS_H
-#define _ATTACK_DNS_REFLECT_DOS_H
+#ifndef _DNS_REFLECT_H
+#define _DNS_REFLECT_H
 
 // yypes of DNS resource records :)
 // query type is here

