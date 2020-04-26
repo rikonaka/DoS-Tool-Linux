@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 
 
     size_t str_len = LEN;
-    char *str = (char *)malloc(str_len* sizeof(char));
+    char *str = (char *)malloc(str_len);
     char ch = fgetc(fp);
     while (ch && ch != '\n' && ch != '\r' && !feof(fp))
     {

@@ -38,6 +38,8 @@ int ServerTcpCreateSocket(int port)
     int enable = 1;
 
     listen_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    #ifdef DEBUG
     if(listen_socket == -1)
     {
         ErrorMessage("server create socket failed: %s(%d)", strerror(errno), errno);
@@ -52,6 +54,7 @@ int ServerTcpCreateSocket(int port)
         }
         return -1;
     }
+    #endif
 
     if (setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
@@ -60,19 +63,25 @@ int ServerTcpCreateSocket(int port)
     }
     
     int ret = bind(listen_socket, (struct sockaddr *)&addr, sizeof(addr));
+
+    #ifdef DEBUG
     if(ret == -1)
     {
         ErrorMessage("server bind failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
+    #endif
     
     /* only wait for one connection */
     ret = listen(listen_socket, 1);
+
+    #ifdef DEBUG
     if(ret == -1)
     {
         ErrorMessage("server listen failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
+    #endif
     
     return listen_socket;
 }
@@ -87,11 +96,14 @@ size_t WaitClient(int listen_socket)
     int addrlen = (int)sizeof(cliaddr);
     InfoMessage("waitting connection...");
     int client_socket = accept(listen_socket, (struct sockaddr *)&cliaddr, &addrlen);
+
+    #ifdef DEBUG
     if (client_socket == -1)
     {
         ErrorMessage("get client socket failed: %s(%d)", strerror(errno), errno);
         return (size_t)-1;
     }
+    #endif
     
     InfoMessage("client connected: %s", inet_ntoa(cliaddr.sin_addr));
     
@@ -156,7 +168,7 @@ static int ClientTcpCreateSocket(const char *host, int port)
     return connect_socket;
 }
 
-static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
+static size_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
 {
     /*
      * in this function
@@ -169,9 +181,9 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
      * return sended data size
      */
 
-    ssize_t sent_total_size = 0;
-    ssize_t ret = 0;
+    size_t sent_total_size = 0;
     size_t buff_size = sizeof(buff);
+    int ret = 0;
 
     // make sure the program had sending all data
     if (label == HTTP)
@@ -180,11 +192,15 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
         while (sent_total_size < buff_size)
         {
             ret = send(socket, buff + sent_total_size, buff_size - sent_total_size, 0);
+
+            #ifdef DEBUG
             if (ret == -1)
             {
                 ErrorMessage("tcp send data failed: %s(%d)", strerror(errno), errno);
                 return -1;
             }
+            #endif
+
             sent_total_size += ret;
         }
     }
@@ -193,11 +209,15 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
         while (sent_total_size < buff_size)
         {
             ret = SSL_write(ssl, buff, buff_size);
+
+            #ifdef DEBUG
             if (ret <= 0)
             {
                 ErrorMessage("tcp send via ssl send data failed: %d", SSL_get_error(ssl, ret));
                 return -1;
             }
+            #endif
+
             sent_total_size += ret;
         }
     }
@@ -211,7 +231,7 @@ static ssize_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
     return sent_total_size;
 }
 
-static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
+static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
 {
     /*
      * This function will return the receive data length
@@ -219,17 +239,22 @@ static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
      *           else set 1, use the https
      */
 
-    ssize_t recv_total_size = 0;
-    ssize_t ret = 0;
-    char *buff = (char *)malloc(RECEIVE_DATA_SIZE);
+    size_t recv_total_size = 0;
+    size_t RECV_BUFF_SIZE = 128; 
+    int ret = 0;
+    char *buff = (char *)malloc(RECV_BUFF_SIZE));
+
     if (label == HTTP)
     {
         for (;;)
         {
-            ret = recv(socket, buff, RECEIVE_DATA_SIZE, 0);
+            ret = recv(socket, buff, RECV_BUFF_SIZE, 0);
             if (ret == -1)
             {
+                #ifdef DEBUG
                 ErrorMessage("tcp recv data failed");
+                #endif
+
                 return -1;
             }
             else if (ret == 0)
@@ -238,12 +263,16 @@ static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
                 break;
             }
 
-            buff = (char *)realloc(buff, sizeof(buff) + RECEIVE_DATA_SIZE);
+            buff = (char *)realloc(buff, sizeof(buff) + RECV_BUFF_SIZE);
+
+            #ifdef DEBUG
             if (!buff)
             {
                 ErrorMessage("tcp recv realloc failed: %s(%d)", strerror(errno), errno);
                 return -1;
             }
+            #endif
+
             recv_total_size += ret;
         }
     }
@@ -251,19 +280,25 @@ static ssize_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
     {
         for (;;)
         {
-            ret = SSL_read(ssl, buff, RECEIVE_DATA_SIZE);
+            ret = SSL_read(ssl, buff, RECV_BUFF_SIZE);
             if (ret <= 0)
             {
+                #ifdef DEBUG
                 ErrorMessage("tcp recv data failed: %d", SSL_get_error(ssl, ret));
+                #endif
                 return -1;
             }
 
-            buff = realloc(buff, RECEIVE_DATA_SIZE);
+            buff = realloc(buff, RECV_BUFF_SIZE);
+
+            #ifdef DEBUG
             if (!buff)
             {
                 ErrorMessage("tcp recv via https realloc failed: %s(%d)", strerror(errno), errno);
                 return -1;
             }
+            #endif
+
             recv_total_size += ret;
         }
     }

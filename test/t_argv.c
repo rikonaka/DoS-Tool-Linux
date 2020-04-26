@@ -8,6 +8,8 @@ int main(int argc, char *argv[])
     {
         printf("argv: %s\n", argv[i]);
     }
+    char *test = (char *)malloc(10);
+    memset(test, 0, 10);
 
     return 0;
 }

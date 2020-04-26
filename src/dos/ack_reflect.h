@@ -12,7 +12,7 @@ typedef struct pseudo_header
     struct tcphdr tcp;
 } PseudoHeader;
 
-typedef struct syn_struct
+typedef struct syn_flood_st
 {
     char *src_ip;
     char *dst_ip;

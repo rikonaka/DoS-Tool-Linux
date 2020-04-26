@@ -9,6 +9,9 @@
 #include "../main.h"
 #include "../debug.h"
 
+#define GEN_USERNAME 0
+#define GEN_PASSWORD 1
+
 char *StripCopy(char *dst, const char *src)
 {
     /* delete the space which in the start and end of string*/
@@ -120,17 +123,21 @@ static void _DesBruteForceStrNode(pStrNode node)
 
 void DesBruteForceStrList(pStrHeader list_header)
 {
-    if (list_header->mode == NORMAL_STR_LIST_MODE)
+    if (list_header->str_list_mode == NORMAL_STR_LIST_MODE)
     {
         pStrNode node = list_header->next;
         _DesBruteForceStrNode(node);
         free(list_header);
     }
-    else if (list_header->mode == SPECIAL_STR_LIST_MODE)
+    else if (list_header->str_list_mode == REPEAT_STR_LIST_MODE)
     {
         free(list_header->next->str);
         free(list_header->next);
         free(list_header);
+    }
+    else if (list_header->str_list_mode == RANDOM_STR_LIST_MODE)
+    {
+        /* do nothing */
     }
     else
     {
@@ -153,13 +160,15 @@ static int _GenBruteForceStrList(const char *file_path, pStrHeader *list_header,
     (*list_header) = local_list_header;
 
     int str_len;
-    if (flag == 1)
+    if (flag == GEN_USERNAME)
     {
         str_len = MAX_USERNAME_LENGTH;
+        local_list_header->str_list_type = USERNAME_STR_LIST;
     }
-    else if (flag == 2)
+    else if (flag == GEN_PASSWORD)
     {
         str_len = MAX_PASSWORD_LENGTH;
+        local_list_header->str_list_type = PASSWORD_STR_LIST;
     }
     else
     {
@@ -170,8 +179,8 @@ static int _GenBruteForceStrList(const char *file_path, pStrHeader *list_header,
     pStrNode local_node;
     local_list_header->length = 0;
     local_list_header->next = NULL;
-    local_list_header->mode = NORMAL_STR_LIST_MODE;
-    char *str_buff = (char *)malloc(str_len * sizeof(char));
+    local_list_header->str_list_mode = NORMAL_STR_LIST_MODE;
+    char *str_buff = (char *)malloc(str_len);
     char ch;
 
     FILE *fp = fopen(file_path, "r");
@@ -223,32 +232,36 @@ static int _GenBruteForceStrList(const char *file_path, pStrHeader *list_header,
 
 int GenBruteForceUsernameList(const char *file_path, pStrHeader *username_list_header, const int len)
 {
-    return _GenBruteForceStrList(file_path, username_list_header, 1, len);
+    return _GenBruteForceStrList(file_path, username_list_header, GEN_USERNAME, len);
 }
 
 int GenBruteForcePasswordList(const char *file_path, pStrHeader *password_list_header, const int len)
 {
-    return _GenBruteForceStrList(file_path, password_list_header, 2, len);
+    return _GenBruteForceStrList(file_path, password_list_header, GEN_PASSWORD, len);
 }
 
-static int _GenBruteForceSpecialStrList(const char *str, pStrHeader *list_header, int flag)
+static int _GenBruteForceRepeatStrList(const char *str, pStrHeader *list_header, int flag)
 {
    pStrHeader local_list_header = (pStrHeader)malloc(sizeof(StrHeader));
+   #ifdef DEBUG
     if (!local_list_header)
     {
         MallocErrorMessage();
         return -1;
     }
+    #endif
     (*list_header) = local_list_header;
 
     int str_len;
-    if (flag == 1)
+    if (flag == GEN_USERNAME)
     {
         str_len = MAX_USERNAME_LENGTH;
+        local_list_header->str_list_type = USERNAME_STR_LIST;
     }
-    else if (flag == 2)
+    else if (flag == GEN_PASSWORD)
     {
         str_len = MAX_PASSWORD_LENGTH;
+        local_list_header->str_list_type = PASSWORD_STR_LIST;
     }
     else
     {
@@ -257,37 +270,44 @@ static int _GenBruteForceSpecialStrList(const char *str, pStrHeader *list_header
     
     local_list_header->length = UINT_MAX;
     local_list_header->next = NULL;
-    local_list_header->mode = SPECIAL_STR_LIST_MODE;
+    local_list_header->str_list_mode = REPEAT_STR_LIST_MODE;
 
     pStrNode local_node = (pStrNode)malloc(sizeof(StrNode));
+    #ifdef DEBUG
+    if (!local_node)
+    {
+        MallocErrorMessage();
+        return -1;
+    }
+    #endif
     local_node->label = 0;
     local_list_header->next = local_node;
-    local_node->str = (char *)malloc(str_len * sizeof(char));
-    local_node->next = local_node;    // unlimit loop for specify username
+    local_node->str = (char *)malloc(str_len);
+    // unlimit loop for specify username
+    local_node->next = local_node;
     local_list_header->cursor = local_list_header->next;
 
     return 0;
 
 }
 
-int GenBruteForceSpecialUsernameList(const char *str, pStrHeader *username_list_header)
+int GenBruteForceRepeatUsernameList(const char *str, pStrHeader *username_list_header)
 {
-    return _GenBruteForceSpecialStrList(str, username_list_header, 1);
+    return _GenBruteForceRepeatStrList(str, username_list_header, GEN_USERNAME);
 }
 
 
-int GenBruteForceSpecialPasswordList(const char *str, pStrHeader *password_list_header)
+int GenBruteForceRepeatPasswordList(const char *str, pStrHeader *password_list_header)
 {
-    return _GenBruteForceSpecialStrList(str, password_list_header, 2);
+    return _GenBruteForceRepeatStrList(str, password_list_header, GEN_PASSWORD);
 }
 
-/*
-size_t *GetRandomPassword(char **output, unsigned int seed, const int length)
+char *GenRandomPassword(char **result, const unsigned int seed, const int len)
 {
     // generate the random password and return
 
-    char **output = (char *)malloc(MAX_PASSWORD_LENGTH * sizeof(char));
-    memset(*output, '\0', strlen(*output));
+    char **output = (char *)malloc(MAX_PASSWORD_LENGTH);
+    memset(*output, 0, strlen(*output));
     char *password = *output;
     int random_number;
     int i;
@@ -295,7 +315,8 @@ size_t *GetRandomPassword(char **output, unsigned int seed, const int length)
     // srand is here
     srand((int)time(0) + seed);
 
-    for (i = 0; i < length; i++)
+    i = 0;
+    while (i < len)
     {
         // [a, b] random interger
         // [33, 126] except space[32]
@@ -303,12 +324,14 @@ size_t *GetRandomPassword(char **output, unsigned int seed, const int length)
         random_number = 33 + (int)(rand() % 92);
         if (isprint(random_number))
         {
-            snprintf(password, 1, "%s%c", password, random_number);
+            //snprintf(password, 1, "%s%c", password, random_number);
+            password[i] = 
+            ++i;
         }
     }
     return strlen(password);
 }
-`
+
 static size_t RandomIpNumber(int seed, int *random_num)
 {
     // return the random number between 1-255
@@ -331,7 +354,7 @@ size_t FakeAddress(char **output)
     int random_num = 0;
     // 012345678901234
     // 255.255.255.255
-    (*output) = (char *)malloc(MAX_HOSTNAME_LENGTH * sizeof(char));
+    (*output) = (char *)malloc(MAX_HOSTNAME_LENGTH);
     if (!(*output))
     {
         ErrorMessage("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
@@ -342,7 +365,7 @@ size_t FakeAddress(char **output)
         ErrorMessage("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (size_t)-1;
     }
-    char *ip = (char *)malloc(MAX_HOSTNAME_LENGTH * sizeof(char));
+    char *ip = (char *)malloc(MAX_HOSTNAME_LENGTH);
 
     // 1   2   3 4
     // 192.168.1.1
@@ -738,4 +761,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-*/

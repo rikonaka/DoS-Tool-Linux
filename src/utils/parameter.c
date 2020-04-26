@@ -9,7 +9,7 @@
 
 static int _IsShortParameter(const char *input)
 {
-    char *input_strip = (char *)malloc(strlen(input) * sizeof(char));
+    char *input_strip = (char *)malloc(strlen(input));
     input_strip = StripCopy(input_strip, input);
     if ((input_strip[0] == '-') && (input_strip[1] != '-'))
     {
@@ -23,7 +23,7 @@ static int _IsShortParameter(const char *input)
 
 static int _IsLongParameter(const char *input)
 {
-    char *input_strip = (char *)malloc(strlen(input) * sizeof(char));
+    char *input_strip = (char *)malloc(strlen(input));
     input_strip = StripCopy(input_strip, input);
     if ((input_strip[0] == '-') && (input_strip[1] == '-') && (input_strip[3] != '-'))
     {
@@ -37,7 +37,7 @@ static int _IsLongParameter(const char *input)
 
 static int _IsParameter(const char *input)
 {
-    char *input_strip = (char *)malloc(strlen(input) * sizeof(char));
+    char *input_strip = (char *)malloc(strlen(input));
     input_strip = StripCopy(input_strip, input);
     if (input_strip[0] == '-')
     {
@@ -243,7 +243,7 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
 
                 case 'u':
                     // char
-                    local_parameter->target_address = (char *)malloc(MAX_ADDRESS_LENGTH * sizeof(char));
+                    local_parameter->target_address = (char *)malloc(MAX_ADDRESS_LENGTH);
                     #ifdef DEBUG
                     if (!(local_parameter->target_address))
                     {
@@ -404,7 +404,7 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             else if (strcmp(p, "username"))
             {
                 // char
-                local_parameter->username = (char *)malloc(MAX_USERNAME_LENGTH * sizeof(char));
+                local_parameter->username = (char *)malloc(MAX_USERNAME_LENGTH);
                 #ifdef DEBUG
                 if (!(local_parameter->username))
                 {
@@ -426,7 +426,7 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             else if (strcmp(p, "username-file")) 
             {
                 // char
-                local_parameter->username_file_path = (char *)malloc(MAX_USERNAME_FILE_PATH_LENGTH * sizeof(char));
+                local_parameter->username_file_path = (char *)malloc(MAX_USERNAME_FILE_PATH_LENGTH);
 
                 #ifdef DEBUG
                 if (!(local_parameter->username_file_path))
@@ -450,7 +450,7 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             else if (strcmp(p, "password-file"))
             {
                 // char
-                local_parameter->password_file_path = (char *)malloc(MAX_PASSWORD_FILE_PATH_LENGTH * sizeof(char));
+                local_parameter->password_file_path = (char *)malloc(MAX_PASSWORD_FILE_PATH_LENGTH);
 
                 #ifdef DEBUG
                 if (!(local_parameter->password_file_path))
@@ -559,7 +559,27 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             else if (strcmp(p, "router") == 0)
             {
                 // char
-                local_parameter->router_type = (char *)malloc(MAX_ROUTER_TYPE_LENGTH * sizeof(char));
+                local_parameter->router_type = (char *)malloc(MAX_ROUTER_TYPE_LENGTH);
+                #ifdef DEBUG
+                if (!(local_parameter->router_type))
+                {
+                    MallocErrorMessage();
+                    return -1;
+                }
+                #endif
+                if (!(argv[++i]) || (_IsParameter(argv[i])))
+                {
+                    ErrorMessage("can not found value of --each-ip-repeat-time parameter");
+                    return -1;
+                }
+                else
+                {
+                    strncpy(local_parameter->router_type, argv[i], MAX_ROUTER_TYPE_LENGTH);
+                }
+            }
+            else if (strcmp(p, "password-randomness") == 0)
+            {
+                local_parameter->router_type = (char *)malloc(MAX_ROUTER_TYPE_LENGTH);
                 #ifdef DEBUG
                 if (!(local_parameter->router_type))
                 {

@@ -33,7 +33,7 @@ char *Strip(char *dst, const char *src)
 int main(int argc, char *argv[])
 {
     char *src = "      1 2 3 4    5 7      ";
-    char *dst = (char *)malloc(strlen(src) * sizeof(char));
+    char *dst = (char *)malloc(strlen(src));
 
     dst = Strip(dst, src);
     printf("[%s]\n", dst);

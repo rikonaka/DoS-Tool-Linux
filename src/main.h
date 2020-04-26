@@ -13,9 +13,6 @@
 #define BRUTE_FORCE_UF_PS 4    // username from file and password specified
 #define BRUTE_FORCE_UF_PF 5    // the username and password both from file 
 
-#define DISABLE_SIP 0
-#define ENABLE_SIP 1
-
 #define ADDRESS_TYPE_IP 1
 #define ADDRESS_TYPE_HTTP 2
 #define ADDRESS_TYPE_HTTPS 3
@@ -28,14 +25,17 @@
 #define MAX_USERNAME_FILE_PATH_LENGTH 100
 #define MAX_PASSWORD_FILE_PATH_LENGTH 100
 #define MAX_ADDRESS_LENGTH 2048              // URL standard
+#define MAX_IP_LENGTH 16                     // 255.255.255.255
 #define MAX_HOSTNAME_LENGTH 2048
-#define MAX_IP_LENGTH 20
 #define MAX_ROUTER_TYPE_LENGTH 100
-#define MAX_PARAMETER_LENGTH 64
 
-#define COMMON_BUFFER_SIZE 16
-#define SEND_DATA_SIZE 2048
-#define RECEIVE_DATA_SIZE 2048
+/* use in brute force attack */
+#define MAX_REQUEST_LENGTH 2048
+#define MAX_REQUEST_POST_DATA_LENGTH 128
+#define MAX_RESPONSE_LENGTH 2048
+
+#define MAX_HTTP_SEND_DATA_SIZE 2048
+#define MAX_HTTP_RECV_DATA_SIZE 2048
 
 #define MAX_PROTOCOL_LENGTH 10               // http https
 #define MAX_PORT_LENGTH 6                   // 65535
@@ -47,27 +47,23 @@
 #define FALSE 0
 
 #define NORMAL_STR_LIST_MODE 0
-#define SPECIAL_STR_LIST_MODE 1
+#define REPEAT_STR_LIST_MODE 1
+#define RANDOM_STR_LIST_MODE 2
 
-#define DEBUG_MODE_DEFAULT OFF
+#define USERNAME_STR_LIST 0
+#define PASSWORD_STR_LIST 1
 
 #define PROCESS_NUM_DEFAULT 1
 #define THREAD_NUM_DEFAULT 4
 
-#define RANDOM_SIP_DEFAULT DEACTIVETE
 #define USERNAME_DEFAULT "admin"
 
-#define TARGET_PORT_DEFAULT 80
 #define USERNAME_FILE_PATH_DEFAULT "/etc/dos-tool-linux-username.txt"
 #define PASSWORD_FILE_PATH_DEFAULT "/etc/dos-tool-linux-password.txt"
 #define RECV_TIME_OUT 60 //s
 #define ROUTER_TYPE_DEFAULT "feixun_fwr_604h"
 #define HTTP_PORT_DEFAULT 80
 #define HTTPS_PORT_DEFAULT 443
-#define SYN_FLOOD_PORT_DEFAULT 80
-#define UDP_FLOOD_PORT_DEFAULT 80
-#define ACK_REFLECT_PORT_DEFAULT 80
-#define EACH_IP_REPEAT_TIME_DEFAULT 64                                 // should be a big value, if your try to debug, make it smaller like 10
 
 #define BRUTE_FORCE_ATTACK_RESPONSE_WRITE_PATH "./guess-response.log"
 
@@ -106,7 +102,19 @@ typedef struct str_header
 {
     struct str_node *next;
     size_t length;
-    int mode;
+
+    /* NORMAL_STR_LIST_MODE: get the str from the file
+     *                       and put it into a list
+     * REPEAT_STR_LIST_MODE: repeat one str in user
+     * RANDOM_STR_LIST_MODE: specify this str should
+     *                       be random string
+     */
+    int str_list_mode;
+
+    /* USERNAME_STR_LIST: this string list store the username
+     * PASSWORD_STR_LIST: this string list store the password
+     */
+    int str_list_type;
     struct str_node *cursor; // this pointer will point to the next not used value
 } StrHeader, *pStrHeader;
 
@@ -117,14 +125,33 @@ typedef struct ip_list_thread
     pStrHeader list;
 } IPList_Thread, *pIPList_Thread;
 
+typedef struct pseudo_header
+{
+    // Needed for checksum calculation
+    unsigned int source_address;
+    unsigned int dest_address;
+    unsigned char placeholder;
+    unsigned char protocol;
+    unsigned short tcp_length;
+    struct tcphdr tcp;
+} PseudoHeader;
+
+typedef struct syn_flood_st
+{
+    char *src_ip;
+    char *dst_ip;
+    size_t src_port;
+    size_t dst_port;
+} SynFloodSt, *pSynFloodSt;
+
 typedef struct brute_force_st
 {
     /* if not use the path file, set all NULL */
     int id;
-    int brute_force_attack_mode;
     /* 0: normal mode struct */
     /* 1: special mode struct */
     /* 2: fill the str_node in thread program run (random password use)*/ 
+    int brute_force_attack_mode;
     struct str_header *username_list_header;
     struct str_header *password_list_header;
 } BruteForceSt, *pBruteForceSt;
@@ -157,6 +184,7 @@ typedef struct parameter
     /* field in the thread program */
     int seed;
     pBruteForceSt _brute_force_st;
+    pSynFloodSt _syn_flood_st;
 } Parameter, *pParameter;
 
 /* from logger.c */
@@ -178,8 +206,10 @@ extern char *StripCopy(char *dst, const char *src);
 extern void DesBruteForceStrList(pStrHeader list_header);
 extern int GenBruteForceUsernameList(const char *file_path, pStrHeader *username_list_header, const int len);
 extern int GenBruteForcePasswordList(const char *file_path, pStrHeader *password_list_header, const int len);
-extern int GenBruteForceSpecialUsernameList(const char *str, pStrHeader *username_list_header);
-extern int GenBruteForceSpecialPasswordList(const char *str, pStrHeader *password_list_header);
+extern int GenBruteForceRepeatUsernameList(const char *str, pStrHeader *username_list_header);
+extern int GenBruteForceRepeatPasswordList(const char *str, pStrHeader *password_list_header);
+
+extern char *GenRandomPassword(char **result, const unsigned int seed, const int len);
 
 /* from https.c */
 extern int HttpMethod(const char *address, const int port, const char *request, char **response);
@@ -194,24 +224,15 @@ extern int BruteForceMode(pParameter parameter);
 /* usage.c */
 extern void ShowUsage(void);
 
-/* attack function */
-extern int StartSYNFloodAttack(pParameter input);
-extern int StartSYNFloodTest(pParameter input);
-
-extern int StartBruteForceAttack(pParameter input);
-extern int StartGuessTest(pParameter input);
-
-extern int StartUDPFloodAttack(pParameter input);
-extern int StartUDPFloodTest(pParameter input);
-
-extern int StartACKReflectAttack(pParameter input);
-extern int StartACKReflectTest(pParameter input);
-
-extern int StartDNSReflectAttack(pParameter input);
-extern int StartDNSReflectTest(pParameter input);
-
 /* from crypto.h */
 extern char *Base64Encode(const char *plain_text);
 extern unsigned char *Base64Decode(const char *cipher_text);
+
+/* attack function */
+extern int StartBruteForceAttack(pParameter parameter);
+extern int StartSYNFloodAttack(pParameter parameter);
+extern int StartUDPFloodAttack(pParameter parameter);
+extern int StartACKReflectAttack(pParameter parameter);
+extern int StartDNSReflectAttack(pParameter parameter);
 
 #endif

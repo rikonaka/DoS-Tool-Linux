@@ -13,7 +13,7 @@ int Base64Encode(const char *plain_text)
 
     const size_t plain_text_len = strlen(plain_text);
     const size_t cipher_text_max_len = sodium_base64_encoded_len(plain_text_len, sodium_base64_VARIANT_ORIGINAL);
-    char *cipher_text = (char *)malloc(cipher_text_max_len * sizeof(char));
+    char *cipher_text = (char *)malloc(cipher_text_max_len);
     cipher_text = sodium_bin2base64(cipher_text, cipher_text_max_len, (unsigned char *)plain_text, plain_text_len, sodium_base64_VARIANT_ORIGINAL);
 
     printf("%s\n", cipher_text);
@@ -31,7 +31,7 @@ int Base64Decode(const char *cipher_text)
 
     const size_t plain_text_max_len =  4 * (cipher_text_len / 3);
     size_t plain_text_len = plain_text_max_len - i;
-    unsigned char *plain_text = (unsigned char *)malloc(plain_text_max_len * sizeof(char));
+    unsigned char *plain_text = (unsigned char *)malloc(plain_text_max_len);
 
     if (sodium_base642bin(plain_text, plain_text_max_len, cipher_text, cipher_text_len, NULL, &plain_text_len, NULL, sodium_base64_VARIANT_ORIGINAL) != 0)
     {
