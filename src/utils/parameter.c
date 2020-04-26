@@ -103,46 +103,15 @@ void DesParameterSt(pParameter parameter)
     }
 }
 
-int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
+static int AttackMode(const int argc, const char *argv[])
 {
     /*
-     * get the user input parameter
+     * return thr user's attack mode
      */
 
-    int i;
-    char *p;
-    char *endptr;
+    int attack_mode = 0;
 
-    pParameter local_parameter = (pParameter)malloc(sizeof(Parameter));
-    #ifdef DEBUG
-    if (!local_parameter)
-    {
-        MallocErrorMessage();
-        return -1;
-    }
-    #endif
-    /* force set the char pointer to 0x0 */
-    local_parameter->target_address = NULL;
-    local_parameter->username = NULL;
-    local_parameter->password = NULL;
-    local_parameter->username_file_path = NULL;
-    local_parameter->password_file_path = NULL;
-    local_parameter->router_type = NULL;
-    local_parameter->_brute_force_st = NULL;
-    
-    local_parameter->target_port = 0;
-    local_parameter->attack_mode = 0;
-    local_parameter->random_saddr= DISABLE;
-    local_parameter->thread_num = 0;
-    local_parameter->passwd_len = 0;
-    local_parameter->ip_repeat_time = 0;
-    local_parameter->address_type = 0;
-    local_parameter->username_encrypt_type = 0;
-    local_parameter->password_encrypt_type = 0;
-    
-    *parameter = local_parameter;
-
-    for (i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         /* here must be able to found dashes */
         if (!_IsParameter(argv[i]))
@@ -175,23 +144,23 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                             switch (*argv[i])
                             {
                                 case '1':
-                                    local_parameter->attack_mode = BRUTE_FORCE_ATTACK;
+                                    attack_mode = BRUTE_FORCE_ATTACK;
                                     break;
 
                                 case '2':
-                                    local_parameter->attack_mode = SYN_FLOOD_ATTACK;
+                                    attack_mode = SYN_FLOOD_ATTACK;
                                     break;
 
                                 case '3':
-                                    local_parameter->attack_mode = UDP_FLOOD_ATTACK;
+                                    attack_mode = UDP_FLOOD_ATTACK;
                                     break;
 
                                 case '4':
-                                    local_parameter->attack_mode = ACK_REFLECT_ATTACK;
+                                    attack_mode = ACK_REFLECT_ATTACK;
                                     break;
 
                                 case '5':
-                                    local_parameter->attack_mode = DNS_REFLECT_ATTACK;
+                                    attack_mode = DNS_REFLECT_ATTACK;
                                     break;
 
                                 default:
@@ -205,27 +174,27 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                             /* no int value found in the parameter */
                             if (strcmp(argv[i], "guess_password") == 0)
                             {
-                                local_parameter->attack_mode = BRUTE_FORCE_ATTACK;
+                                attack_mode = BRUTE_FORCE_ATTACK;
                             }
 
                             else if (strcmp(argv[i], "syn_flood") == 0)
                             {
-                                local_parameter->attack_mode = SYN_FLOOD_ATTACK;
+                                attack_mode = SYN_FLOOD_ATTACK;
                             }
 
                             else if (strcmp(argv[i], "udp_flood") == 0)
                             {
-                                local_parameter->attack_mode = UDP_FLOOD_ATTACK;
+                                attack_mode = UDP_FLOOD_ATTACK;
                             }
 
                             else if (strcmp(argv[i], "ack_reflect") == 0)
                             {
-                                local_parameter->attack_mode = ACK_REFLECT_ATTACK;
+                                attack_mode = ACK_REFLECT_ATTACK;
                             }
 
                             else if (strcmp(argv[i], "dns_reflect") == 0)
                             {
-                                local_parameter->attack_mode = DNS_REFLECT_ATTACK;
+                                attack_mode = DNS_REFLECT_ATTACK;
                             }
                             else
                             {
@@ -239,6 +208,90 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                         ErrorMessage("can not found value of -a parameter");
                         return -1;
                     }
+                    break;
+
+                default:
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+            }
+        }
+    }
+
+    return attack_mode;
+}
+
+int GenParameterSt(const int argc, const char *argv[], pParameter *parameter)
+{
+    /*
+     * get the user input parameter
+     */
+
+    int i;
+    char *p;
+    char *endptr;
+
+    pParameter local_parameter = (pParameter)malloc(sizeof(Parameter));
+    #ifdef DEBUG
+    if (!local_parameter)
+    {
+        MallocErrorMessage();
+        return -1;
+    }
+    #endif
+
+    /* force set the char pointer to 0x0 */
+    local_parameter->attack_mode = 0;
+    local_parameter->target_port = 0;
+    local_parameter->thread_num = 0;
+    local_parameter->address_type = 0;
+    local_parameter->target_address = NULL;
+    pBruteForceSt brute_force_st = NULL;
+    local_parameter->_brute_force_st = brute_force_st;
+    pSynFloodSt syn_flood_st = NULL;
+    local_parameter->_syn_flood_st = syn_flood_st;
+
+    int attack_mode = AttackMode(argc, argv);
+    local_parameter->attack_mode = attack_mode;
+    if (attack_mode == BRUTE_FORCE_ATTACK)
+    {
+        brute_force_st = (pBruteForceSt)malloc(sizeof(BruteForceSt));
+        brute_force_st->username = NULL;
+        brute_force_st->password = NULL;
+        brute_force_st->username_file_path = NULL;
+        brute_force_st->password_file_path = NULL;
+        brute_force_st->router_type = NULL;
+        brute_force_st->username_encrypt_type = 0;
+        brute_force_st->password_encrypt_type = 0;
+    }
+    else if (attack_mode == SYN_FLOOD_ATTACK)
+    {
+        syn_flood_st = (pSynFloodSt)malloc(sizeof(SynFloodSt));
+        syn_flood_st->random_saddr= DISABLE;
+        syn_flood_st->ip_repeat_time = 0;
+    }
+    
+    *parameter = local_parameter;
+
+    for (i = 1; i < argc; i++)
+    {
+        /* here must be able to found dashes */
+        if (!_IsParameter(argv[i]))
+        {
+            /* this is value */
+            InvalidParameterErrorMessage(argv[i]);
+            return -1;
+        }
+
+        if (_IsShortParameter(argv[i]))
+        {
+            /* the option only have one dash */
+            p = strstr(argv[i], "-");
+            /* *p is '-', so move one postion after '-' */
+            switch (*(++p))
+            {
+                case 'a':
+                    // int
+                    /* same as AttackMode() */
                     break;
 
                 case 'u':
@@ -297,6 +350,11 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             p = strstr(argv[i], "--");
             if (strcmp(p, "username-encrypt"))
             {
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
                 if (argv[++i])
                 {
                     if (_IsParameter(argv[i]))
@@ -311,11 +369,11 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                         switch (*argv[i])
                         {
                             case '0':
-                                local_parameter->username_encrypt_type= NO_ENCRYPT;
+                                brute_force_st->username_encrypt_type = NO_ENCRYPT;
                                 break;
 
                             case '1':
-                                local_parameter->username_encrypt_type= BASE64_ENCRYPT;
+                                brute_force_st->username_encrypt_type = BASE64_ENCRYPT;
                                 break;
 
                             default:
@@ -329,11 +387,11 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                         /* no int value found in the parameter */
                         if (strcmp(argv[i], "no_encrypt") == 0)
                         {
-                            local_parameter->username_encrypt_type = NO_ENCRYPT;
+                            brute_force_st->username_encrypt_type = NO_ENCRYPT;
                         }
                         else if (strcmp(argv[i], "base64_encrypt") == 0)
                         {
-                            local_parameter->username_encrypt_type= BASE64_ENCRYPT;
+                            brute_force_st->username_encrypt_type= BASE64_ENCRYPT;
                         }
                         else
                         {
@@ -350,6 +408,11 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             }
             else if (strcmp(p, "password-encrypt"))
             {
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
                 if (argv[++i])
                 {
                     if (_IsParameter(argv[i]))
@@ -364,11 +427,11 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                         switch (*argv[i])
                         {
                             case '0':
-                                local_parameter->password_encrypt_type= NO_ENCRYPT;
+                                brute_force_st->password_encrypt_type= NO_ENCRYPT;
                                 break;
 
                             case '1':
-                                local_parameter->password_encrypt_type= BASE64_ENCRYPT;
+                                brute_force_st->password_encrypt_type= BASE64_ENCRYPT;
                                 break;
 
                             default:
@@ -382,11 +445,11 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                         /* no int value found in the parameter */
                         if (strcmp(argv[i], "no_encrypt") == 0)
                         {
-                            local_parameter->password_encrypt_type = NO_ENCRYPT;
+                            brute_force_st->password_encrypt_type = NO_ENCRYPT;
                         }
                         else if (strcmp(argv[i], "base64_encrypt") == 0)
                         {
-                            local_parameter->password_encrypt_type= BASE64_ENCRYPT;
+                            brute_force_st->password_encrypt_type= BASE64_ENCRYPT;
                         }
                         else
                         {
@@ -404,9 +467,14 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             else if (strcmp(p, "username"))
             {
                 // char
-                local_parameter->username = (char *)malloc(MAX_USERNAME_LENGTH);
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
+                brute_force_st->username = (char *)malloc(MAX_USERNAME_LENGTH);
                 #ifdef DEBUG
-                if (!(local_parameter->username))
+                if (!(brute_force_st->username))
                 {
                     MallocErrorMessage();
                     return -1;
@@ -420,16 +488,21 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                 }
                 else
                 {
-                    strcpy(local_parameter->username, argv[i]);
+                    strcpy(brute_force_st->username, argv[i]);
                 }
             }
             else if (strcmp(p, "username-file")) 
             {
                 // char
-                local_parameter->username_file_path = (char *)malloc(MAX_USERNAME_FILE_PATH_LENGTH);
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
+                brute_force_st->username_file_path = (char *)malloc(MAX_USERNAME_FILE_PATH_LENGTH);
 
                 #ifdef DEBUG
-                if (!(local_parameter->username_file_path))
+                if (!(brute_force_st->username_file_path))
                 {
                     MallocErrorMessage();
                     return -1;
@@ -443,17 +516,22 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                 }
                 else if (strlen(argv[i]) != 0)
                 {
-                    strcpy(local_parameter->username_file_path, argv[i]);
+                    strcpy(brute_force_st->username_file_path, argv[i]);
                 }
             }
 
             else if (strcmp(p, "password-file"))
             {
                 // char
-                local_parameter->password_file_path = (char *)malloc(MAX_PASSWORD_FILE_PATH_LENGTH);
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
+                brute_force_st->password_file_path = (char *)malloc(MAX_PASSWORD_FILE_PATH_LENGTH);
 
                 #ifdef DEBUG
-                if (!(local_parameter->password_file_path))
+                if (!(brute_force_st->password_file_path))
                 {
                     MallocErrorMessage();
                     return -1;
@@ -467,7 +545,7 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                 }
                 else
                 {
-                    strcpy(local_parameter->password_file_path, argv[i]);
+                    strcpy(brute_force_st->password_file_path, argv[i]);
                 }
             }
             else if (strcmp(p, "thread"))
@@ -495,18 +573,23 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                     }
                 }
             }
-            else if (strcmp(p, "random-password-length"))
+            else if (strcmp(p, "password-random-length"))
             {
                 // int
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
                 if (!(argv[++i]) || (_IsParameter(argv[i])))
                 {
-                    ErrorMessage("can not found value of --random-password-length parameter");
+                    ErrorMessage("can not found value of --password-random-length parameter");
                     return -1;
                 }
                 else
                 {
                     errno = 0;
-                    local_parameter->passwd_len = strtol(argv[i], &endptr, 10);
+                    brute_force_st->random_password_length = strtol(argv[i], &endptr, 10);
                     //p_parameter->passwd_len = atoi(argv[i]);
                     if (errno == ERANGE)
                     {
@@ -520,16 +603,44 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                     }
                 }
             }
+            else if (strcmp(p, "password-randomness") == 0)
+            {
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
+                if (!(argv[++i]) || (_IsParameter(argv[i])))
+                {
+                    ErrorMessage("can not found value of --password-randomness parameter");
+                    return -1;
+                }
+                else
+                {
+                    errno = 0;
+                    brute_force_st->password_randomness = strtol(argv[i], &endptr, 10);
+                    //p_parameter->passwd_len = atoi(argv[i]);
+                    if (errno == ERANGE)
+                    {
+                        ErrorMessage("the value of --password-randomness parameter is illegal");
+                        return -1;
+                    }
+                    else if (endptr == argv[i])
+                    {
+                        ErrorMessage("can not found vaild value of --password-randomness parameter");
+                        return -1;
+                    }
+                }
+            }
             else if (strcmp(p, "random-saddr"))
             {
                 // int
-                local_parameter->random_saddr = ENABLE;
-            }
-            else if (strcmp(p, "help"))
-            {
-                // help
-                ShowUsage();
-                exit(0);
+                if (!syn_flood_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
+                syn_flood_st->random_saddr = ENABLE;
             }
             else if (strcmp(p, "ip-repeat-time") == 0)
             {
@@ -559,9 +670,14 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
             else if (strcmp(p, "router") == 0)
             {
                 // char
-                local_parameter->router_type = (char *)malloc(MAX_ROUTER_TYPE_LENGTH);
+                if (!brute_force_st)
+                {
+                    InvalidParameterErrorMessage(argv[i]);
+                    return -1;
+                }
+                brute_force_st->router_type = (char *)malloc(MAX_ROUTER_TYPE_LENGTH);
                 #ifdef DEBUG
-                if (!(local_parameter->router_type))
+                if (!(brute_force_st->router_type))
                 {
                     MallocErrorMessage();
                     return -1;
@@ -574,28 +690,14 @@ int GenParameterSt(const int argc, char *argv[], pParameter *parameter)
                 }
                 else
                 {
-                    strncpy(local_parameter->router_type, argv[i], MAX_ROUTER_TYPE_LENGTH);
+                    strncpy(brute_force_st->router_type, argv[i], MAX_ROUTER_TYPE_LENGTH);
                 }
             }
-            else if (strcmp(p, "password-randomness") == 0)
+            else if (strcmp(p, "help"))
             {
-                local_parameter->router_type = (char *)malloc(MAX_ROUTER_TYPE_LENGTH);
-                #ifdef DEBUG
-                if (!(local_parameter->router_type))
-                {
-                    MallocErrorMessage();
-                    return -1;
-                }
-                #endif
-                if (!(argv[++i]) || (_IsParameter(argv[i])))
-                {
-                    ErrorMessage("can not found value of --each-ip-repeat-time parameter");
-                    return -1;
-                }
-                else
-                {
-                    strncpy(local_parameter->router_type, argv[i], MAX_ROUTER_TYPE_LENGTH);
-                }
+                // help
+                ShowUsage();
+                exit(0);
             }
             else
             {

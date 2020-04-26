@@ -138,6 +138,8 @@ typedef struct pseudo_header
 
 typedef struct syn_flood_st
 {
+    int random_saddr;
+    long int ip_repeat_time;
     char *src_ip;
     char *dst_ip;
     size_t src_port;
@@ -148,6 +150,16 @@ typedef struct brute_force_st
 {
     /* if not use the path file, set all NULL */
     int id;
+    int password_encrypt_type;
+    int username_encrypt_type;
+    long int random_password_length;
+    int password_randomness;
+
+    char *username;
+    char *password;
+    char *username_file_path;
+    char *password_file_path;
+    char *router_type;
     /* 0: normal mode struct */
     /* 1: special mode struct */
     /* 2: fill the str_node in thread program run (random password use)*/ 
@@ -159,27 +171,17 @@ typedef struct brute_force_st
 typedef struct parameter
 {
     int attack_mode;
-    int random_saddr;
 
     long int thread_num;
-    long int passwd_len;
-    long int ip_repeat_time;
     /* if 0, ip address */
     /* if 1, http url address */
     /* if 2, https url address */
     int address_type;
 
     /* for brute force atack user */
-    int password_encrypt_type;
-    int username_encrypt_type;
 
     char *target_address;
     int target_port;
-    char *username;
-    char *password;
-    char *username_file_path;
-    char *password_file_path;
-    char *router_type;
 
     /* field in the thread program */
     int seed;

@@ -243,7 +243,7 @@ int MallocErrorMessage(void)
 
 int InvalidParameterErrorMessage(const char *argv_s)
 {
-    char *invalid_parameter_s = "please check your input: %s(%d)";
+    char *invalid_parameter_s = "please check your input: %s";
     return ErrorMessage(invalid_parameter_s, argv_s);
 }
 
