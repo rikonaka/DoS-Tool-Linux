@@ -3,39 +3,38 @@
 CC   = gcc
 SRCS = src/main.c \
 	src/utils/logger.c \
-	src/utils/crypto.c \
-	src/utils/https.c \
 	src/utils/tools.c \
-	src/utils/parameter.c \
 	src/utils/usage.c \
-	src/dos/brute_force.c \
+	src/utils/version.c \
 	src/dos/syn_flood.c \
 	src/dos/udp_flood.c \
 	src/dos/ack_reflect.c \
 	src/dos/dns_reflect.c \
 
-T_SRCS = src/debug.c \
+TEST_SRCS = src/test.c \
 	src/utils/logger.c \
-	src/utils/crypto.c \
-	src/utils/https.c \
 	src/utils/tools.c \
-	src/utils/parameter.c \
 	src/utils/usage.c \
+	src/utils/version.c \
+	src/dos/syn_flood.c \
+	src/dos/udp_flood.c \
+	src/dos/ack_reflect.c \
+	src/dos/dns_reflect.c \
 
 OBJS = $(SRCS:.c=.o)
-T_OBJS= $(T_SRCS:.c=.o)
-EXEC = dos-tool-linux
-T_EXEC = debug-dos-tool-linux
+TEST_OBJS= $(TEST_SRCS:.c=.o)
+EXEC = dos_tool_linux
+TEST_EXEC = test_dos_tool_linux
 
-all: $(EXEC) $(T_EXEC)
+all: $(EXEC) $(TEST_EXEC)
 
 $(EXEC): $(OBJS)
 	$(CC) -o $(EXEC) $(OBJS) -g -Wall -lpthread -lcrypto -lssl -lsodium
-	@echo "\033[0;32mCompiled finish.\033[0m"
+	@echo "Compiled finish."
 
-$(T_EXEC): $(T_OBJS)
-	$(CC) -o $(T_EXEC) $(T_OBJS) -g -Wall -lpthread -lcrypto -lssl -lsodium
-	@echo "\033[0;32mCompiled test file finish.\033[0m"
+$(TEST_EXEC): $(TEST_OBJS)
+	$(CC) -o $(TEST_EXEC) $(TEST_OBJS) -g -Wall -lpthread -lcrypto -lssl -lsodium
+	@echo "Compiled test file finish."
 
 .c.o:
 	$(CC) -o $@ -c $< -g -Wall -lpthread -lcrypto -lss -lsodium
@@ -43,5 +42,5 @@ $(T_EXEC): $(T_OBJS)
 clean: 
 	rm -f $(OBJS)
 	rm -f $(EXEC)
-	rm -f $(T_EXEC)
-	@echo "\033[0;32mClean up finish.\033[0m"
+	rm -f $(TEST_EXEC)
+	@echo "Clean up finish."

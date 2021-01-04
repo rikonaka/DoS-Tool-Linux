@@ -4,7 +4,6 @@
 #include <sodium.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 char *Base64Encode(const char *plain_text)
 {

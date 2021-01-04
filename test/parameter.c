@@ -5,7 +5,6 @@
 #include <limits.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 static int _IsShortParameter(const char *input)
 {

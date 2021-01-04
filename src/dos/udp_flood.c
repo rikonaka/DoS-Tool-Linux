@@ -17,8 +17,6 @@
 #include <arpa/inet.h>
 
 #include "../main.h"
-#include "../debug.h"
-
 #include "udp_flood.h"
 
 static int SendUDP(const pUDPStruct us, const int debug_level)

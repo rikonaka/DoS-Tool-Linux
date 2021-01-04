@@ -7,10 +7,12 @@
 #include <limits.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 #define GEN_USERNAME 0
 #define GEN_PASSWORD 1
+
+// temp use
+#define IP_BUFFER_SIZE 1024
 
 char *StripCopy(char *dst, const char *src)
 {
@@ -40,53 +42,6 @@ char *StripCopy(char *dst, const char *src)
     return dst;
 }
 
-
-int BruteForceMode(pParameter parameter)
-{
-    // judge the guess attack mode
-    if (parameter->username)
-    {
-        if (parameter->password_file_path)
-        {
-            // one username, password from file
-            // parameter->guess_attack_mode
-            return BRUTE_FORCE_US_PF;
-        }
-        else if (parameter->password)
-        {
-            return BRUTE_FORCE_US_PS;
-        }
-        else
-        {
-            return BRUTE_FORCE_US_PR;
-        }
-
-    }
-    else if (parameter->username_file_path)
-    {
-        if (parameter->password)
-        {
-            return BRUTE_FORCE_UF_PS;
-        }
-        else if (parameter->password_file_path)
-        {
-            return BRUTE_FORCE_UF_PF;
-        }
-        else
-        {
-            /* this mode is unacceptable */
-            return -1;
-        }
-    }
-    else
-    {
-        /* also unacceptable */
-        return -1;
-    }
-    
-    return -1;
-}
-
 int AnalysisAddress(const char *addr)
 {
 
@@ -109,230 +64,7 @@ int AnalysisAddress(const char *addr)
     return -1;
 }
 
-static void _DesBruteForceStrNode(pStrNode node)
-{
-    if (node->next)
-    {
-        _DesBruteForceStrNode(node->next);
-    }
-    free(node->str);
-    node->str = NULL;
-    free(node);
-    node = NULL;
-}
-
-void DesBruteForceStrList(pStrHeader list_header)
-{
-    if (list_header->str_list_mode == NORMAL_STR_LIST_MODE)
-    {
-        pStrNode node = list_header->next;
-        _DesBruteForceStrNode(node);
-        free(list_header);
-    }
-    else if (list_header->str_list_mode == REPEAT_STR_LIST_MODE)
-    {
-        free(list_header->next->str);
-        free(list_header->next);
-        free(list_header);
-    }
-    else if (list_header->str_list_mode == RANDOM_STR_LIST_MODE)
-    {
-        /* do nothing */
-    }
-    else
-    {
-        ErrorMessage("DesBruteForceSpecialSt should used with special struct");
-    }
-}
-
-static int _GenBruteForceStrList(const char *file_path, pStrHeader *list_header, const int flag, const int len)
-{
-    /* use the structure store the username list */
-    /*
-     * header => node -> node
-     */
-    pStrHeader local_list_header = (pStrHeader)malloc(sizeof(StrHeader));
-    if (!local_list_header)
-    {
-        MallocErrorMessage();
-        return -1;
-    }
-    (*list_header) = local_list_header;
-
-    int str_len;
-    if (flag == GEN_USERNAME)
-    {
-        str_len = MAX_USERNAME_LENGTH;
-        local_list_header->str_list_type = USERNAME_STR_LIST;
-    }
-    else if (flag == GEN_PASSWORD)
-    {
-        str_len = MAX_PASSWORD_LENGTH;
-        local_list_header->str_list_type = PASSWORD_STR_LIST;
-    }
-    else
-    {
-        return -1;
-    }
-    
-
-    pStrNode local_node;
-    local_list_header->length = 0;
-    local_list_header->next = NULL;
-    local_list_header->str_list_mode = NORMAL_STR_LIST_MODE;
-    char *str_buff = (char *)malloc(str_len);
-    char ch;
-
-    FILE *fp = fopen(file_path, "r");
-    if (!fp)
-    {
-        ErrorMessage("can not open the brute force attack file: %s[%d]", strerror(errno), errno);
-        return -1;
-    }
-
-    while (!feof(fp) && local_list_header->length <= len)
-    {
-        // if stack error, change here
-        memset(str_buff, 0, strlen(str_buff));
-        ch = fgetc(fp);
-        while (ch && ch != '\n' && ch != '\r' && !feof(fp))
-        {
-            sprintf(str_buff, "%s%c", str_buff, ch);
-            //DisplayInfo("%c", ch);
-            ch = fgetc(fp);
-        }
-
-        if (strlen(str_buff) > 0)
-        {
-            local_node = (pStrNode)malloc(sizeof(StrNode));
-
-            #ifdef DEBUG
-            if (!local_node)
-            {
-                MallocErrorMessage();
-                return -1;
-            }
-            #endif
-
-            local_node->label = 0;
-            local_node->next = local_list_header->next;
-            local_list_header->next = local_node;
-
-            local_node->str = (char *)malloc(strlen(str_buff) + 1);
-            memset(local_node->str, 0, strlen(str_buff) + 1);
-            StripCopy(local_node->str, str_buff);
-
-            ++(local_list_header->length);
-        }
-    }
-    fclose(fp);
-    local_list_header->cursor = local_list_header->next;
-    return 0;
-}
-
-int GenBruteForceUsernameList(const char *file_path, pStrHeader *username_list_header, const int len)
-{
-    return _GenBruteForceStrList(file_path, username_list_header, GEN_USERNAME, len);
-}
-
-int GenBruteForcePasswordList(const char *file_path, pStrHeader *password_list_header, const int len)
-{
-    return _GenBruteForceStrList(file_path, password_list_header, GEN_PASSWORD, len);
-}
-
-static int _GenBruteForceRepeatStrList(const char *str, pStrHeader *list_header, int flag)
-{
-   pStrHeader local_list_header = (pStrHeader)malloc(sizeof(StrHeader));
-   #ifdef DEBUG
-    if (!local_list_header)
-    {
-        MallocErrorMessage();
-        return -1;
-    }
-    #endif
-    (*list_header) = local_list_header;
-
-    int str_len;
-    if (flag == GEN_USERNAME)
-    {
-        str_len = MAX_USERNAME_LENGTH;
-        local_list_header->str_list_type = USERNAME_STR_LIST;
-    }
-    else if (flag == GEN_PASSWORD)
-    {
-        str_len = MAX_PASSWORD_LENGTH;
-        local_list_header->str_list_type = PASSWORD_STR_LIST;
-    }
-    else
-    {
-        return -1;
-    }
-    
-    local_list_header->length = UINT_MAX;
-    local_list_header->next = NULL;
-    local_list_header->str_list_mode = REPEAT_STR_LIST_MODE;
-
-    pStrNode local_node = (pStrNode)malloc(sizeof(StrNode));
-    #ifdef DEBUG
-    if (!local_node)
-    {
-        MallocErrorMessage();
-        return -1;
-    }
-    #endif
-    local_node->label = 0;
-    local_list_header->next = local_node;
-    local_node->str = (char *)malloc(str_len);
-    // unlimit loop for specify username
-    local_node->next = local_node;
-    local_list_header->cursor = local_list_header->next;
-
-    return 0;
-
-}
-
-int GenBruteForceRepeatUsernameList(const char *str, pStrHeader *username_list_header)
-{
-    return _GenBruteForceRepeatStrList(str, username_list_header, GEN_USERNAME);
-}
-
-
-int GenBruteForceRepeatPasswordList(const char *str, pStrHeader *password_list_header)
-{
-    return _GenBruteForceRepeatStrList(str, password_list_header, GEN_PASSWORD);
-}
-
-char *GenRandomPassword(char **result, const unsigned int seed, const int len)
-{
-    // generate the random password and return
-
-    char **output = (char *)malloc(MAX_PASSWORD_LENGTH);
-    memset(*output, 0, strlen(*output));
-    char *password = *output;
-    int random_number;
-    int i;
-
-    // srand is here
-    srand((int)time(0) + seed);
-
-    i = 0;
-    while (i < len)
-    {
-        // [a, b] random interger
-        // [33, 126] except space[32]
-        // 92 = 126 - 33 - 1
-        random_number = 33 + (int)(rand() % 92);
-        if (isprint(random_number))
-        {
-            //snprintf(password, 1, "%s%c", password, random_number);
-            password[i] = 
-            ++i;
-        }
-    }
-    return strlen(password);
-}
-
-static size_t RandomIpNumber(int seed, int *random_num)
+static size_t RandomIPNumber(int seed, int *random_num)
 {
     // return the random number between 1-255
 
@@ -354,7 +86,7 @@ size_t FakeAddress(char **output)
     int random_num = 0;
     // 012345678901234
     // 255.255.255.255
-    (*output) = (char *)malloc(MAX_HOSTNAME_LENGTH);
+    (*output) = (char *)malloc(MAX_ADDRESS_LENGTH);
     if (!(*output))
     {
         ErrorMessage("GetRandomIP malloc failed: %s(%d)", strerror(errno), errno);
@@ -365,14 +97,14 @@ size_t FakeAddress(char **output)
         ErrorMessage("GetRandomIP memset failed: %s(%d)", strerror(errno), errno);
         return (size_t)-1;
     }
-    char *ip = (char *)malloc(MAX_HOSTNAME_LENGTH);
+    char *ip = (char *)malloc(MAX_ADDRESS_LENGTH);
 
     // 1   2   3 4
     // 192.168.1.1
     for (i = 0; i < 4; i++)
     {
         // ip has four num like 192 168 1 1
-        RandomIpNumber(i, &random_num);
+        RandomIPNumber(i, &random_num);
         sprintf(ip, "%s.%d", ip, random_num);
     }
 
@@ -730,6 +462,7 @@ void FreeIPListBuff(pIPList_Thread input)
     free(tmp);
 }
 
+/*
 int main(int argc, char *argv[])
 {
     // for test
@@ -761,3 +494,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+*/

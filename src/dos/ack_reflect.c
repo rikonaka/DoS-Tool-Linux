@@ -21,8 +21,6 @@
 #include <signal.h>
 
 #include "../main.h"
-#include "../debug.h"
-
 #include "ack_reflect.h"
 
 static int SendSYN(const pSYNStruct ss, const int debug_level)

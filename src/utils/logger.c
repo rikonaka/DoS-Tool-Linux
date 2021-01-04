@@ -5,33 +5,6 @@
 #include <time.h>
 #include <errno.h>
 
-#include "../main.h"
-#include "../debug.h"
-
-int BruteForceAttackResponseWrite(const char *response)
-{
-    FILE *fptr;
-
-    // use appropriate location if you are using MacOS or Linux
-    fptr = fopen(BRUTE_FORCE_ATTACK_RESPONSE_WRITE_PATH, "a+");
-
-    #ifdef DEBUG
-    if(fptr == NULL)
-    {
-        ErrorMessage("open the response file failed: %s[%d]", errno, strerror(errno));
-        return -1;
-    }
-    #endif
-
-    time_t t;
-    struct tm *time_st;
-    time(&t);
-    time_st = localtime(&t);
-    fprintf(fptr, "[len: %lu]%d-%d-%d %d:%d:%d RESULT:\n%s\n\n", strlen(response), time_st->tm_year + 1900, time_st->tm_mon, time_st->tm_mday, time_st->tm_hour, time_st->tm_min, time_st->tm_sec, response);
-    fclose(fptr);
-    return 0;
-}
-
 int InfoMessage(const char *fmt, ...)
 {
     /*
@@ -245,6 +218,12 @@ int InvalidParameterErrorMessage(const char *argv_s)
 {
     char *invalid_parameter_s = "please check your input: %s";
     return ErrorMessage(invalid_parameter_s, argv_s);
+}
+
+void WrongInputMessage(const char *input_parameter)
+{
+    ErrorMessage("please check your %s option", input_parameter);
+    exit(-1);
 }
 
 /*

@@ -1,111 +1,165 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <signal.h>
+#include <stdlib.h> // for exit and atoi
+#include <stdio.h>  // for printf
+#include <signal.h> // for signal
+#include <string.h> // for strncpy
+#include <getopt.h> // for getopt_long
 
 #include "main.h"
 
-// char *version = "v0.10";
-// const char *version = "0.20";
-// const char *version = "0.30"; // 2019-3-25
-const char *version = "1.00"; // 2020-3-23, new arch now
+extern void VersionShow(void);
+/* from logger.c */
+extern int ShowMessage(const int message_debug_mode, const int user_debug_mode, const char *fmt, ...);
+extern int InfoMessage(const char *fmt, ...);
+extern int WarningMessage(const char *fmt, ...);
+extern int ErrorMessage(const char *fmt, ...);
+extern int MallocErrorMessage(void);
+extern int InvalidParameterErrorMessage(const char *argv_s);
+extern void WrongInputMessage(const char *input_parameter);
 
-/* global value*/
-pParameter parameter;
+/* from tools.c */
+extern int AnalysisAddress(const char *addr);
+extern char *StripCopy(char *dst, const char *src);
 
-void ElegantExit()
+/* from https.c */
+extern int HttpMethod(const char *address, const int port, const char *request, char **response);
+extern int HttpsMethod(const char *address, const int port, const char *request, char **response);
+
+/* usage.c */
+extern void ShowUsage(void);
+
+/* attack function */
+extern int StartSYNFloodAttack(pParameter parameter);
+extern int StartUDPFloodAttack(pParameter parameter);
+extern int StartACKReflectAttack(pParameter parameter);
+extern int StartDNSReflectAttack(pParameter parameter);
+
+void Exit(int sig)
 {
-    if (parameter->_brute_force_st)
-    {
-        
-    }
-    DesParameterSt(parameter);
-    InfoMessage("exit program now");
+    signal(sig, SIGINT);
+    signal(sig, SIGSEGV);
+    signal(sig, SIGTERM);
+    InfoMessage("exit program now...\n");
     exit(0);
 }
 
 int main(int argc, char *argv[])
 {
     /*
-     * main function
+     * main function here, do some parameters parse work
      */
+
+    signal(SIGINT, Exit);
+    signal(SIGSEGV, Exit);
+    signal(SIGTERM, Exit);
 
     if (argc < 2)
     {
         ErrorMessage("please specify at least one parameter!");
+        ErrorMessage("exit now...");
         ShowUsage();
         return -1;
     }
 
-    signal(SIGINT, ElegantExit);
-    signal(SIGSEGV, ElegantExit);
-    signal(SIGTERM, ElegantExit);
     /*
-     * GUESS 0              // guess the web passwd (advanced)
-     * SYN_FLOOD_ATTACK 1   // syn flood attack
-     * UDP_FLOOD_ATTACK 2   // udp flood attack
-     * ACK_REFLECT_ATTACK 3 // ack reflect attack
-     * DNS_REFLECT_ATTACK 4 // dns reflect attack
+     * BRUTE_FORCE_ATTACK 1 // guess the web passwd (advanced)
+     * SYN_FLOOD_ATTACK 2   // syn flood attack
+     * UDP_FLOOD_ATTACK 3   // udp flood attack
+     * ACK_REFLECT_ATTACK 4 // ack reflect attack
+     * DNS_REFLECT_ATTACK 5 // dns reflect attack
      */
-    
-    InfoMessage("dos-tool-linux version: %s", version);
+
+    VersionShow();
     InfoMessage("running...");
 
-    // processing the user input data
-    if (GenParameterSt(argc, argv, &parameter) == -1)
+    static char *option_string = "u:p:a:rt:i:h";
+    int option_index = 0;
+    int c;
+    static struct option long_options[] = {
+        {"url", required_argument, NULL, 'u'},
+        {"port", required_argument, NULL, 'p'},
+        {"attack-mode", required_argument, NULL, 'a'},
+        {"random-source-address", no_argument, NULL, 'r'},
+        {"thread", required_argument, NULL, 't'},
+        {"ip-repeat-time", required_argument, NULL, 'i'},
+        {"help", no_argument, NULL, 'h'},
+        {0, 0, 0, 0},
+    };
+
+    char url[MAX_ADDRESS_LENGTH] = {'\0'};
+    int port = HTTP_PORT_DEFAULT;
+    int attack_mode = NON_ATTACK;
+    int random_source_address = DISABLE;
+    int thread = THREAD_NUM_DEFAULT;
+    int ip_repeat_time = 0;
+    while (1)
     {
+        c = getopt_long(argc, argv, option_string, long_options, &option_index);
+        if (c == -1)
+            break;
 
-        ErrorMessage("Please check you input");
-        //ShowUsage();
-        return -1;
+        switch (c)
+        {
+        case 'r':
+            random_source_address = ENABLE;
+            break;
+        case 't':
+            if (atoi(optarg) != 0)
+                thread = atoi(optarg);
+            else
+                WrongInputMessage("thread");
+            break;
+        case 'i':
+            if (atoi(optarg) != 0)
+                ip_repeat_time = atoi(optarg);
+            else
+                WrongInputMessage("ip-repeat-time");
+            break;
+        case 'h':
+            ShowUsage();
+            break;
+        case 'u':
+            strncpy(url, optarg, MAX_ADDRESS_LENGTH);
+            break;
+        case 'p':
+            if (atoi(optarg) != 0)
+                port = atoi(optarg);
+            else
+                WrongInputMessage("-p or --port"); 
+            break;
+        case 'a':
+            if (atoi(optarg) != 0)
+                attack_mode = atoi(optarg);
+            else
+                WrongInputMessage("-a or --attack-mode"); 
+            break;
+        case '?':
+            WrongInputMessage(c);
+        }
     }
-    ShowMessage(DEBUG, parameter->debug_mode, "debug mode started...");
-
-    if ((!parameter->target_address) || (strlen(parameter->target_address) == 0))
+    if (strlen(url) == 0)
     {
-        ErrorMessage("please input the target address use -i");
-        return -1;
+        WrongInputMessage("-u or --url");
     }
 
-    switch (parameter->attack_mode)
+    if (attack_mode == NON_ATTACK)
     {
-        case BRUTE_FORCE_ATTACK:
-            parameter->_brute_force_st = (pBruteForceSt)malloc(sizeof(BruteForceSt));
-            parameter->_brute_force_st->brute_force_attack_mode = BruteForceMode(parameter);
-            parameter->address_type = AnalysisAddress(parameter->target_address);
-            if (parameter->address_type == -1)
-            {
-                ErrorMessage("analysis address failed");
-                return -1;
-            }
-            /* start attack thread */
-            StartBruteForceAttack(parameter);
-            break;
-
-        case SYN_FLOOD_ATTACK:
-            /* start syn flood thread */
-            parameter->_syn_flood_st = (pSynFloodSt)malloc(sizeof(SynFloodSt));
-
-            StartSYNFloodAttack(parameter);
-            break;
-
-        case UDP_FLOOD_ATTACK:
-            break;
-
-        case ACK_REFLECT_ATTACK:
-            break;
-
-        case DNS_REFLECT_ATTACK:
-            break;
-        
-        default:
-            break;
+        WrongInputMessage("-a or --attck-mode");
     }
 
-    if (parameter)
+    switch (attack_mode)
     {
-        free(parameter);
+    case SYN_FLOOD_ATTACK:
+        /* start syn flood thread */
+        break;
+    case UDP_FLOOD_ATTACK:
+        break;
+    case ACK_REFLECT_ATTACK:
+        break;
+    case DNS_REFLECT_ATTACK:
+        break;
+    default:
+        break;
     }
+
     return 0;
 }

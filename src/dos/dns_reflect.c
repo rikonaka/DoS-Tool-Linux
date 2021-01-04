@@ -17,8 +17,6 @@
 #include <signal.h>
 
 #include "../main.h"
-#include "../debug.h"
-
 #include "dns_reflect.h"
 
 //List of DNS Servers registered on the system
