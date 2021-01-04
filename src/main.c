@@ -20,10 +20,6 @@ extern void WrongInputMessage(const char *input_parameter);
 extern int AnalysisAddress(const char *addr);
 extern char *StripCopy(char *dst, const char *src);
 
-/* from https.c */
-extern int HttpMethod(const char *address, const int port, const char *request, char **response);
-extern int HttpsMethod(const char *address, const int port, const char *request, char **response);
-
 /* usage.c */
 extern void ShowUsage(void);
 
