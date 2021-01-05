@@ -34,7 +34,7 @@ void Exit(int sig)
     signal(sig, SIGINT);
     signal(sig, SIGSEGV);
     signal(sig, SIGTERM);
-    InfoMessage("exit program now...\n");
+    InfoMessage("exit program now...");
     exit(0);
 }
 

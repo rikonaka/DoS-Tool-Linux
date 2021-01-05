@@ -12,7 +12,7 @@ SRCS = src/main.c \
 	src/dos/dns_reflect.c \
 
 OBJS = $(SRCS:.c=.o)
-EXEC = dos_tool_linux
+EXEC = dos-tool-linux
 
 all: $(EXEC) $(TEST_EXEC)
 

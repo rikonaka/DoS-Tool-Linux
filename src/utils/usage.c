@@ -1,7 +1,5 @@
 #include <stdio.h>
 
-extern void VersionShow(void);
-
 void ShowUsage(void)
 {
     /*
@@ -30,7 +28,6 @@ void ShowUsage(void)
                   "\n"
                   "";
 
-    VersionShow();
     printf("%s", usage);
     exit(0);
 }

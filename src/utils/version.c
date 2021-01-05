@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+extern int InfoMessage(const char *fmt, ...);
+
 // char *version = "v0.10";
 // static char *version = "0.20";
 // 2019-03-25
@@ -16,5 +18,5 @@ char *ReturnVersion(void)
 
 void VersionShow(void)
 {
-    printf("dos-tool-linux v%s\n", version);
+    InfoMessage("dos-tool-linux v%s", version);
 }
