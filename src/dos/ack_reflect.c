@@ -23,7 +23,7 @@
 #include "../main.h"
 #include "ack_reflect.h"
 
-static int SendSYN(const pSYNStruct ss, const int debug_level)
+static int SendSYN(const pSynFloodSt, const int debug_level)
 {
     // this belong to the ack reflect attack part
     /*
@@ -169,7 +169,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     return 0;
 }
 
-static void FreeSYNStructBuff(pSYNStruct input)
+static void FreeSYNStructBuff(pSynFloodSt input)
 {
     // free the structure
     if (input)
@@ -182,7 +182,7 @@ static void FreeSYNStructBuff(pSYNStruct input)
     }
 }
 
-static int AttackThread(pSYNStruct syn_struct)
+static int AttackThread(pSynFloodSt syn_struct)
 {
     // now we start the syn flood attack
 
