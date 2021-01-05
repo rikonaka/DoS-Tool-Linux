@@ -16,5 +16,5 @@ char *ReturnVersion(void)
 
 void VersionShow(void)
 {
-    print("dos-tool-linux v%s\n", version);
+    printf("dos-tool-linux v%s\n", version);
 }
