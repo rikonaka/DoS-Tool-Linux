@@ -23,7 +23,7 @@
 #include "../main.h"
 #include "ack_reflect.h"
 
-static int SendSYN(const pSynFloodSt, const int debug_level)
+static int SendSYN(const pSynFloodSt st, const int debug_level)
 {
     // this belong to the ack reflect attack part
     /*
