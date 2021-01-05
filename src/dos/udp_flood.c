@@ -273,10 +273,11 @@ int StartUDPFloodAttack(const pParameter input)
     return 0;
 }
 
+/*
 int StartUDPFloodTest(const pParameter input)
 {
     // for test
-    ShowMessage(VERBOSE, input->debug_mode, "Enter StartUDPFloodTest");
     AttackThread(input);
     return 0;
 }
+*/
