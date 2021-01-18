@@ -2,11 +2,11 @@
 
 ## Intro
 
-[Dos-Tool-Linux](https://github.com/rikonaka/DoS-Tool-Linux) is used to guess the WiFi manage password or use DoS make it can NOT work, the DoS method also could attack other website not just router.
+[Dos-Tool-Linux](https://github.com/rikonaka/DoS-Tool-Linux) is used DoS attack make computer offline, the DoS method also could attack website.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-Current version: 0.30 | [Changelog](CHANGELOG.md)
+Current version: 1.0.2 | [Changelog](CHANGELOG.md)
 
 ## Support the legitimate rights and interests of programmers
 
