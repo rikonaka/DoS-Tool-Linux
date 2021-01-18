@@ -5,34 +5,7 @@
 #include <time.h>
 #include <errno.h>
 
-#include "../main.h"
-#include "../debug.h"
-
-int BruteForceAttackResponseWrite(const char *response)
-{
-    FILE *fptr;
-
-    // use appropriate location if you are using MacOS or Linux
-    fptr = fopen(BRUTE_FORCE_ATTACK_RESPONSE_WRITE_PATH, "a+");
-
-    #ifdef DEBUG
-    if(fptr == NULL)
-    {
-        ErrorMessage("open the response file failed: %s[%d]", errno, strerror(errno));
-        return -1;
-    }
-    #endif
-
-    time_t t;
-    struct tm *time_st;
-    time(&t);
-    time_st = localtime(&t);
-    fprintf(fptr, "[len: %lu]%d-%d-%d %d:%d:%d RESULT:\n%s\n\n", strlen(response), time_st->tm_year + 1900, time_st->tm_mon, time_st->tm_mday, time_st->tm_hour, time_st->tm_min, time_st->tm_sec, response);
-    fclose(fptr);
-    return 0;
-}
-
-int InfoMessage(const char *fmt, ...)
+void info(const char *fmt, ...)
 {
     /*
      * show the info message
@@ -49,7 +22,7 @@ int InfoMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (buff_size < 0)
     {
-        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        error("get buff_size failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -61,7 +34,7 @@ int InfoMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (!buff)
     {
-        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        error("malloc failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -72,7 +45,7 @@ int InfoMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (buff_size < 0)
     {
-        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        error("malloc failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
@@ -99,10 +72,9 @@ int InfoMessage(const char *fmt, ...)
     {
         free(buff);
     }
-    return 0;
 }
 
-int WarningMessage(const char *fmt, ...)
+void warning(const char *fmt, ...)
 {
     /*
      * show the warning message
@@ -119,7 +91,7 @@ int WarningMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (buff_size < 0)
     {
-        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        error("get buff_size failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -131,7 +103,7 @@ int WarningMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (!buff)
     {
-        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        error("malloc failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -142,7 +114,7 @@ int WarningMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (buff_size < 0)
     {
-        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        error("get buff_size failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
@@ -165,10 +137,9 @@ int WarningMessage(const char *fmt, ...)
 
     va_end(arg);
     free(buff);
-    return 0;
 }
 
-int ErrorMessage(const char *fmt, ...)
+void error(const char *fmt, ...)
 {
     // show the error message
 
@@ -183,7 +154,7 @@ int ErrorMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (buff_size < 0)
     {
-        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        error("get buff_size failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -195,7 +166,7 @@ int ErrorMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (!buff)
     {
-        ErrorMessage("malloc failed: %s(%d)", strerror(errno), errno);
+        error("malloc failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -206,7 +177,7 @@ int ErrorMessage(const char *fmt, ...)
     #ifdef DEBUG
     if (buff_size < 0)
     {
-        ErrorMessage("get buff_size failed: %s(%d)", strerror(errno), errno);
+        error("get buff_size failed: %s(%d)", strerror(errno), errno);
         if (buff)
         {
             free(buff);
@@ -232,19 +203,13 @@ int ErrorMessage(const char *fmt, ...)
     {
         free(buff);
     }
-    return 0;
+
+    exit(-1);
 }
 
-int MallocErrorMessage(void)
+void wronginput(const char *input_parameter)
 {
-    char *malloc_failed_s = "malloc failed: %s(%d)";
-    return ErrorMessage(malloc_failed_s, strerror(errno), errno);
-}
-
-int InvalidParameterErrorMessage(const char *argv_s)
-{
-    char *invalid_parameter_s = "please check your input: %s";
-    return ErrorMessage(invalid_parameter_s, argv_s);
+    error("please check your %s option", input_parameter);
 }
 
 /*

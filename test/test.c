@@ -164,7 +164,7 @@ static int TestBase64(void)
      */
 
     /* encode code */
-    WarningMessage("TestBase64 start");
+    warning("TestBase64 start");
 
     const char *plain_text_1 = "1234567890";
     char *cipher_text_1 = Base64Encode(plain_text_1);
@@ -203,7 +203,7 @@ static int TestBase64(void)
     free(cipher_text_3);
     free(plain_text_4);
 
-    WarningMessage("TestBase64 end");
+    warning("TestBase64 end");
     return 0;
 }
 
@@ -347,16 +347,16 @@ static int _TestParameter_4(void)
 static int TestParameter(void)
 {
 
-    WarningMessage("TestParameter start");
-    WarningMessage("_TestParameter_1");
+    warning("TestParameter start");
+    warning("_TestParameter_1");
     _TestParameter_1();
-    WarningMessage("_TestParameter_2");
+    warning("_TestParameter_2");
     _TestParameter_2();
-    WarningMessage("_TestParameter_3");
+    warning("_TestParameter_3");
     _TestParameter_3();
-    WarningMessage("_TestParameter_4");
+    warning("_TestParameter_4");
     _TestParameter_4();
-    WarningMessage("TestParameter end");
+    warning("TestParameter end");
 
     return 0;
 
@@ -365,7 +365,7 @@ static int TestParameter(void)
 static int TestResponseWrite(void)
 {
 
-    WarningMessage("TestResponseWrite start");
+    warning("TestResponseWrite start");
     const char *test_str = "qwertyiop!@#$%^&*(){}:)(*&^$#@!WGHJHJJHJGJDGAJG";
     BruteForceAttackResponseWrite(test_str);
 
@@ -379,13 +379,13 @@ static int TestResponseWrite(void)
         return -1;
     }
 
-    WarningMessage("TestResponseWrite end");
+    warning("TestResponseWrite end");
     return 0;
 }
 
 static int TestStrListTravel(const pStrHeader test_list_header)
 {
-    WarningMessage("TestStrListTravel start");
+    warning("TestStrListTravel start");
     if (test_list_header->length <= 0)
     {
         ErrorMessage("the test_list_header is null");
@@ -403,16 +403,16 @@ static int TestStrListTravel(const pStrHeader test_list_header)
         InfoMessage("%d: %s", i, test_node->str);
         test_node = test_node->next;
     }
-    WarningMessage("TestStrListTravel end");
+    warning("TestStrListTravel end");
     return 0;
 }
 
 static int TestDesBruteForceList(pStrHeader password_list_header, pStrHeader username_list_header)
 {
-    WarningMessage("TestDesBruteForceList start");
+    warning("TestDesBruteForceList start");
     DesBruteForceStrList(password_list_header);
     DesBruteForceStrList(username_list_header);
-    WarningMessage("TestDesBruteForceList end");
+    warning("TestDesBruteForceList end");
     return 0;
 }
 
@@ -466,7 +466,7 @@ static int TestStrListDistributor(username_header, password_header)
 
 static int TestGenBruteForceList()
 {
-    WarningMessage("TestGenBruteForceSt start");
+    warning("TestGenBruteForceSt start");
     const char *test_password_path = "src/utils/txt/password.txt";
     pStrHeader password_list_header;
     if (GenBruteForcePasswordList(test_password_path, &password_list_header, 10) == -1)
@@ -496,7 +496,7 @@ static int TestGenBruteForceList()
 
     TestDesBruteForceList(password_list_header, username_list_header);
 
-    WarningMessage("TestGenBruteForceSt end");
+    warning("TestGenBruteForceSt end");
     return 0;
 }
 

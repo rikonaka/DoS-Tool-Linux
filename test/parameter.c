@@ -5,7 +5,6 @@
 #include <limits.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 static int _IsShortParameter(const char *input)
 {
@@ -296,7 +295,7 @@ int GenParameterSt(const int argc, const char *argv[], pParameter *parameter)
 
                 case 'u':
                     // char
-                    local_parameter->target_address = (char *)malloc(MAX_ADDRESS_LENGTH);
+                    local_parameter->target_address = (char *)malloc(MAX_URL_LENGTH);
                     #ifdef DEBUG
                     if (!(local_parameter->target_address))
                     {
@@ -696,7 +695,7 @@ int GenParameterSt(const int argc, const char *argv[], pParameter *parameter)
             else if (strcmp(p, "help"))
             {
                 // help
-                ShowUsage();
+                usage();
                 exit(0);
             }
             else

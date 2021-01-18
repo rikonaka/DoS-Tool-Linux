@@ -1,3 +1,3 @@
 git add .
-git commit -m "test"
+git commit -m "for dev"
 git push origin master

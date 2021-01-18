@@ -14,7 +14,6 @@
 #include <openssl/err.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 #define HTTP 0
 #define HTTPS 1
@@ -42,15 +41,15 @@ int ServerTcpCreateSocket(int port)
     #ifdef DEBUG
     if(listen_socket == -1)
     {
-        ErrorMessage("server create socket failed: %s(%d)", strerror(errno), errno);
+        error("server create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
-            WarningMessage("this program should run as root user!");
+            warning("this program should run as root user!");
         }
         else if (errno == 24)
         {
-            WarningMessage("you shoud check max file number use 'ulimit -n' in linux.");
-            WarningMessage("and change the max file number use 'ulimit -n <setting number>'.");
+            warning("you shoud check max file number use 'ulimit -n' in linux.");
+            warning("and change the max file number use 'ulimit -n <setting number>'.");
         }
         return -1;
     }
@@ -58,7 +57,7 @@ int ServerTcpCreateSocket(int port)
 
     if (setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
-        ErrorMessage("server setsockopt SO_REUSEADDR failed: %s(%d)", strerror(errno), errno);
+        error("server setsockopt SO_REUSEADDR failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     
@@ -67,7 +66,7 @@ int ServerTcpCreateSocket(int port)
     #ifdef DEBUG
     if(ret == -1)
     {
-        ErrorMessage("server bind failed: %s(%d)", strerror(errno), errno);
+        error("server bind failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -78,7 +77,7 @@ int ServerTcpCreateSocket(int port)
     #ifdef DEBUG
     if(ret == -1)
     {
-        ErrorMessage("server listen failed: %s(%d)", strerror(errno), errno);
+        error("server listen failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #endif
@@ -100,7 +99,7 @@ size_t WaitClient(int listen_socket)
     #ifdef DEBUG
     if (client_socket == -1)
     {
-        ErrorMessage("get client socket failed: %s(%d)", strerror(errno), errno);
+        error("get client socket failed: %s(%d)", strerror(errno), errno);
         return (size_t)-1;
     }
     #endif
@@ -118,7 +117,8 @@ static int ClientTcpCreateSocket(const char *host, int port)
     int connect_socket;
     int enable = 1;
     struct timeval recv_timeout;
-    recv_timeout.tv_sec = RECV_TIME_OUT;
+    // recv_timeout.tv_sec = RECV_TIME_OUT;
+    recv_timeout.tv_sec = 10;
     recv_timeout.tv_usec = 0;
     //char *host_test = "192.168.1.1";
 
@@ -133,35 +133,35 @@ static int ClientTcpCreateSocket(const char *host, int port)
 
     if (connect_socket == -1)
     {
-        ErrorMessage("client create socket failed: %s(%d)", strerror(errno), errno);
+        error("client create socket failed: %s(%d)", strerror(errno), errno);
         if (errno == 1)
         {
-            WarningMessage("this program should run as root user!");
+            warning("this program should run as root user!");
         }
         else if (errno == 24)
         {
-            WarningMessage("you shoud check max file number use 'ulimit -n' in linux.");
-            WarningMessage("and change the max file number use 'ulimit -n <setting number>'.");
+            warning("you shoud check max file number use 'ulimit -n' in linux.");
+            warning("and change the max file number use 'ulimit -n <setting number>'.");
         }
         return -1;
     }
 
     if (setsockopt(connect_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)))
     {
-        ErrorMessage("client setsockopt SO_REUSEADDR failed: %s(%d)", strerror(errno), errno);
+        error("client setsockopt SO_REUSEADDR failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
     if (setsockopt(connect_socket, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(struct timeval)))
     {
-        ErrorMessage("client setsockopt SO_RCVTIMEO failed: %s(%d)", strerror(errno), errno);
+        error("client setsockopt SO_RCVTIMEO failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
     if (connect(connect_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         close(connect_socket);
-        ErrorMessage("client connect to host failed: %s(%d)", strerror(errno), errno);
+        error("client connect to host failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -196,7 +196,7 @@ static size_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
             #ifdef DEBUG
             if (ret == -1)
             {
-                ErrorMessage("tcp send data failed: %s(%d)", strerror(errno), errno);
+                error("tcp send data failed: %s(%d)", strerror(errno), errno);
                 return -1;
             }
             #endif
@@ -213,7 +213,7 @@ static size_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
             #ifdef DEBUG
             if (ret <= 0)
             {
-                ErrorMessage("tcp send via ssl send data failed: %d", SSL_get_error(ssl, ret));
+                error("tcp send via ssl send data failed: %d", SSL_get_error(ssl, ret));
                 return -1;
             }
             #endif
@@ -223,7 +223,7 @@ static size_t TcpSend(const int socket, const char *buff, int label, SSL *ssl)
     }
     else
     {
-        ErrorMessage("tcp send had a wrong label!");
+        error("tcp send had a wrong label!");
         return -1;
     }
 
@@ -242,7 +242,7 @@ static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
     size_t recv_total_size = 0;
     size_t RECV_BUFF_SIZE = 128; 
     int ret = 0;
-    char *buff = (char *)malloc(RECV_BUFF_SIZE));
+    char *buff = (char *)malloc(RECV_BUFF_SIZE);
 
     if (label == HTTP)
     {
@@ -252,7 +252,7 @@ static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             if (ret == -1)
             {
                 #ifdef DEBUG
-                ErrorMessage("tcp recv data failed");
+                error("tcp recv data failed");
                 #endif
 
                 return -1;
@@ -268,7 +268,7 @@ static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             #ifdef DEBUG
             if (!buff)
             {
-                ErrorMessage("tcp recv realloc failed: %s(%d)", strerror(errno), errno);
+                error("tcp recv realloc failed: %s(%d)", strerror(errno), errno);
                 return -1;
             }
             #endif
@@ -284,7 +284,7 @@ static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             if (ret <= 0)
             {
                 #ifdef DEBUG
-                ErrorMessage("tcp recv data failed: %d", SSL_get_error(ssl, ret));
+                error("tcp recv data failed: %d", SSL_get_error(ssl, ret));
                 #endif
                 return -1;
             }
@@ -294,7 +294,7 @@ static size_t TcpRecv(int socket, char **rebuff, int label, SSL *ssl)
             #ifdef DEBUG
             if (!buff)
             {
-                ErrorMessage("tcp recv via https realloc failed: %s(%d)", strerror(errno), errno);
+                error("tcp recv via https realloc failed: %s(%d)", strerror(errno), errno);
                 return -1;
             }
             #endif
@@ -325,14 +325,14 @@ int HttpMethod(const char *address, const int port, const char *request, char **
 
     if ((strlen(address) == 0) || (strlen(request) == 0))
     {
-        ErrorMessage("url or request can not be null!");
+        error("url or request can not be null!");
         return -1;
     }
 
     socket = ClientTcpCreateSocket(address, port);
     if (socket == -1)
     {
-        ErrorMessage("tcp connection create failed: %s(%d)", strerror(errno), errno);
+        error("tcp connection create failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -342,7 +342,7 @@ int HttpMethod(const char *address, const int port, const char *request, char **
 
     if (TcpSend(socket, request, HTTP, NULL) == -1)
     {
-        ErrorMessage("tcp send data failed: %s(%d)", strerror(errno), errno);
+        error("tcp send data failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -352,7 +352,7 @@ int HttpMethod(const char *address, const int port, const char *request, char **
 
     if (TcpRecv(socket, response, HTTP, NULL) == -1)
     {
-        ErrorMessage("tcp recvive data failed: %s(%d)", strerror(errno), errno);
+        error("tcp recvive data failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
     #ifdef DEBUG
@@ -378,7 +378,7 @@ static int InitCtx(SSL_CTX **output)
     (*output) = SSL_CTX_new(method);
     if (!(*output))
     {
-        ErrorMessage("InitCTX failed: %s(%d)", strerror(errno), errno);
+        error("InitCTX failed: %s(%d)", strerror(errno), errno);
         ERR_print_errors_fp(stderr);
         return -1;
     }
@@ -406,7 +406,7 @@ static int ShowCerts(SSL *ssl)
     }
     else
     {
-        ErrorMessage("no certificates found!");
+        error("no certificates found!");
         return -1;
     }
     return 0;
@@ -430,14 +430,14 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
 
     if ((strlen(address) == 0 )|| (strlen(request) == 0))
     {
-        ErrorMessage("url or request can not be null!");
+        error("url or request can not be null!");
         return -1;
     }
 
     // 1 ssl init
     if (InitCtx(&ctx) == -1)
     {
-        ErrorMessage("InitCTX failed");
+        error("InitCTX failed");
         return -1;
     }
 
@@ -445,7 +445,7 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
     socket = ClientTcpCreateSocket(address, port);
     if (socket == -1)
     {
-        ErrorMessage("tcp Connection create failed: %s(%d)", strerror(errno), errno);
+        error("tcp Connection create failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -454,7 +454,7 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
     SSL_set_fd(ssl, socket);
     if (SSL_connect(ssl) < 0)
     {
-        ErrorMessage("HTTPSMethod SSL_connect failed: %s(%d)", strerror(errno), errno);
+        error("HTTPSMethod SSL_connect failed: %s(%d)", strerror(errno), errno);
         //ERR_print_errors_fp(stderr);
         return -1;
     }
@@ -466,7 +466,7 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
     if (ShowCerts(ssl))
     {
         // failed
-        ErrorMessage("ShowCert failed!");
+        error("ShowCert failed!");
         return -1;
     }
     #endif
@@ -478,7 +478,7 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
 
     if (TcpSend(socket, request, HTTPS, ssl) == -1)
     {
-        ErrorMessage("Tcp send failed: %s(%d)", strerror(errno), errno);
+        error("Tcp send failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 
@@ -489,7 +489,7 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
 
     if (TcpRecv(socket, response, HTTPS, ssl) == -1)
     {
-        ErrorMessage("Tcp receive failed: %s(%d)", strerror(errno), errno);
+        error("Tcp receive failed: %s(%d)", strerror(errno), errno);
         return -1;
     }
 

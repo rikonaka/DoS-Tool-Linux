@@ -11,7 +11,6 @@
 #include <limits.h>
 
 #include "../main.h"
-#include "../debug.h"
 
 #include "brute_force.h"
 
@@ -38,7 +37,7 @@ static char *StrListDistributor(pStrHeader str_list_header)
         else
         {
             #ifdef DEBUG
-            ErrorMessage("distributor error");
+            error("distributor error");
             return -1;
             #endif
         }
@@ -152,7 +151,7 @@ static int _AttackThread(pParameter parameter)
                 }
                 else
                 {
-                    ErrorMessage("HttpMethod failed");
+                    error("HttpMethod failed");
                 }
             }
             else if (parameter->address_type == ADDRESS_TYPE_HTTPS)
@@ -165,7 +164,7 @@ static int _AttackThread(pParameter parameter)
                 }
                 else
                 {
-                    ErrorMessage("HttpsMethod failed");
+                    error("HttpsMethod failed");
                 }
             }
         }
@@ -182,7 +181,7 @@ int StartBruteForceAttack(pParameter parameter)
 
     if (!(parameter->router_type) || strlen(parameter->router_type) == 0)
     {
-        ErrorMessage("please specify a router type");
+        error("please specify a router type");
         return -1;
     }
 
@@ -191,12 +190,12 @@ int StartBruteForceAttack(pParameter parameter)
     {
         if (!(parameter->username))
         {
-            ErrorMessage("BRUTE_FORCE_US_PF mode should specify a username");
+            error("BRUTE_FORCE_US_PF mode should specify a username");
             return -1;
         }
         else if (!(parameter->password_file_path))
         {
-            ErrorMessage("BRUTE_FORCE_US_PF mode should specify a password file path");
+            error("BRUTE_FORCE_US_PF mode should specify a password file path");
             return -1;
         }
 
@@ -212,12 +211,12 @@ int StartBruteForceAttack(pParameter parameter)
     {
         if (!(parameter->username_file_path))
         {
-            ErrorMessage("BRUTE_FORCE_UF_PS mode should specify a username file path");
+            error("BRUTE_FORCE_UF_PS mode should specify a username file path");
             return -1;
         }
         else if (!(parameter->password))
         {
-            ErrorMessage("BRUTE_FORCE_UF_PS mode should specify a password");
+            error("BRUTE_FORCE_UF_PS mode should specify a password");
             return -1;
         }
         pStrHeader username_list_header;
@@ -232,12 +231,12 @@ int StartBruteForceAttack(pParameter parameter)
     {
         if (!(parameter->username_file_path))
         {
-            ErrorMessage("BRUTE_FORCE_UF_PF mode should specify a username file path");
+            error("BRUTE_FORCE_UF_PF mode should specify a username file path");
             return -1;
         }
         else if (!(parameter->password_file_path))
         {
-            ErrorMessage("BRUTE_FORCE_UF_PF mode should specfiy a password file path");
+            error("BRUTE_FORCE_UF_PF mode should specfiy a password file path");
             return -1;
         }
         pStrHeader username_list_header;
@@ -252,12 +251,12 @@ int StartBruteForceAttack(pParameter parameter)
     {
         if (!(parameter->username))
         {
-            ErrorMessage("BRUTE_FORCE_US_PS mode should specify a username");
+            error("BRUTE_FORCE_US_PS mode should specify a username");
             return -1;
         }
         else if (!(parameter->password))
         {
-            ErrorMessage("BRUTE_FORCE_US_PS mode should specify a password");
+            error("BRUTE_FORCE_US_PS mode should specify a password");
             return -1;
         }
         pStrHeader username_list_header;
@@ -269,7 +268,7 @@ int StartBruteForceAttack(pParameter parameter)
     {
         if (!(parameter->username))
         {
-            ErrorMessage("BRUTE_FORCE_US_PR mode should specify a username");
+            error("BRUTE_FORCE_US_PR mode should specify a username");
             return -1;
         }
         pStrHeader username_list_header;
@@ -291,13 +290,13 @@ int StartBruteForceAttack(pParameter parameter)
         parameter->_brute_force_st->id = i;
         if (pthread_attr_init(&attr))
         {
-            ErrorMessage("pthread_attr_init failed");
+            error("pthread_attr_init failed");
             return 1;
         }
         //if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
         if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
         {
-            ErrorMessage("StartGuess pthread_attr_setdetachstate failed");
+            error("StartGuess pthread_attr_setdetachstate failed");
             return 1;
         }
         /* create thread */
@@ -306,8 +305,8 @@ int StartBruteForceAttack(pParameter parameter)
         #ifdef DEBUG
         if (ret != 0)
         {
-            ErrorMessage("ret: %d", ret);
-            ErrorMessage("create pthread failed");
+            error("ret: %d", ret);
+            error("create pthread failed");
             return -1;
         }
         InfoMessage("tid: %ld", tid[i]);
