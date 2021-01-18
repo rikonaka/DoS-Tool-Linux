@@ -19,7 +19,7 @@ extern void error(const char *fmt, ...);
 
 extern char *randip(char **buff);
 extern int randport(void);
-extern unsigned short checksum(unsigned short *ptr, int hlen);
+extern unsigned short checksum(unsigned short *ptr, int hlen, ...);
 
 static int _send_syn_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep)
 {
@@ -58,7 +58,7 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
     iph->ip_sum = 0;                       // set to 0 before calculating checksum
     iph->ip_src.s_addr = inet_addr(saddr); // spoof the source ip address
     iph->ip_dst.s_addr = inet_addr(daddr);
-    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip));
+    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip), NULL);
 
     tcph->source = htons(sport);
     tcph->dest = htons(dport);
@@ -73,11 +73,17 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
     tcph->urg = 0;
     tcph->window = htons(65535); // maximum allowed window size
     tcph->check = 0;
-    /*
-     * if you set a checksum to zero, your kernel's IP stack
-     * should fill in the correct checksum during transmission.
-     */
     tcph->urg_ptr = 0;
+
+    struct pseudo_header_tcp *psh = (struct pseudo_header_tcp *)malloc(sizeof(struct pseudo_header_tcp));
+    psh->source_address = inet_addr(saddr);
+    psh->dest_address = sin.sin_addr.s_addr;
+    psh->placeholder = 0;
+    psh->protocol = IPPROTO_TCP;
+    psh->tcp_length = htons(20);
+    memcpy(&psh->tcph, tcph, sizeof(struct tcphdr));
+    tcph->check = checksum((unsigned short *)psh, sizeof(struct pseudo_header_tcp), NULL);
+    free(psh);
 
     // IP_HDRINCL to tell the kernel that headers are included in the packet
     int one = 1;
@@ -143,7 +149,7 @@ static int _send_ack_packet(const char *daddr, const int dport, const char *sadd
     iph->ip_sum = 0;                       // set to 0 before calculating checksum
     iph->ip_src.s_addr = inet_addr(saddr); // spoof the source ip address
     iph->ip_dst.s_addr = inet_addr(daddr);
-    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip));
+    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip), NULL);
 
     tcph->source = htons(sport);
     tcph->dest = htons(dport);
@@ -158,11 +164,17 @@ static int _send_ack_packet(const char *daddr, const int dport, const char *sadd
     tcph->urg = 0;
     tcph->window = htons(65535); // maximum allowed window size
     tcph->check = 0;
-    /*
-     * if you set a checksum to zero, your kernel's IP stack
-     * should fill in the correct checksum during transmission.
-     */
     tcph->urg_ptr = 0;
+
+    struct pseudo_header_tcp *psh = (struct pseudo_header_tcp *)malloc(sizeof(struct pseudo_header_tcp));
+    psh->source_address = inet_addr(saddr);
+    psh->dest_address = sin.sin_addr.s_addr;
+    psh->placeholder = 0;
+    psh->protocol = IPPROTO_TCP;
+    psh->tcp_length = htons(20);
+    memcpy(&psh->tcph, tcph, sizeof(struct tcphdr));
+    tcph->check = checksum((unsigned short *)psh, sizeof(struct pseudo_header_tcp), NULL);
+    free(psh);
 
     // IP_HDRINCL to tell the kernel that headers are included in the packet
     int one = 1;

@@ -14,45 +14,15 @@ void info(const char *fmt, ...)
     int buff_size = 0;
     char *buff = NULL;
     va_list arg;
-
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     va_end(arg);
-
-    #ifdef DEBUG
-    if (buff_size < 0)
-    {
-        error("get buff_size failed: %s(%d)", strerror(errno), errno);
-        return -1;
-    }
-    #endif
-
     // for '\0'
     ++buff_size;
     buff = (char *)malloc(buff_size);
 
-    #ifdef DEBUG
-    if (!buff)
-    {
-        error("malloc failed: %s(%d)", strerror(errno), errno);
-        return -1;
-    }
-    #endif
-
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
-
-    #ifdef DEBUG
-    if (buff_size < 0)
-    {
-        error("malloc failed: %s(%d)", strerror(errno), errno);
-        if (buff)
-        {
-            free(buff);
-        }
-        return -1;
-    }
-    #endif
 
     time_t t;
     struct tm *time_st;
@@ -65,7 +35,6 @@ void info(const char *fmt, ...)
     #elif __linux__
         printf("\033[0;32m%d-%d-%d %d:%d:%d INFO [%s]\033[0m\n", time_st->tm_year + 1900, time_st->tm_mon, time_st->tm_mday, time_st->tm_hour, time_st->tm_min, time_st->tm_sec, buff);
     #endif
-    //printf("\033[0;32m DEBUG [%s]\033[0m\n", buff);
 
     va_end(arg);
     if (buff)
@@ -83,45 +52,16 @@ void warning(const char *fmt, ...)
     int buff_size = 0;
     char *buff = NULL;
     va_list arg;
-
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     va_end(arg);
-
-    #ifdef DEBUG
-    if (buff_size < 0)
-    {
-        error("get buff_size failed: %s(%d)", strerror(errno), errno);
-        return -1;
-    }
-    #endif
 
     // for '\0'
     ++buff_size;
     buff = (char *)malloc(buff_size);
 
-    #ifdef DEBUG
-    if (!buff)
-    {
-        error("malloc failed: %s(%d)", strerror(errno), errno);
-        return -1;
-    }
-    #endif
-
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
-
-    #ifdef DEBUG
-    if (buff_size < 0)
-    {
-        error("get buff_size failed: %s(%d)", strerror(errno), errno);
-        if (buff)
-        {
-            free(buff);
-        }
-        return -1;
-    }
-    #endif
 
     time_t t;
     struct tm *time_st;
@@ -150,41 +90,11 @@ void error(const char *fmt, ...)
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
     va_end(arg);
-
-    #ifdef DEBUG
-    if (buff_size < 0)
-    {
-        error("get buff_size failed: %s(%d)", strerror(errno), errno);
-        return -1;
-    }
-    #endif
-
     // for '\0'
     ++buff_size;
     buff = (char *)malloc(buff_size);
-
-    #ifdef DEBUG
-    if (!buff)
-    {
-        error("malloc failed: %s(%d)", strerror(errno), errno);
-        return -1;
-    }
-    #endif
-
     va_start(arg, fmt);
     buff_size = vsnprintf(buff, buff_size, fmt, arg);
-
-    #ifdef DEBUG
-    if (buff_size < 0)
-    {
-        error("get buff_size failed: %s(%d)", strerror(errno), errno);
-        if (buff)
-        {
-            free(buff);
-        }
-        return -1;
-    }
-    #endif
 
     time_t t;
     struct tm *time_st;

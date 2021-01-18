@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- no.
+
+## [1.01]
+
+### Changed
+
+-  Rewirte all code.
+
+### Removed
+
+- ack reflect module.
+- brute force module.
+- http method.
+
+## [1.00]
+
+### Added
+
 - ACK reflect dos attack module.
 - DNS reflect dos attack module.
 - Test module.

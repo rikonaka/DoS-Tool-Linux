@@ -7,19 +7,30 @@
 
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <netinet/udp.h>
 #include <netinet/ip.h>
 
 struct pseudo_header_tcp
 {
-	unsigned int source_address;
-	unsigned int dest_address;
-	unsigned char placeholder;
-	unsigned char protocol;
-	unsigned short tcp_length;
-	struct tcphdr tcph;
+    unsigned int source_address;
+    unsigned int dest_address;
+    unsigned char placeholder;
+    unsigned char protocol;
+    unsigned short tcp_length;
+    struct tcphdr tcph;
 };
 
-static unsigned short checksum(const unsigned short *ptr, const int hlen)
+struct pseudo_header_udp
+{
+    unsigned int source_address;
+    unsigned int dest_address;
+    unsigned char placeholder;
+    unsigned char protocol;
+    unsigned short udp_length;
+    struct udphdr udph;
+};
+
+static unsigned short checksum_1(const unsigned short *ptr, const int hlen)
 {
     /*
      * hlen is the header you want to checksum's length
@@ -93,6 +104,7 @@ static unsigned short _csum(unsigned short *ptr, int nbytes)
     return answer;
 }
 
+/*
 int main(void)
 {
     char datagram[4096] = {'\0'}; // datagram to represent the packet
@@ -141,9 +153,106 @@ int main(void)
 	psh->protocol = IPPROTO_TCP;
 	psh->tcp_length = htons(20);
     memcpy(&psh->tcph, tcph, sizeof(struct tcphdr));
-    unsigned short r3 = checksum((unsigned short *)psh, sizeof(struct pseudo_header_tcp));
+    unsigned short r3 = checksum_1((unsigned short *)psh, sizeof(struct pseudo_header_tcp));
     unsigned short r4 = _csum((unsigned short *)psh, sizeof(struct pseudo_header_tcp));
     free(psh);
 
     return 0;
+}
+*/
+
+
+unsigned short checksum_test_udp(unsigned short *ptr, int hlen, ...)
+{
+    /*
+     * hlen is the header you want to checksum's length
+     * n means how many 16 bit there is
+     * 
+     * parameters:
+     *      - ptr
+     *      - hlen
+     *      - data
+     */
+    va_list vlist;
+    va_start(vlist, hlen);
+    char *data = va_arg(vlist, char *);
+    va_end(vlist);
+    unsigned short *dptr = (unsigned short *)data;
+    // 32 bits
+    long sum = 0;
+    int i;
+    /*
+     * IP header 20 Bytes
+     * 20 Bytes = 160 Bit = 10 * 16 Bit
+     * 20 -> 10 (20 * 1/2)
+     */
+    int n = (hlen >> 1);
+    for (i = 0; i < n; i++)
+        sum += *ptr++;
+
+    if (data)
+    {
+        n = (strlen(data) >> 1);
+        for (i = 0; i < n; i++)
+            sum += *dptr++;
+    }
+
+    while ((sum >> 16) != 0)
+        sum = (sum >> 16) + (sum & 0xffff);
+
+    return (unsigned short)~sum;
+}
+
+int main(void)
+{
+    int dport = 80;
+    char *daddr = "192.168.1.1";
+    int sport = 3399;
+    char *saddr = "192.168.1.2";
+    int padding_size = 4;
+
+    int size = sizeof(struct ip) + sizeof(struct udphdr) + padding_size;
+    char *datagram = (char *)malloc(sizeof(char) * size);
+
+    struct ip *iph = (struct ip *)datagram;
+    struct udphdr *udph = (struct udphdr *)(datagram + sizeof(struct ip));
+
+    struct sockaddr_in sin;
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(dport);
+    sin.sin_addr.s_addr = inet_addr(daddr);
+
+    // ip header
+    iph->ip_v = 4;
+    iph->ip_hl = 5;
+    iph->ip_tos = 0;
+    iph->ip_len = sizeof(struct ip) + sizeof(struct udphdr) + padding_size;
+    iph->ip_id = htons(1999);
+    iph->ip_off = 0;
+    iph->ip_ttl = 255;
+    iph->ip_p = IPPROTO_UDP;
+    iph->ip_sum = 0; // a remplir aprés
+    iph->ip_src.s_addr = inet_addr(saddr);
+    iph->ip_dst.s_addr = inet_addr(daddr);
+    iph->ip_sum = checksum_test_udp((unsigned short *)datagram, sizeof(struct ip), NULL);
+
+    // udp header
+    udph->uh_sport = htons(sport);
+    udph->uh_dport = htons(dport);
+    udph->uh_ulen = htons(sizeof(struct udphdr) + padding_size);
+    udph->uh_sum = 0;
+
+    char *data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
+    // filed the data
+    memcpy((char *)data, "love", (padding_size >> 2));
+
+    struct pseudo_header_udp *psh = (struct pseudo_header_udp *)malloc(sizeof(struct pseudo_header_udp));
+    psh->source_address = inet_addr(saddr);
+    psh->dest_address = sin.sin_addr.s_addr;
+    psh->placeholder = 0;
+    psh->protocol = IPPROTO_UDP;
+    psh->udp_length = htons(size);
+    memcpy(&psh->udph, udph, sizeof(struct udphdr));
+    udph->uh_sum = checksum_test_udp((unsigned short *)psh, sizeof(struct pseudo_header_udp), data);
+    free(psh);
 }

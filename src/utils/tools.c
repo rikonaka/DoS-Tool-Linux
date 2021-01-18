@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 
 #include "../main.h"
 
@@ -53,27 +54,43 @@ char *randip(char **buff)
     return random_ip;
 }
 
-unsigned short checksum(unsigned short *ptr, int hlen)
+unsigned short checksum(unsigned short *ptr, int hlen, ...)
 {
     /*
      * hlen is the header you want to checksum's length
      * n means how many 16 bit there is
+     * 
+     * parameters:
+     *      - ptr
+     *      - hlen
+     *      - data
      */
+    va_list vlist;
+    va_start(vlist, hlen);
+    char *data = va_arg(vlist, char *);
+    va_end(vlist);
+    unsigned short *dptr = (unsigned short *)data;
     // 32 bits
     long sum = 0;
+    int i;
     /*
      * IP header 20 Bytes
      * 20 Bytes = 160 Bit = 10 * 16 Bit
+     * 20 -> 10 (20 * 1/2)
      */
     int n = (hlen >> 1);
-    for (int i = 0; i < n; i++)
-    {
+    for (i = 0; i < n; i++)
         sum += *ptr++;
+
+    if (data)
+    {
+        n = (strlen(data) >> 1);
+        for (i = 0; i < n; i++)
+            sum += *dptr++;
     }
 
-    if ((sum >> 16) != 0)
-    {
+    while ((sum >> 16) != 0)
         sum = (sum >> 16) + (sum & 0xffff);
-    }
+
     return (unsigned short)~sum;
 }

@@ -27,12 +27,7 @@
 #define HTTP_PORT_DEFAULT 80
 #define HTTPS_PORT_DEFAULT 443
 
-/* need re-think here */
-#define ACK_IP_LIST_NAME "./core_module/ack_reflect_ip_list.txt"
-#define DNS_IP_LIST_NAME "./core_module/dns_reflect_ip_list.txt"
-
-// if you want to change this name, please also edit the dns query->name size
-#define DNS_QUERY_NAME_DEFAULT "github.com"
+#define PADDING_SIZE 4; // 4B
 
 // for tcp header checksum
 struct pseudo_header_tcp
@@ -53,7 +48,7 @@ struct pseudo_header_udp
 	unsigned char protocol;
 	unsigned short udp_length;
 	struct udphdr udph;
-}
+};
 
 typedef struct ack_flood_thread_parameters
 {

