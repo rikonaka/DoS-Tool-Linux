@@ -20,7 +20,7 @@ extern void error(const char *fmt, ...);
 
 extern char *randip(char **buff);
 extern int randport(void);
-extern unsigned short checksum(unsigned short *ptr, int hlen, ...);
+extern unsigned short checksum(unsigned short *ptr, int hlen, char *data); 
 
 static int _send_udp_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep, const int dp)
 {
@@ -74,7 +74,7 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
     iph->ip_sum = 0; // a remplir aprés
     iph->ip_src.s_addr = inet_addr(saddr);
     iph->ip_dst.s_addr = inet_addr(daddr);
-    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip), NULL);
+    iph->ip_sum = htons(checksum((unsigned short *)datagram, sizeof(struct ip), NULL));
 
     // udp header
     udph->uh_sport = htons(sport);
@@ -84,7 +84,15 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
 
     char *data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
     // filed the data
-    memcpy((char *)data, "love", (padding_size >> 2));
+    int n = (padding_size >> 2);
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        memcpy(data + i + 0, "l", 1);
+        memcpy(data + i + 1, "o", 1);
+        memcpy(data + i + 2, "v", 1);
+        memcpy(data + i + 3, "e", 1);
+    }
 
     struct pseudo_header_udp *psh = (struct pseudo_header_udp *)malloc(sizeof(struct pseudo_header_udp));
     psh->source_address = inet_addr(saddr);
@@ -93,7 +101,7 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
     psh->protocol = IPPROTO_UDP;
     psh->udp_length = htons(size);
     memcpy(&psh->udph, udph, sizeof(struct udphdr));
-    udph->uh_sum = checksum((unsigned short *)psh, sizeof(struct pseudo_header_udp), data);
+    udph->uh_sum = htons(checksum((unsigned short *)psh, sizeof(struct pseudo_header_udp), data));
     free(psh);
 
     int one = 1;

@@ -19,7 +19,7 @@ extern void error(const char *fmt, ...);
 
 extern char *randip(char **buff);
 extern int randport(void);
-extern unsigned short checksum(unsigned short *ptr, int hlen, ...);
+extern unsigned short checksum(unsigned short *ptr, int hlen, char *data); 
 
 static int _send_syn_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep)
 {
@@ -58,7 +58,7 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
     iph->ip_sum = 0;                       // set to 0 before calculating checksum
     iph->ip_src.s_addr = inet_addr(saddr); // spoof the source ip address
     iph->ip_dst.s_addr = inet_addr(daddr);
-    iph->ip_sum = checksum((unsigned short *)datagram, sizeof(struct ip), NULL);
+    iph->ip_sum = htons(checksum((unsigned short *)datagram, sizeof(struct ip), NULL));
 
     tcph->source = htons(sport);
     tcph->dest = htons(dport);
@@ -82,7 +82,7 @@ static int _send_syn_packet(const char *daddr, const int dport, const char *sadd
     psh->protocol = IPPROTO_TCP;
     psh->tcp_length = htons(20);
     memcpy(&psh->tcph, tcph, sizeof(struct tcphdr));
-    tcph->check = checksum((unsigned short *)psh, sizeof(struct pseudo_header_tcp), NULL);
+    tcph->check = htons(checksum((unsigned short *)psh, sizeof(struct pseudo_header_tcp), NULL));
     free(psh);
 
     // IP_HDRINCL to tell the kernel that headers are included in the packet

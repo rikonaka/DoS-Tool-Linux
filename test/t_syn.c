@@ -162,7 +162,7 @@ int main(void)
 */
 
 
-unsigned short checksum_test_udp(unsigned short *ptr, int hlen, ...)
+unsigned short checksum_test_udp(unsigned short *ptr, int hlen, char *data)
 {
     /*
      * hlen is the header you want to checksum's length
@@ -173,10 +173,6 @@ unsigned short checksum_test_udp(unsigned short *ptr, int hlen, ...)
      *      - hlen
      *      - data
      */
-    va_list vlist;
-    va_start(vlist, hlen);
-    char *data = va_arg(vlist, char *);
-    va_end(vlist);
     unsigned short *dptr = (unsigned short *)data;
     // 32 bits
     long sum = 0;
@@ -189,12 +185,14 @@ unsigned short checksum_test_udp(unsigned short *ptr, int hlen, ...)
     int n = (hlen >> 1);
     for (i = 0; i < n; i++)
         sum += *ptr++;
+    // l         o
+    // 0110 1100 0110 1111
 
     if (data)
     {
         n = (strlen(data) >> 1);
         for (i = 0; i < n; i++)
-            sum += *dptr++;
+            sum += htons(*dptr++);
     }
 
     while ((sum >> 16) != 0)
@@ -244,7 +242,15 @@ int main(void)
 
     char *data = (char *)(datagram + sizeof(struct ip) + sizeof(struct udphdr));
     // filed the data
-    memcpy((char *)data, "love", (padding_size >> 2));
+    int n = (padding_size >> 2);
+    int i;
+    for (i = 0; i < n; i++)
+    {
+        memcpy((char *)(data + i), "l", 1);
+        memcpy((char *)(data + i + 1), "o", 1);
+        memcpy((char *)(data + i + 2), "v", 1);
+        memcpy((char *)(data + i + 3), "e", 1);
+    }
 
     struct pseudo_header_udp *psh = (struct pseudo_header_udp *)malloc(sizeof(struct pseudo_header_udp));
     psh->source_address = inet_addr(saddr);
