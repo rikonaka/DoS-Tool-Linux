@@ -16,23 +16,14 @@ Current version: 1.0.2 | [Changelog](CHANGELOG.md)
 
 ## Features
 
-DoS-Tool-Linux is written in pure C, in order to keep the resource usage as low as possible.
+DoS-Tool-Linux is written in pure C, for the efficient operation of the program and keep the resource usage as low as possible.
 
 ## Installation
 
-### Distribution-specific guide
-
-#### Install from source
-
-- Debian & Ubuntu
+### Install from source
 
 ```bash
 sudo apt install make gcc
-```
-
-then
-
-```bash
 make
 ```
 

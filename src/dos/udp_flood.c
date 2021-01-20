@@ -34,7 +34,7 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
         // get the random number from [1, 8]
         // The number of bytes is a multiple of 4
         // limited: MTU = 1500
-        padding_size = (2 << (1 + randport() % 4));
+        padding_size = ((1 + randport() % 4) * 4);
 
     int socket_fd;
     socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -88,10 +88,7 @@ static int _send_udp_packet(const char *daddr, const int dport, const char *sadd
     int i;
     for (i = 0; i < n; i++)
     {
-        memcpy(data + i + 0, "l", 1);
-        memcpy(data + i + 1, "o", 1);
-        memcpy(data + i + 2, "v", 1);
-        memcpy(data + i + 3, "e", 1);
+        memcpy(data + (i * 4), "love", 4);
     }
 
     struct pseudo_header_udp *psh = (struct pseudo_header_udp *)malloc(sizeof(struct pseudo_header_udp));
