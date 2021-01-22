@@ -13,16 +13,16 @@ SRCS = src/main.c \
 	src/dos/http_flood.c \
 
 OBJS = $(SRCS:.c=.o)
-EXEC = dos-tool-linux
+EXEC = debug-dos-tool-linux
 
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) -o $(EXEC) $(OBJS) -g -Wall -lpthread -lcrypto -lssl
+	$(CC) -o $(EXEC) $(OBJS) -g -Wall -lpthread -lcrypto -lssl -D DEBUG
 	@echo ">>> finish"
 
 .c.o:
-	$(CC) -o $@ -c $< -g -Wall -lpthread -lcrypto -lssl
+	$(CC) -o $@ -c $< -g -Wall -lpthread -lcrypto -lssl -D DEBUG
 
 clean: 
 	rm -f $(OBJS)

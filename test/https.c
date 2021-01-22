@@ -368,7 +368,7 @@ int HttpMethod(const char *address, const int port, const char *request, char **
     return 0;
 }
 
-static int InitCtx(SSL_CTX **output)
+static int _init_ctx(SSL_CTX **output)
 {
     const SSL_METHOD *method;
 
@@ -385,7 +385,7 @@ static int InitCtx(SSL_CTX **output)
     return 0;
 }
 
-static int ShowCerts(SSL *ssl)
+static int _show_certs(SSL *ssl)
 {
     X509 *cert;
     char *line;
@@ -435,7 +435,7 @@ int HttpsMethod(const char *address, const int port, const char *request, char *
     }
 
     // 1 ssl init
-    if (InitCtx(&ctx) == -1)
+    if (_init_ctx(&ctx) == -1)
     {
         error("InitCTX failed");
         return -1;

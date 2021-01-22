@@ -12,9 +12,11 @@
 #define SYN_ACK_JOINT_FLOOD_ATTACK 4
 #define ACK_REFLECT_ATTACK 5
 #define DNS_REFLECT_ATTACK 6
+#define HTTP_FLOOD_ATTACK 7
 
 #define MAX_URL_LENGTH 2048    // URL
 #define MAX_IP_LENGTH 32
+#define MAX_PATH_LENGTH 128
 
 #define ENABLE 1
 #define DISABLE 0
@@ -81,6 +83,20 @@ typedef struct syn_flood_thread_parameters
     int random_saddr;
     int rep;
 } SFTP, *pSFTP;
+
+typedef struct http_flood_thread_parameters
+{
+    char *url;
+    int port;
+    char *http_request_file_path;
+    int http_or_https;
+} HFTP, *pHFTP;
+
+typedef struct ip_list
+{
+    char *ip;
+    struct ip_list *next;
+} IPLIST, *pIPLIST;
 
 
 #endif

