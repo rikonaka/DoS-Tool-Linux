@@ -11,7 +11,9 @@ extern int info(const char *fmt, ...);
 // 2021-01-01, continue work
 // static char *version = "1.0.1";
 // 2021-01-18
-static char *version = "1.0.2";
+// static char *version = "1.0.2";
+// 2021-3-24, fix memroy leak
+static char *version = "1.0.3";
 
 char *return_version(void)
 {
