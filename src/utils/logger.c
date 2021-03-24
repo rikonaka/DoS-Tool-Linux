@@ -119,7 +119,10 @@ void error(const char *fmt, ...)
 
 void wronginput(const char *input_parameter)
 {
-    error("please check your %s option", input_parameter);
+    if (input_parameter)
+        error("please check your %s option", input_parameter);
+    else
+        error("please check your option");
 }
 
 /*

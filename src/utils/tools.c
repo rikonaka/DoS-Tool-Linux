@@ -55,13 +55,14 @@ char *randip(char **buff)
     return random_ip;
 }
 
-unsigned short checksum(unsigned short *ptr, int hlen, char *data)
+
+unsigned short checksum(unsigned short *ptr, int hlen, char *data, int dlen)
 {
     /*
      * hlen is the header you want to checksum's length
      * n means how many 16 bit there is
+     * dlen is data length, to avoid strlen() read out of memory 
      */
-    unsigned short *dptr = (unsigned short *)data;
     // 32 bits
     long sum = 0;
     int i;
@@ -78,9 +79,11 @@ unsigned short checksum(unsigned short *ptr, int hlen, char *data)
 
     if (data)
     {
-        n = (strlen(data) >> 1);
+        unsigned short *dptr = (unsigned short *)data;
+        n = dlen >> 1;
         for (i = 0; i < n; i++)
-            sum += htons(*dptr++);
+            // sum += htons(*dptr++);
+            sum += *dptr++;
     }
 
     while (sum >> 16)

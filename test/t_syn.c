@@ -12,8 +12,8 @@
 
 struct pseudo_header_tcp
 {
-    unsigned int source_address;
-    unsigned int dest_address;
+    unsigned int saddr;
+    unsigned int daddr;
     unsigned char placeholder;
     unsigned char protocol;
     unsigned short tcp_length;
