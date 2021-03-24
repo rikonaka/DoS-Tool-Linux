@@ -25,20 +25,20 @@ DoS-Tool-Linux is written in pure C, for the efficient operation of the program 
 - Debian or Ubuntu
 
 ```bash
-sudo apt install make gcc libssl-dev
-make
+# sudo apt install make gcc libssl-dev
+# make
 ```
 
 ## Usage
 
 ```bash
-dos-tool-linux -h
+# dos-tool-linux -h
 ```
 
 ## Run
 
 ```bash
-dos-tool-linux [option]
+# dos-tool-linux [option]
 ```
 
 ## Note
@@ -56,5 +56,5 @@ After closing the terminal and creating a new session, the limits will get back 
 To change the general value for the system /proc/sys/fs/file-max, change the fs.file-max value in `/etc/sysctl.conf`:
 
 ```bash
-fs.file-max = 100000
+# fs.file-max = 100000
 ```
