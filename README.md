@@ -2,8 +2,6 @@
 
 ## Intro
 
-> code was not finished
-
 [Dos-Tool-Linux](https://github.com/rikonaka/DoS-Tool-Linux) is used DoS attack make computer offline, the DoS method also could attack website.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -29,6 +27,12 @@ DoS-Tool-Linux is written in pure C, for the efficient operation of the program 
 ```bash
 sudo apt install make gcc libssl-dev
 make
+```
+
+## Usage
+
+```bash
+dos-tool-linux -h
 ```
 
 ## Run
