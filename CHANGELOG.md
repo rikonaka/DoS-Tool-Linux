@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix syn flood, ack flood, syn ack joint flood memory leak.
 - Fix http flood memory leak.
+- Rewrite Makefile.
 
 ## [1.0.2]
 
